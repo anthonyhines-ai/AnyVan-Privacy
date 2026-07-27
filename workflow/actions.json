@@ -1,0 +1,29 @@
+[
+  {
+    "type": "FRESHDESK_TICKET_CREATE",
+    "config": {
+      "requester_email": "{requester_email}",
+      "subject": "{subject}",
+      "description": "{description}",
+      "status": 2,
+      "priority": 2,
+      "tags": ["privacy", "dsr", "{request_type_tag}", "{requester_type_tag}", "source:dsr-form"],
+      "custom_fields": {
+        "cf_dsr_type": "{dsr_type}",
+        "cf_requester_type": "{requester_type}",
+        "cf_booking_reference": "{booking_reference}",
+        "cf_tp_username": "{tp_username}",
+        "cf_formstack_id": { "value": "{event.payload.UniqueID}", "type": "number" }
+      }
+    }
+  },
+  {
+    "type": "FORMSTACK_SUBMISSION_UPDATE",
+    "config": {
+      "submission_id": "{event.payload.UniqueID}",
+      "field_map": {
+        "field_FRESHDESK_TICKET_ID_FIELD": { "value": "{steps[0].ticket_id}", "value_type": "text" }
+      }
+    }
+  }
+]
