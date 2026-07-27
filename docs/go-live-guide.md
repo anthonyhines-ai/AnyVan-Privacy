@@ -7,6 +7,12 @@ One sequential runbook to take the DSR intake form live for **UK customers (publ
 > **MVP scope:** the initial launch uses ticket **tags + a structured description** — no
 > Freshdesk custom fields — so **Stage 1 is optional and can be skipped**; start at Stage 2.
 > Stage 2 can be largely automated with `workflow/build-formstack-form.js`.
+>
+> **Progress:** Stage 2 is **done** — the form is built in the AnyVanforms account (**id
+> `6559077`**, https://AnyVanforms.formstack.com/forms/anyvan__data_subject_request_dsr_2). Field
+> ids are recorded in `docs/dsr-field-mapping.md` and the form id is set in `workflow/create.sh`.
+> Remaining: finish the builder-only config (region/retention/reCAPTCHA/theme/confirmation email)
+> and review/publish, then Stages 4–8 (workflow → launch).
 
 ```
 Freshdesk fields ──► Formstack form ──► record field ids ──► create workflow (DRY_RUN)

@@ -32,11 +32,15 @@ and is parked (not deployed).
 
 - **Direction:** all-Formstack, single form, both audiences (decided). Formstack is an approved
   UK-PII processor — no procurement gate.
+- **Formstack form:** **built** in the AnyVanforms account — id `6559077`
+  (`https://AnyVanforms.formstack.com/forms/anyvan__data_subject_request_dsr_2`), created by
+  `workflow/build-formstack-form.js`. Pending: builder config (EU/UK region, retention,
+  reCAPTCHA, theme, confirmation email) + review/publish.
 - **Custom form:** live at `https://dashboards.anyvan.com/operations/dsr-intake-form`
   (internal, `@anyvan.com` login), in **test mode**. Checkbox bug fixed and deployed (v1).
-  Interim staff tool until Formstack is live.
-- **Next:** build the Formstack form (`docs/formstack-dsr-build.md`), then create the workflow
-  (`docs/formstack-to-freshdesk-workflow.md`). Both need account/admin access — see those docs.
+  Interim staff tool until the Formstack form is live.
+- **Next:** finish the Formstack builder config, then create the workflow
+  (`docs/formstack-to-freshdesk-workflow.md`) and launch — see `docs/go-live-guide.md`.
 - **Backend Lambda:** built + tested, **superseded** by the workflow-system path; parked.
 
 ## Deploying the form to AV Dashboards

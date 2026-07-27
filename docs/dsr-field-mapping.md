@@ -1,57 +1,57 @@
 # DSR field mapping (single source of truth)
 
-The contract between the **Formstack form** (`docs/formstack-dsr-build.md`) and the
-**workflow → Freshdesk** wiring (`workflow/`). Fill the `field_<NNN>` column once the Formstack
-form is built — **`workflow/build-formstack-form.js` prints the whole map** for you to paste in
-(fields are referenced by numeric id, not label). "Destination" is where the value lands.
+The contract between the **Formstack form** and the **workflow → Freshdesk** wiring (`workflow/`).
 
-> **MVP:** there are no Freshdesk custom fields yet — everything lands in **tags + the ticket
-> description**. The `cf_*` destinations below are the **later** mapping (when the fields are
-> added per `docs/freshdesk-custom-fields.md`); for now those values go into the description.
+> **Built.** The form exists in the AnyVanforms account — **form id `6559077`**
+> (`AnyVan — Data Subject Request (DSR)`), created by `workflow/build-formstack-form.js`. The
+> `field_<NNN>` ids below are the live ids from that build.
+>
+> **MVP:** no Freshdesk custom fields yet — everything lands in **ticket tags + the description**.
+> The `cf_*` column is the **later** mapping (add per `docs/freshdesk-custom-fields.md`).
 
-| Form question | Requester types | Formstack field id | Destination |
-|---|---|---|---|
-| Full Name / Full Name of Data Subject | all | `field____` | ticket requester name + description |
-| Email Address | all | `field____` | **`requester_email`** |
-| Phone Number | all | `field____` | ticket `phone` + description |
-| Alternative Phone Number | all | `field____` | description |
-| Business Type (Sole Trader / Limited) | TP | `field____` | derives `requester_type` = `TP Sole Trader` / `TP Limited` |
-| Trading Name / Company Name | TP | `field____` | description |
-| Transport Partner Username | TP | `field____` | **`cf_tp_username`** |
-| Authorisation Details | Third Party | `field____` | description |
-| Proof of Authorisation (file upload) | Third Party | `field____` | vision-summarised into description (file stays on the Formstack submission — see open item) |
-| AnyVan Booking Reference | all | `field____` | **`cf_booking_reference`** (AV-prefix if digits-only) |
-| Account-holder confirmation | Customer, TP | `field____` | description (attestation) |
-| Request type | all | `field____` | **`cf_dsr_type`** + `request_type_tag` + description |
-| SAR data categories | SAR | `field____` | description |
-| Call recording entries (date/time/phone) | SAR (calls) | `field____` | description |
-| Chat transcript detail (date range, channels) | SAR (chat) | `field____` | description |
-| All-data window + reason | SAR (all data) | `field____` | description |
-| Deletion scopes | Deletion | `field____` | description |
-| Rectification fields + details | Rectification | `field____` | description |
-| Additional Information | all | `field____` | description |
-| Declaration | all | `field____` | required to submit (not stored as a field) |
+| Form question | Requester types | Formstack field id | Destination (MVP) | Later `cf_*` |
+|---|---|---|---|---|
+| Full name / of data subject | all | `197276071` | description | — |
+| Email address | all | `197276072` | **`requester_email`** | — |
+| Phone number | all | `197276073` | ticket `phone` + description | — |
+| Alternative phone number | all | `197276074` | description | — |
+| Business type (Sole/Ltd) | TP | `197276081` | → `requester_type` (TP Sole/Ltd) | — |
+| Trading name | TP sole | `197276082` | description | — |
+| Registered company / partnership name | TP ltd | `197276083` | description | — |
+| Transport Partner username | TP | `197276084` | description | `cf_tp_username` |
+| Authorisation details | Third Party | `197276085` | description | — |
+| Proof of authorisation (file) | Third Party | `197276086` | vision-summarised into description | — |
+| AnyVan booking reference | all | `197276080` | description (AV-prefixed) | `cf_booking_reference` |
+| Account-holder confirmation | Customer, TP | `197276087` | description + `account-holder-confirmed` tag | — |
+| Request type | all | `197276089` | `cf_dsr_type` value + `request_type_tag` + subject | `cf_dsr_type` |
+| SAR data categories | SAR | `197276090` | description | — |
+| Call recording details | SAR (calls) | `197276091` | description | — |
+| Chat — from date | SAR (chat) | `197276092` | description | — |
+| Chat — to date | SAR (chat) | `197276093` | description | — |
+| Chat channels | SAR (chat) | `197276094` | description | — |
+| All-data — earliest | SAR (all) | `197276095` | description | — |
+| All-data — most recent | SAR (all) | `197276096` | description | — |
+| All-data reason | SAR (all) | `197276097` | description | — |
+| Deletion scopes | Deletion | `197276099` | description | — |
+| Rectification fields | Rectification | `197276100` | description | — |
+| Rectification details | Rectification | `197276101` | description | — |
+| Additional information | all | `197276106` | description | — |
+| Declaration | all | `197276108` | required to submit | — |
+| source (hidden) | admin entry | `197276151` | description ("logged by staff") | — |
+| agent (hidden) | admin entry | `197276152` | description | — |
+
+Controllers (for reference): `requester_type` = `197276069`, sections = `197276067` /
+`197276070` / `197276088` / `197276107`.
 
 ## Derived / meta
-
 | Value | Source | Destination |
 |---|---|---|
-| `requester_type` | requester-type page + business type | **`cf_requester_type`** (`Customer` / `TP Sole Trader` / `TP Limited` / `Third Party`) + `requester_type_tag` (`customer`/`tp`/`third-party`) |
-| Formstack submission id | event payload | **`cf_formstack_id`** + subject reference `DSR-<id>` |
-| `source` / `agent` | hidden URL params on the admin entry point (`?source=admin&agent=<id>`) | description ("logged by staff …") |
+| `requester_type` | requester-type + business type | subject + `requester_type_tag` (`customer`/`tp`/`third-party`) |
+| Reference | Formstack submission id | `DSR-<id>` in subject + confirmation |
+| `source` / `agent` | hidden prefill `?field197276151=admin&field197276152=<id>` | description |
 | Tags | derived | `privacy`, `dsr`, `<request_type_tag>`, `<requester_type_tag>`, `source:dsr-form` |
 
-## Freshdesk dropdown values (must match exactly)
-- `cf_dsr_type`: `SAR` · `Deletion` · `Rectification` · `Marketing Opt-Out` · `Portability`
-- `cf_requester_type`: `Customer` · `TP Sole Trader` · `TP Limited` · `Third Party`
-
-## Open items to confirm during build
-- **`cf_formstack_id` type/key.** Historically a *number* field (and its key was once renamed
-  to `cf_formstack_id594255` when its type changed). Confirm the live key + type via
-  `GET /api/v2/ticket_fields`; `workflow/actions.json` currently sends it as a typed number.
-- **Submission-id path** in the `FORMSTACK_FORM_SUBMITTED` payload (`actions.json` uses the
-  placeholder `{event.payload.UniqueID}`) — confirm from a real event / `catalogue`.
-- **Attaching the third-party auth file to the ticket.** The file remains on the Formstack
-  submission and is vision-summarised; pulling the bytes into a Freshdesk attachment isn't a
-  documented action-config path. Decide: (a) reviewers open the Formstack submission, or
-  (b) add a step/handler to copy the file across. Defaulting to (a).
+## Later (when adding Freshdesk custom fields)
+`cf_dsr_type`, `cf_requester_type`, `cf_booking_reference`, `cf_tp_username` — see
+`docs/freshdesk-custom-fields.md`; then put `custom_fields` back into `workflow/actions.json`.
+Confirm `cf_*` live keys/types via `GET /api/v2/ticket_fields`.

@@ -16,7 +16,7 @@ SK="${CLAUDE_SKILL_DIR:-$HOME/.claude/skills/workflow-editor}/workflow_edit.py"
 ENVv="${ENVv:-prod}"
 
 # ---- placeholders you must set ------------------------------------------------
-FORMSTACK_FORM_ID="<FORMSTACK_FORM_ID>"     # numeric Formstack form id of the DSR form
+FORMSTACK_FORM_ID="6559077"                 # DSR form id (built by build-formstack-form.js)
 # Also confirm the submission-id path used in workflow/user_prompt.md ({event.payload.UniqueID})
 # against a real FORMSTACK_FORM_SUBMITTED payload (run `python3 "$SK" catalogue --env prod`).
 # -------------------------------------------------------------------------------
