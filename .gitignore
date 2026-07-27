@@ -1,0 +1,5 @@
+node_modules/
+payload.json
+*.log
+.aws-sam/
+.DS_Store
