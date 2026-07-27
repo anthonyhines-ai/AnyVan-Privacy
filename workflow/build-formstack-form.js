@@ -34,8 +34,9 @@ const REQ = {
   SAR: 'Access My Data (SAR)', DEL: 'Delete My Data', RECT: 'Correct My Data',
   MKT: 'Marketing Opt-Out', PORT: 'Data Portability',
 };
+// NB: "Payment & transaction records" was removed on the live form (5 categories).
 const SAR_CATS = ['Booking & account details', 'Call recordings', 'Chat transcripts',
-  'Email correspondence', 'Payment & transaction records', 'All personal data held'];
+  'Email correspondence', 'All personal data held'];
 
 // showIf: { any:[[key,value],...] } -> OR ; { all:[...] } -> AND
 const FIELDS = [
@@ -76,8 +77,9 @@ const FIELDS = [
 
   { key: 'sar_data_types', type: 'checkbox', label: 'What data would you like to access?', required: true,
     options: SAR_CATS, showIf: { any: [['request_type', REQ.SAR]] } },
-  { key: 'call_details', type: 'textarea', label: 'Call recording details',
-    hint: 'One call per line: date, approx time, and the number used. We need this to locate recordings.',
+  { key: 'call_from', type: 'datetime', label: 'Call Recordings - From Date',
+    showIf: { any: [['sar_data_types', 'Call recordings']] } },
+  { key: 'call_to', type: 'datetime', label: 'Call Recordings - To Date',
     showIf: { any: [['sar_data_types', 'Call recordings']] } },
   { key: 'chat_from', type: 'datetime', label: 'Chat transcripts — from date',
     showIf: { any: [['sar_data_types', 'Chat transcripts']] } },

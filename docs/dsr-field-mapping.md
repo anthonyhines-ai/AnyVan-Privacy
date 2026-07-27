@@ -25,7 +25,8 @@ The contract between the **Formstack form** and the **workflow → Freshdesk** w
 | Account-holder confirmation | Customer, TP | `197276087` | description + `account-holder-confirmed` tag | — |
 | Request type | all | `197276089` | `cf_dsr_type` value + `request_type_tag` + subject | `cf_dsr_type` |
 | SAR data categories | SAR | `197276090` | description | — |
-| Call recording details | SAR (calls) | `197276091` | description | — |
+| Call recordings — from date | SAR (calls) | `197277114` | description | — |
+| Call recordings — to date | SAR (calls) | `197277122` | description | — |
 | Chat — from date | SAR (chat) | `197276092` | description | — |
 | Chat — to date | SAR (chat) | `197276093` | description | — |
 | Chat channels | SAR (chat) | `197276094` | description | — |
