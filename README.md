@@ -19,6 +19,7 @@ and is parked (not deployed).
 | `docs/go-live-guide.md` | **Start here** — the end-to-end, stage-by-stage runbook (owners + commands + checkpoints) to take the form live. |
 | `docs/formstack-dsr-build.md` | **Build spec** for the DSR form in Formstack (pages, conditional logic, file upload, EU region/retention/spam, two entry points). |
 | `docs/formstack-to-freshdesk-workflow.md` | **Runbook** to wire the Formstack form → workflow-system → Freshdesk. |
+| `workflow/build-formstack-form.js` | Script that **creates the Formstack form** (fields + conditional logic) via the Formstack v2 API and prints the field-id map. Runs `--dry-run` with no token. |
 | `workflow/` | The workflow definition: `actions.json`, `config_prompt.md`, `user_prompt.md`, `create.sh`. |
 | `docs/dsr-field-mapping.md` | Single source of truth: form question → Formstack field id → Freshdesk field/tag. |
 | `docs/freshdesk-custom-fields.md` | The `cf_*` custom fields to create in Freshdesk admin (and how to confirm their live keys). |
@@ -66,16 +67,18 @@ tool. CloudFront caches the HTML — hard-refresh after deploying.
 cd backend && node test/local-invoke.js
 ```
 
-## Going live (summary — Formstack direction)
+## Going live (summary — Formstack direction, MVP)
 
-**Full runbook: `docs/go-live-guide.md`.** In brief:
-1. Create the Freshdesk custom fields (+ confirm `cf_formstack_id`) — `docs/freshdesk-custom-fields.md`.
-2. Build the DSR form in Formstack and record its field ids — `docs/formstack-dsr-build.md`,
-   `docs/dsr-field-mapping.md`.
-3. Create the workflow (Formstack → Freshdesk), test in DRY_RUN, promote in the admin UI —
+**Full runbook: `docs/go-live-guide.md`.** MVP maps to **tags + a structured description** — no
+Freshdesk custom fields required. In brief:
+1. Build the DSR form in Formstack — `node workflow/build-formstack-form.js` (or by hand from
+   `docs/formstack-dsr-build.md`); record field ids in `docs/dsr-field-mapping.md`.
+2. Create the workflow (Formstack → Freshdesk), test in DRY_RUN, promote in the admin UI —
    `docs/formstack-to-freshdesk-workflow.md` + `workflow/`.
-4. Publish the public URL (customers) and link the form in `/administer` (staff); retire the
+3. Publish the public URL (customers) and link the form in `/administer` (staff); retire the
    interim custom form.
+4. _Later (optional):_ add the `cf_*` custom fields for structured reporting —
+   `docs/freshdesk-custom-fields.md`.
 
 _Rejected alternative (self-hosted Lambda + S3/CloudFront) is documented in
 `docs/public-hosting.md` and `docs/backend-runbook.md` for the record._

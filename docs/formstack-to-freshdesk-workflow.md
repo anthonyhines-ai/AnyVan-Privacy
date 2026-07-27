@@ -7,10 +7,12 @@ the existing `FRESHDESK_TICKET_CREATED` classifier routes it.
 ```
 Formstack DSR submit ──FORMSTACK_FORM_SUBMITTED──► this workflow
    (AI eval: read submission, vision-check 3rd-party auth doc, map fields)
-      └─► FRESHDESK_TICKET_CREATE (cf_* + tags + cf_formstack_id)
-      └─► FORMSTACK_SUBMISSION_UPDATE (write ticket id back)  [optional]
+      └─► FRESHDESK_TICKET_CREATE (tags + structured HTML description)   ← MVP
               │
    FRESHDESK_TICKET_CREATED ──► existing classifier (routing/assignment)
+
+   (later: add cf_* custom_fields, and an optional FORMSTACK_SUBMISSION_UPDATE
+    to write the ticket id back — see docs/freshdesk-custom-fields.md)
 ```
 
 Uses the **workflow-editor** skill (`workflow_edit.py`). Editing/creating always lands a
@@ -23,21 +25,21 @@ Uses the **workflow-editor** skill (`workflow_edit.py`). Editing/creating always
 - `user_prompt.md` — the per-event instruction.
 - `create.sh` — the `workflow_edit.py create` invocation tying it together.
 
+> **MVP:** this workflow maps to ticket **tags + a structured HTML description** only — no
+> Freshdesk custom fields, no submission write-back. `actions.json` is a single
+> `FRESHDESK_TICKET_CREATE`. Adding `cf_*` fields later is a small edit (put `custom_fields`
+> back and re-create a version) — see `docs/freshdesk-custom-fields.md`.
+
 ## Prerequisites
-1. **Formstack form built** (`docs/formstack-dsr-build.md`) — you need its **FORM ID** and the
-   numeric **field ids**, recorded in `docs/dsr-field-mapping.md`.
-2. **Freshdesk fields** created and their live keys/types confirmed
-   (`docs/freshdesk-custom-fields.md`): `cf_dsr_type`, `cf_requester_type`,
-   `cf_booking_reference`, `cf_tp_username`, and the existing `cf_formstack_id`.
-3. **`WF_JWT`** exported — "Copy token" in the admin UI header (prod token for prod; ~12h).
+1. **Formstack form built** (`workflow/build-formstack-form.js` or `docs/formstack-dsr-build.md`)
+   — you need its **FORM ID** and the submission-id path.
+2. **`WF_JWT`** exported — "Copy token" in the admin UI header (prod token for prod; ~12h).
 
 ## Placeholders to fill before creating
 | Placeholder | Where | What |
 |---|---|---|
 | `<FORMSTACK_FORM_ID>` | `create.sh` | the DSR form's numeric id (used in `event_filter`) |
-| `{event.payload.UniqueID}` | `actions.json` (×3) | the real submission-id path in a `FORMSTACK_FORM_SUBMITTED` payload — confirm from a test event or `catalogue` |
-| `field_FRESHDESK_TICKET_ID_FIELD` | `actions.json` | Formstack field id of a "Freshdesk Ticket ID" field for the write-back (or delete this action if not writing back) |
-| `cf_formstack_id` type/key | `actions.json` | confirm via `GET /api/v2/ticket_fields`; sent as a typed number by default |
+| `{event.payload.UniqueID}` | `user_prompt.md` | the real submission-id path in a `FORMSTACK_FORM_SUBMITTED` payload — confirm from a test event or `catalogue` |
 
 Confirm the event payload path and that `FORMSTACK_FORM_SUBMITTED` is live:
 ```bash
@@ -62,8 +64,8 @@ Note the returned `workflow_id` + `version`.
    Confirm: ticket created; `subject` = `DSR-<id> — <type> (<requester>)`; **tags** rendered
    correctly (verify the templated array elements landed as separate tags — if the handler
    doesn't element-render arrays, have the model emit the two type tags into the description
-   or switch to a follow-up update); `cf_*` mapped; `cf_formstack_id` set; the third-party
-   vision read appears in the description.
+   or switch to a follow-up update); the **description** carries every field (booking ref, TP
+   username, request detail); the third-party vision read appears in the description.
 4. Confirm the existing classifier fired on `FRESHDESK_TICKET_CREATED`:
    ```bash
    python3 ~/.claude/skills/workflow-editor/workflow_edit.py list --env prod --jwt "$WF_JWT" | grep -i freshdesk

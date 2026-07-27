@@ -4,8 +4,17 @@ Recreates the DSR intake form (`dsr-intake-form.html` / `docs/dsr-intake-form-ha
 single Formstack form serving **both** UK customers (public) and staff (internal). One form =
 one source of truth for the DSR question logic. Feeds the workflow in `workflow/`.
 
-Do this in the Formstack account (needs a Formstack builder login). As you build, record each
-field's numeric id in `docs/dsr-field-mapping.md`.
+**Fastest path — run the build script** (creates the form + fields + conditional logic via the
+Formstack API and prints the field-id map):
+```bash
+FORMSTACK_TOKEN=<oauth token> node workflow/build-formstack-form.js   # --dry-run to preview
+```
+Then finish the builder-only bits below (page breaks, region/retention/reCAPTCHA, theme,
+confirmation email). The rest of this doc is the field-by-field spec the script implements — use
+it to build by hand instead, or to review/adjust what the script created.
+
+Do this in the Formstack account (needs a Formstack builder login). Record each field's numeric
+id in `docs/dsr-field-mapping.md` (the script prints them).
 
 ## Pages (mirror the 4 steps)
 1. **Requester Type** — single choice: Customer / Transport Partner / Authorised Third Party.

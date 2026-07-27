@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # Create the "DSR Intake - UK - Formstack" workflow in the workflow-system.
 #
-# Prerequisites:
+# Prerequisites (MVP — tags + description only, no Freshdesk custom fields):
 #   - WF_JWT exported (copy "Copy token" from https://workflows.anyvan.com admin UI; ~12h).
-#   - The Formstack DSR form built (docs/formstack-dsr-build.md) so you have its FORM ID and
-#     the numeric field ids for the field_map below.
-#   - The Freshdesk cf_* fields created and their LIVE keys/types confirmed via
-#     GET /api/v2/ticket_fields (docs/freshdesk-custom-fields.md).
+#   - The Formstack DSR form built (run workflow/build-formstack-form.js) so you have its
+#     FORM ID and the submission-id path in a real event payload.
 #
 # This lands a DRY_RUN version. Promotion to ACTIVE is a manual, human-reviewed step in the
 # admin UI — this script does NOT promote.
@@ -19,10 +17,8 @@ ENVv="${ENVv:-prod}"
 
 # ---- placeholders you must set ------------------------------------------------
 FORMSTACK_FORM_ID="<FORMSTACK_FORM_ID>"     # numeric Formstack form id of the DSR form
-# In actions.json also replace:
-#   {event.payload.UniqueID}  -> the actual submission-id path from a real event payload
-#   field_FRESHDESK_TICKET_ID_FIELD -> the Formstack field id of a "Freshdesk Ticket ID" field
-#   cf_formstack_id type/key  -> confirm against GET /api/v2/ticket_fields
+# Also confirm the submission-id path used in workflow/user_prompt.md ({event.payload.UniqueID})
+# against a real FORMSTACK_FORM_SUBMITTED payload (run `python3 "$SK" catalogue --env prod`).
 # -------------------------------------------------------------------------------
 
 cd "$(dirname "$0")/.."   # repo root, so the file paths below resolve

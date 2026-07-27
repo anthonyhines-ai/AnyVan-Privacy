@@ -4,6 +4,10 @@ One sequential runbook to take the DSR intake form live for **UK customers (publ
 **internal admins**, on Formstack → workflow-system → Freshdesk. Each stage says **who** does it,
 **what** to do, and the **checkpoint** ("done when"). Deeper detail is in the linked docs.
 
+> **MVP scope:** the initial launch uses ticket **tags + a structured description** — no
+> Freshdesk custom fields — so **Stage 1 is optional and can be skipped**; start at Stage 2.
+> Stage 2 can be largely automated with `workflow/build-formstack-form.js`.
+
 ```
 Freshdesk fields ──► Formstack form ──► record field ids ──► create workflow (DRY_RUN)
       (Stage 1)         (Stage 2)          (Stage 3)              (Stage 4)
@@ -21,32 +25,35 @@ Freshdesk fields ──► Formstack form ──► record field ids ──► c
 
 ---
 
-## Stage 1 — Freshdesk custom fields  · owner: Freshdesk admin
-Detail: `docs/freshdesk-custom-fields.md`.
-1. In **Admin → Ticket Fields**, create: `cf_dsr_type` (dropdown), `cf_requester_type`
-   (dropdown), `cf_booking_reference` (text), `cf_tp_username` (text). Use the exact dropdown
-   values in the doc.
-2. Confirm the existing `cf_formstack_id` field's **live key and type**:
-   ```bash
-   curl -s -u "$FRESHDESK_API_KEY:X" "https://anyvan.freshdesk.com/api/v2/ticket_fields" \
-     | jq '.[] | select(.name|test("dsr|requester|booking|tp_username|formstack")) | {label,name,type}'
-   ```
-3. If any live `name` differs from the defaults, note it — you'll set it in Stage 4.
+## Stage 1 (OPTIONAL — skip for MVP) — Freshdesk custom fields  · owner: Freshdesk admin
+Detail: `docs/freshdesk-custom-fields.md`. **Not needed for the MVP launch** (tags + description
+carry everything). Do this later for structured filtering/reporting: create `cf_dsr_type`,
+`cf_requester_type`, `cf_booking_reference`, `cf_tp_username`, confirm their live keys via
+`GET /api/v2/ticket_fields`, then add `custom_fields` back into `workflow/actions.json`.
 
-**Done when:** all five `cf_*` keys/types are confirmed from the live `ticket_fields` response.
+**Done when (if doing it):** the `cf_*` keys/types are confirmed from the live `ticket_fields`
+response and added to the workflow action.
 
 ---
 
 ## Stage 2 — Build the Formstack form  · owner: Formstack builder
-Detail: `docs/formstack-dsr-build.md`.
-1. Create a form with 4 pages (Requester Type → Your Details → Your Request → Review &
-   Declaration) and the conditional logic described in the spec.
-2. Add the third-party **file upload** (PDF/JPG/PNG, 10MB/file) and the two hidden fields
-   `source` + `agent` (populated from URL params for the admin entry point).
+Detail: `docs/formstack-dsr-build.md`. **Automated route (recommended):**
+```bash
+FORMSTACK_TOKEN=<your oauth token> node workflow/build-formstack-form.js
+# preview first with:  node workflow/build-formstack-form.js --dry-run
+```
+This creates the form with all fields + conditional logic and **prints the field-id map**. Then
+finish in the builder:
+1. Set the four `sec_*` sections to **"Start a New Page"** for the 4-step layout.
+2. Confirm the third-party **file upload** (PDF/JPG/PNG, 10MB/file) and the two hidden fields
+   `source` + `agent` (for the admin entry point).
 3. Configure: **EU/UK data region**, submission **retention** to the DSR policy minimum,
    built-in **reCAPTCHA**, AnyVan theme + WCAG pass, and a **confirmation email** quoting
    `DSR-<submission id>` and the one-calendar-month timeline.
-4. Decide the repeatable-call-rows approach (see the spec's note) for your Formstack plan.
+4. Decide the repeatable-call-rows approach (the script uses a structured free-text field —
+   swap for repeatable rows in the builder if your plan supports it).
+
+(Or build it by hand from `docs/formstack-dsr-build.md` if you'd rather not run the script.)
 
 **Done when:** the form submits end-to-end in Formstack's preview and a test submission appears
 in the Formstack submissions list.
@@ -55,13 +62,14 @@ in the Formstack submissions list.
 
 ## Stage 3 — Record the field ids  · owner: whoever built the form
 Detail: `docs/dsr-field-mapping.md`.
-1. For each question, copy its numeric Formstack **`field_<NNN>`** id into the mapping table.
+1. Paste the **field-id map** the build script printed into the mapping table (or read ids from
+   the builder if you built it by hand).
 2. Note the form's **FORM ID** and, from the test submission's webhook/event, the
    **submission-id path** in the payload (the workflow uses `{event.payload.UniqueID}` as a
    placeholder — replace with the real path).
 
-**Done when:** every row in `docs/dsr-field-mapping.md` has a field id and the FORM ID +
-submission-id path are known.
+**Done when:** the mapping table has the field ids and the FORM ID + submission-id path are
+known.
 
 ---
 
@@ -69,9 +77,9 @@ submission-id path are known.
 Detail: `docs/formstack-to-freshdesk-workflow.md`. Files in `workflow/`.
 1. Fill the placeholders:
    - `workflow/create.sh` → `FORMSTACK_FORM_ID`.
-   - `workflow/actions.json` → the real submission-id path (×3), the Formstack "Freshdesk Ticket
-     ID" field id for write-back (or delete that second action), and `cf_formstack_id`
-     key/type from Stage 1.
+   - `workflow/user_prompt.md` → confirm the submission-id path (`{event.payload.UniqueID}`)
+     against a real event payload.
+   (MVP `actions.json` has no `cf_*` placeholders — it's tags + description only.)
 2. Confirm the event + tools exist (no JWT needed):
    ```bash
    python3 "$SK" catalogue --env prod        # SK = path to workflow_edit.py
@@ -95,8 +103,8 @@ Detail: `docs/formstack-to-freshdesk-workflow.md`. Files in `workflow/`.
    python3 ~/.claude/skills/workflow-doctor/workflow_doctor.py executions --env prod --jwt "$WF_JWT" | head
    ```
    Verify: ticket created; subject `DSR-<id> — <type> (<requester>)`; **tags** landed as
-   separate values; `cf_*` + `cf_formstack_id` mapped; third-party **vision read** appears in
-   the description.
+   separate values; the **description** carries all fields (booking ref, TP username, request
+   detail); third-party **vision read** appears in the description.
 3. Confirm the existing classifier picks it up on `FRESHDESK_TICKET_CREATED`:
    ```bash
    python3 ~/.claude/skills/workflow-editor/workflow_edit.py list --env prod --jwt "$WF_JWT" | grep -i freshdesk
@@ -147,9 +155,9 @@ actioning them; the interim form is retired or clearly marked fallback.
 ## Owner summary
 | Stage | Owner | Needs |
 |---|---|---|
-| 1 Freshdesk fields | Freshdesk admin | Freshdesk admin + API key |
-| 2 Formstack form | Formstack builder | Formstack (EU/UK, UK-PII-approved) |
-| 3 Field ids | form builder | — |
+| 1 Freshdesk fields _(optional, later)_ | Freshdesk admin | Freshdesk admin + API key |
+| 2 Formstack form | Formstack builder | Formstack (EU/UK, UK-PII-approved) + API token for the script |
+| 3 Field ids | form builder | — (script prints them) |
 | 4 Create workflow | workflow-system admin | `WF_JWT`, `workflow_edit.py` |
 | 5 Test | workflow-system admin | `WF_JWT` |
 | 6 Promote | workflow-system admin | admin-UI access |

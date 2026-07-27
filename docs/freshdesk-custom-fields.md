@@ -1,7 +1,13 @@
 # Freshdesk custom fields for DSR tickets
 
-These four custom fields must exist on the **ticket** object in Freshdesk before the
-backend goes live. Create them in **Admin → Ticket Fields** (requires Freshdesk admin).
+> **Deferred for the MVP launch.** The initial go-live maps everything into ticket **tags + a
+> structured HTML description** (no custom fields). Everything still routes. Add these fields
+> later when you want structured filtering/reporting (SLA views, ICO metrics) — the workflow's
+> prompt already emits the values, so enabling them is a small follow-up (add the fields, then
+> put `custom_fields` back into `workflow/actions.json`). The rest of this doc is that follow-up.
+
+These four custom fields go on the **ticket** object in Freshdesk. Create them in
+**Admin → Ticket Fields** (requires Freshdesk admin).
 
 | Label (what admins see) | Internal key (`cf_*`) | Type | Values |
 |---|---|---|---|

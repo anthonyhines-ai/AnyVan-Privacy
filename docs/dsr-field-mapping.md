@@ -2,8 +2,12 @@
 
 The contract between the **Formstack form** (`docs/formstack-dsr-build.md`) and the
 **workflow → Freshdesk** wiring (`workflow/`). Fill the `field_<NNN>` column once the Formstack
-form is built (fields are referenced by numeric id, not label). "Destination" is where the
-value lands on the Freshdesk ticket.
+form is built — **`workflow/build-formstack-form.js` prints the whole map** for you to paste in
+(fields are referenced by numeric id, not label). "Destination" is where the value lands.
+
+> **MVP:** there are no Freshdesk custom fields yet — everything lands in **tags + the ticket
+> description**. The `cf_*` destinations below are the **later** mapping (when the fields are
+> added per `docs/freshdesk-custom-fields.md`); for now those values go into the description.
 
 | Form question | Requester types | Formstack field id | Destination |
 |---|---|---|---|
