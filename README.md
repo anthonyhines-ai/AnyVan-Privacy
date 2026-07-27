@@ -16,6 +16,7 @@ and is parked (not deployed).
 
 | Path | What it is |
 |---|---|
+| `docs/go-live-guide.md` | **Start here** — the end-to-end, stage-by-stage runbook (owners + commands + checkpoints) to take the form live. |
 | `docs/formstack-dsr-build.md` | **Build spec** for the DSR form in Formstack (pages, conditional logic, file upload, EU region/retention/spam, two entry points). |
 | `docs/formstack-to-freshdesk-workflow.md` | **Runbook** to wire the Formstack form → workflow-system → Freshdesk. |
 | `workflow/` | The workflow definition: `actions.json`, `config_prompt.md`, `user_prompt.md`, `create.sh`. |
@@ -67,6 +68,7 @@ cd backend && node test/local-invoke.js
 
 ## Going live (summary — Formstack direction)
 
+**Full runbook: `docs/go-live-guide.md`.** In brief:
 1. Create the Freshdesk custom fields (+ confirm `cf_formstack_id`) — `docs/freshdesk-custom-fields.md`.
 2. Build the DSR form in Formstack and record its field ids — `docs/formstack-dsr-build.md`,
    `docs/dsr-field-mapping.md`.
