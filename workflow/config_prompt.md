@@ -12,9 +12,10 @@ submission.
   description for a human to verify.
 
 ## MVP scope
-This build maps everything into the **ticket tags + a structured HTML description** — there are
-no Freshdesk custom fields yet. So there are no dropdown values to match; the `dsr_type` /
-`requester_type` strings are only used to compose the subject and description.
+This build maps everything into the **ticket tags + a structured HTML description**, plus one
+**date custom field** (`cf_privacy_due_date` — the statutory deadline). There are no dropdown
+custom fields yet, so the `dsr_type` / `requester_type` strings are only used to compose the
+subject and description.
 
 ## Output contract (fill these keys exactly)
 - `requester_email` — the requester's email from the submission.
@@ -32,6 +33,10 @@ no Freshdesk custom fields yet. So there are no dropdown values to match; the `d
 - `request_type_tag` — lowercase tag token: `sar` | `deletion` | `rectification` |
   `marketing-opt-out` | `portability`.
 - `requester_type_tag` — lowercase tag token: `customer` | `tp` | `third-party`.
+- `privacy_due_date` — the statutory response deadline as `YYYY-MM-DD`. Base date = the
+  submission date; add **one calendar month** (same day-of-month next month; if that day doesn't
+  exist, use the last day of the next month). If the result is a Saturday, Sunday, or England &
+  Wales bank holiday, roll forward to the next working day.
 
 ## Rules
 - Do not include personal data in the `subject`.

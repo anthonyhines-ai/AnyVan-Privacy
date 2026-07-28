@@ -6,6 +6,14 @@
 > prompt already emits the values, so enabling them is a small follow-up (add the fields, then
 > put `custom_fields` back into `workflow/actions.json`). The rest of this doc is that follow-up.
 
+## Live now: Privacy Due Date (date field)
+Already created in Freshdesk (label **Privacy Due Date**, hidden from customers). Internal key
+**`cf_privacy_due_date`** — confirm via `GET /api/v2/ticket_fields` and adjust
+`workflow/actions.json` if Freshdesk suffixed it. The workflow sets it to the statutory deadline
+(submission date + one calendar month, rolled to the next working day), formatted `YYYY-MM-DD`,
+via `custom_fields`. This is the one custom field wired in the MVP.
+
+## Deferred: dropdown/text fields
 These four custom fields go on the **ticket** object in Freshdesk. Create them in
 **Admin → Ticket Fields** (requires Freshdesk admin).
 
