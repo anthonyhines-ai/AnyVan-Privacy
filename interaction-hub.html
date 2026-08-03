@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AnyVan | Interaction Hub</title>
+<meta name="av-dashboard-api" content="https://63g6ly45b0.execute-api.eu-west-1.amazonaws.com/production">
+<script src="https://assets.anyvan.com/tracking/av-track.7fa8936e.js"></script>
+<script>window.av && window.av.configureTracking && window.av.configureTracking({ baseUrl: 'https://www.anyvan.com' })</script>
+<script src="https://assets.anyvan.com/av-dashboards/av-dashboard.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f5f5f7;--sf:#ffffff;--sf2:#f5f5f7;--bd:#d2d2d7;--bd2:#c7c7cc;
+  --tx:#1d1d1f;--tx2:#6e6e73;--tx3:#86868b;--ind:#5a5fcf;--red:#d93025;
+  --amb:#c07a00;--grn:#1a7f37;--pur:#7c3aed;--yel:#a16207;--ora:#c2410c;
+}
+[data-theme="dark"] {
+  --bg:#0c0e16;--sf:#161a24;--sf2:#1c2030;--bd:#2a2f40;--bd2:#353a4e;
+  --tx:#eaedf2;--tx2:#9da4b4;--tx3:#6b7280;--ind:#6366f1;--red:#ef4444;
+  --amb:#f59e0b;--grn:#22c55e;--pur:#a855f7;--yel:#eab308;--ora:#f97316;
+}
+*,*::before,*::after{transition:background-color .35s ease,color .28s ease,border-color .35s ease,box-shadow .35s ease;box-sizing:border-box;}
+body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;-webkit-font-smoothing:antialiased;}
+.hdr{position:sticky;top:0;z-index:40;background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:56px;}
+.hdr-left{display:flex;align-items:center;gap:12px;}
+.hdr-title{font-size:22px;font-weight:900;color:var(--tx);}
+.hdr-title span{color:var(--tx3);font-weight:400;}
+.hdr-right{display:flex;align-items:center;gap:12px;}
+.hdr-meta{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
+.hdr-meta-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700;}
+.hdr-meta-value{font-size:11px;color:var(--tx2);}
+.hdr-divider{width:1px;height:32px;background:var(--bd);}
+.theme-toggle{width:32px;height:32px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.theme-toggle:hover{border-color:var(--ind);}
+.btn-logout{padding:6px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:12px;font-weight:700;cursor:pointer;}
+.btn-logout:hover{border-color:var(--red);color:var(--red);}
+/* Search bar */
+.usearch-bar{background:var(--sf);border-bottom:1px solid var(--bd);padding:8px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:56px;z-index:35;}
+.usearch-wrap{position:relative;width:300px;margin-left:auto;}
+.usearch-input{width:100%;padding:8px 36px 8px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:13px;font-family:'Lato',sans-serif;}
+.usearch-input:focus{border-color:var(--ind);outline:none;box-shadow:0 0 0 3px rgba(99,102,241,.12);}
+.usearch-input::placeholder{color:var(--tx3);}
+.usearch-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;padding:0 4px;display:none;line-height:1;}
+.usearch-clear:hover{color:var(--red);}
+.usearch-input:not(:placeholder-shown)~.usearch-clear{display:block;}
+.usearch-counts{font-size:11px;color:var(--tx2);white-space:nowrap;}
+.usearch-counts-strong{color:var(--ind);font-weight:700;}
+/* Phone search */
+.phone-search-wrap{display:flex;align-items:center;gap:6px;}
+.phone-search-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700;white-space:nowrap;}
+.phone-search-input{padding:8px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:14px;font-weight:700;font-family:'Lato',sans-serif;width:210px;}
+.phone-search-input:focus{border-color:var(--ind);outline:none;box-shadow:0 0 0 3px rgba(99,102,241,.12);}
+.phone-search-input::placeholder{color:var(--tx3);}
+.btn-phone-search{padding:7px 14px;border-radius:8px;border:1px solid var(--ind);background:var(--ind);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;white-space:nowrap;}
+.btn-phone-search:hover{opacity:.9;}
+.btn-phone-search:disabled{opacity:.5;cursor:not-allowed;}
+.btn-phone-clear{padding:6px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:11px;font-weight:700;cursor:pointer;display:none;white-space:nowrap;}
+.btn-phone-clear:hover{border-color:var(--red);color:var(--red);}
+/* Phone panel */
+.phone-mode-banner{padding:10px 20px;background:rgba(90,95,207,.07);border-bottom:1px solid rgba(90,95,207,.18);font-size:12px;color:var(--tx2);line-height:1.5;position:sticky;top:57px;z-index:33;}
+.channel-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;}
+.channel-badge-call{background:rgba(26,127,55,.1);color:var(--grn);}
+.channel-badge-livechat{background:rgba(90,95,207,.1);color:var(--ind);}
+.channel-badge-whatsapp{background:rgba(18,140,126,.12);color:#0a7a6e;}
+[data-theme="dark"] .channel-badge-whatsapp{background:rgba(37,211,102,.1);color:#25d366;}
+.btn-load-history{padding:4px 14px;border-radius:6px;border:1px solid var(--ind);background:rgba(99,102,241,.06);color:var(--ind);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.phone-channel-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.ch-count{opacity:.65;font-weight:400;margin-left:3px;}
+.btn-load-history:hover{background:var(--ind);color:#fff;}
+.btn-load-history:disabled{opacity:.5;cursor:not-allowed;}
+/* Tabs */
+.main-tabs{display:flex;gap:0;padding:0 20px;background:var(--sf);border-bottom:1px solid var(--bd);position:sticky;top:100px;z-index:34;}
+.main-tab{padding:12px 24px;font-size:13px;font-weight:700;color:var(--tx2);cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.main-tab:hover{color:var(--ind);}
+.main-tab.active{color:var(--ind);border-bottom-color:var(--ind);}
+.tab-count{font-size:11px;font-weight:400;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:1px 7px;color:var(--tx3);}
+.main-tab.active .tab-count{background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.2);color:var(--ind);}
+.main{max-width:1600px;margin:0 auto;padding:20px 20px 60px;}
+.filter-bar{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:0;margin-bottom:16px;overflow:hidden;}
+.filter-row{display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;}
+.filter-row+.filter-row{border-top:1px solid var(--bd);}
+.filter-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700;white-space:nowrap;}
+.filter-input{padding:4px 9px;border-radius:6px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:11px;font-family:'Lato',sans-serif;font-weight:700;}
+.filter-input:focus{border-color:var(--ind);outline:none;}
+.filter-input[type="date"]{min-width:120px;}
+.filter-select{padding:4px 9px;border-radius:6px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:11px;font-weight:700;font-family:'Lato',sans-serif;cursor:pointer;min-width:130px;}
+.filter-select:focus{border-color:var(--ind);outline:none;}
+.filter-sep{width:1px;height:20px;background:var(--bd);margin:0 4px;}
+.seg-group{display:flex;gap:0;border:1px solid var(--bd);border-radius:6px;overflow:hidden;}
+.seg-btn{padding:4px 12px;border:none;background:var(--sf2);color:var(--tx2);font-size:11px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;border-right:1px solid var(--bd);}
+.seg-btn:last-child{border-right:none;}
+.seg-btn:hover{background:rgba(99,102,241,.06);color:var(--ind);}
+.seg-btn.on{background:var(--ind);color:#fff;}
+.seg-agenttype .btn-admin.on{background:rgba(99,102,241,.12)!important;color:var(--ind)!important;}
+.seg-agenttype .btn-ai.on{background:rgba(124,58,237,.12)!important;color:var(--pur)!important;}
+.filter-spacer{flex:1;}
+.btn-reset{padding:4px 14px;border-radius:6px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:11px;font-weight:700;cursor:pointer;}
+.btn-reset:hover{border-color:var(--amb);color:var(--amb);}
+.btn-export{padding:4px 14px;border-radius:6px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:11px;font-weight:700;cursor:pointer;}
+.btn-export:hover{border-color:var(--ind);color:var(--ind);}
+.date-hint{margin-left:auto;font-size:10px;color:var(--tx3);font-style:italic;}
+.advisory-banner{display:none;align-items:flex-start;gap:10px;padding:10px 16px;background:rgba(192,122,0,.08);border:1px solid rgba(192,122,0,.25);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--amb);line-height:1.5;}
+.advisory-banner.show{display:flex;}
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.kpi-tile{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;}
+.kpi-label{font-size:9px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:var(--tx3);margin-bottom:6px;}
+.kpi-value{font-size:26px;font-weight:900;line-height:1;color:var(--tx);}
+.kpi-sub{font-size:11px;color:var(--tx2);margin-top:3px;}
+.convo-section{background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;}
+.convo-loading{text-align:center;padding:50px;color:var(--tx3);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:12px;}
+.spinner{width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--ind);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.convo-table-wrap{overflow-x:auto;max-height:620px;overflow-y:auto;}
+.convo-table{width:100%;border-collapse:collapse;font-size:12px;}
+.convo-table thead{position:sticky;top:0;z-index:2;}
+.convo-table thead th{background:var(--sf2);padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--tx3);border-bottom:1px solid var(--bd);white-space:nowrap;cursor:pointer;user-select:none;}
+.convo-table thead th:hover{color:var(--ind);}
+.convo-table tbody tr{border-bottom:1px solid var(--bd);cursor:pointer;transition:background .15s;}
+.convo-table tbody tr:hover{background:rgba(99,102,241,.04);}
+.convo-table tbody tr.convo-expanded{background:rgba(99,102,241,.06);}
+.convo-table td{padding:7px 10px;vertical-align:middle;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis;}
+.convo-expand-row td{padding:0!important;white-space:normal;}
+.convo-expand-content{padding:16px 20px;border-top:1px solid var(--bd);}
+.convo-meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:14px;}
+.convo-meta-item{font-size:12px;}
+.convo-meta-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700;margin-bottom:2px;}
+.convo-meta-value{color:var(--tx);}
+.convo-viewer{width:100%;height:520px;border:1px solid var(--bd);border-radius:8px;background:var(--sf2);}
+.convo-audio{width:100%;margin:6px 0 10px;}
+.convo-actions{display:flex;gap:8px;margin-top:12px;}
+.convo-btn{padding:5px 14px;border-radius:6px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+.convo-btn:hover{border-color:var(--ind);color:var(--ind);}
+.convo-btn-primary{border-color:var(--ind);color:var(--ind);background:rgba(99,102,241,.06);}
+.row-expand-icon{font-size:10px;color:var(--tx3);display:inline-block;transition:transform .15s;}
+.convo-empty{text-align:center;padding:50px;color:var(--tx3);font-size:13px;}
+.convo-footer{padding:8px 16px;border-top:1px solid var(--bd);font-size:11px;color:var(--tx3);display:flex;align-items:center;gap:10px;}
+.sentiment-chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+.sentiment-positive{background:rgba(26,127,55,.1);color:var(--grn);}
+.sentiment-neutral{background:rgba(99,102,241,.1);color:var(--ind);}
+.sentiment-negative{background:rgba(217,48,37,.1);color:var(--red);}
+.sentiment-unknown{background:rgba(110,110,115,.1);color:var(--tx3);}
+.agent-chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.agent-ai{background:rgba(124,58,237,.1);color:var(--pur);}
+.agent-admin{background:rgba(99,102,241,.1);color:var(--ind);}
+.esc-yes{color:var(--red);font-weight:700;}
+.esc-no{color:var(--tx3);}
+.loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.loading-overlay.hidden{display:none;}
+.loading-text{font-size:14px;color:var(--tx2);font-weight:700;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+@media(max-width:1100px){.kpi-strip{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:768px){.kpi-strip{grid-template-columns:1fr 1fr;}.convo-meta-grid{grid-template-columns:1fr 1fr;}.usearch-bar{flex-wrap:wrap;}.usearch-wrap{margin-left:0;}}
+@media(max-width:500px){.convo-meta-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body av-track-source="dashboard-interaction-hub">
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading Interaction Hub...</div>
+</div>
+
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-title">AnyVan <span>|</span> Interaction Hub</div>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-meta">
+      <span class="hdr-meta-label">Logged in as</span>
+      <span class="hdr-meta-value" id="hdrUserName">...</span>
+    </div>
+    <div class="hdr-divider"></div>
+    <div class="hdr-meta">
+      <span class="hdr-meta-label">Data window</span>
+      <span class="hdr-meta-value">Last 7 days</span>
+    </div>
+    <div class="hdr-divider"></div>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+    <button class="btn-logout" id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+<div class="usearch-bar">
+  <div class="phone-search-wrap">
+    <span class="phone-search-label">📞 Phone Lookup</span>
+    <input type="tel" class="phone-search-input" id="phoneSearch" placeholder="+44... or 07...">
+    <button class="btn-phone-search" id="phoneSearchBtn">Search All History</button>
+    <button class="btn-phone-clear" id="phoneSearchClear">✕ Clear</button>
+  </div>
+  <div class="usearch-wrap">
+    <input type="text" class="usearch-input" id="usearchInput" placeholder="🔍 Search Listing ID, name, agent...">
+    <button class="usearch-clear" id="usearchClear" type="button">&times;</button>
+  </div>
+  <span class="usearch-counts" id="usearchCounts"></span>
+</div>
+
+<!-- PHONE LOOKUP PANEL (shown instead of tabs when phone search is active) -->
+<div id="panel-phone" style="display:none;">
+  <div class="phone-mode-banner" id="phoneBanner">📞 Phone lookup mode</div>
+  <div class="main" style="padding-top:16px;">
+    <div class="phone-channel-bar" id="phoneChannelBar">
+      <span class="filter-label">Channel</span>
+      <div class="seg-group" id="phoneChannelSeg">
+        <button class="seg-btn on" data-ch="">All<span class="ch-count" id="chCount-all"></span></button>
+        <button class="seg-btn" data-ch="Call">📞 Call<span class="ch-count" id="chCount-call"></span></button>
+        <button class="seg-btn" data-ch="LiveChat">💬 Live Chat<span class="ch-count" id="chCount-livechat"></span></button>
+        <button class="seg-btn" data-ch="WhatsApp">📱 WhatsApp<span class="ch-count" id="chCount-whatsapp"></span></button>
+      </div>
+    </div>
+    <div class="convo-section">
+      <div class="convo-loading" id="loading-phone" style="display:none;"><div class="spinner"></div><span>Searching...</span></div>
+      <div id="content-phone" style="display:none;">
+        <div class="convo-table-wrap"><table class="convo-table"><thead id="thead-phone"></thead><tbody id="tbody-phone"></tbody></table></div>
+        <div class="convo-empty" id="empty-phone" style="display:none;">No interactions found for this number in the loaded data. Try "Load Full History" below to search further back.</div>
+        <div class="convo-footer">
+          <span id="footer-phone" style="flex:1;"></span>
+          <button class="btn-load-history" id="loadFullHistoryBtn">📅 Load Full History (12 months)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main-tabs" id="mainTabs">
+  <div class="main-tab active" data-tab="calls">📞 Calls <span class="tab-count" id="countCalls">—</span></div>
+  <div class="main-tab" data-tab="livechat">💬 Live Chat <span class="tab-count" id="countLivechat">—</span></div>
+  <div class="main-tab" data-tab="whatsapp">📱 WhatsApp <span class="tab-count" id="countWhatsapp">—</span></div>
+</div>
+
+<div class="main">
+
+  <!-- CALLS -->
+  <div class="tab-panel active" id="panel-calls">
+    <div class="filter-bar">
+      <div class="filter-row">
+        <span class="filter-label">Type</span>
+        <div class="seg-group seg-agenttype" id="calls-agentType">
+          <button class="seg-btn btn-all on" data-val="">All</button>
+          <button class="seg-btn btn-admin" data-val="Admin">Admin</button>
+          <button class="seg-btn btn-ai" data-val="AI">AI</button>
+        </div>
+        <div class="filter-spacer"></div>
+        <button class="btn-export" id="calls-exportBtn">⬇ Export CSV</button>
+        <button class="btn-reset" id="calls-resetBtn">Reset</button>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Interaction Date</span>
+        <input type="date" class="filter-input" id="calls-dateFrom">
+        <span style="font-size:11px;color:var(--tx3);">to</span>
+        <input type="date" class="filter-input" id="calls-dateTo">
+        <div class="filter-sep"></div>
+        <span class="filter-label">Pickup Date</span>
+        <input type="date" class="filter-input" id="calls-pickupFrom">
+        <span style="font-size:11px;color:var(--tx3);">to</span>
+        <input type="date" class="filter-input" id="calls-pickupTo">
+        <span class="date-hint">Showing today — select a date range to view other days</span>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Country</span>
+        <select class="filter-select" id="calls-country"><option value="">All Countries</option></select>
+        <span class="filter-label">Category</span>
+        <select class="filter-select" id="calls-category"><option value="">All Categories</option></select>
+        <span class="filter-label">Agent</span>
+        <select class="filter-select" id="calls-agent"><option value="">All Agents</option></select>
+      </div>
+    </div>
+    <div class="advisory-banner" id="calls-advisory">
+      ⚠️ <span><strong>Large date range selected</strong> — this may take longer to load. For faster results, use the Phone Search above.</span>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-tile"><div class="kpi-label">Total Calls</div><div class="kpi-value" id="kpi-calls-total">—</div></div>
+      <div class="kpi-tile"><div class="kpi-label">AI Calls</div><div class="kpi-value" id="kpi-calls-ai">—</div><div class="kpi-sub" id="kpi-calls-aipct"></div></div>
+      <div class="kpi-tile"><div class="kpi-label">Avg Duration</div><div class="kpi-value" id="kpi-calls-dur">—</div></div>
+      <div class="kpi-tile"><div class="kpi-label">Unique Listings</div><div class="kpi-value" id="kpi-calls-listings">—</div></div>
+    </div>
+    <div class="convo-section">
+      <div class="convo-loading" id="loading-calls"><div class="spinner"></div><span>Loading calls...</span></div>
+      <div id="content-calls" style="display:none;">
+        <div class="convo-table-wrap"><table class="convo-table"><thead id="thead-calls"></thead><tbody id="tbody-calls"></tbody></table></div>
+        <div class="convo-empty" id="empty-calls" style="display:none;">No calls match the current filters.</div>
+        <div class="convo-footer"><span id="footer-calls"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE CHAT -->
+  <div class="tab-panel" id="panel-livechat">
+    <div class="filter-bar">
+      <div class="filter-row">
+        <span class="filter-label">Type</span>
+        <div class="seg-group seg-agenttype" id="livechat-agentType">
+          <button class="seg-btn btn-all on" data-val="">All</button>
+          <button class="seg-btn btn-admin" data-val="Admin">Admin</button>
+          <button class="seg-btn btn-ai" data-val="AI">AI</button>
+        </div>
+        <div class="filter-spacer"></div>
+        <button class="btn-export" id="livechat-exportBtn">⬇ Export CSV</button>
+        <button class="btn-reset" id="livechat-resetBtn">Reset</button>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Chat Date</span>
+        <input type="date" class="filter-input" id="livechat-dateFrom">
+        <span style="font-size:11px;color:var(--tx3);">to</span>
+        <input type="date" class="filter-input" id="livechat-dateTo">
+        <div class="filter-sep"></div>
+        <span class="filter-label">Pickup Date</span>
+        <input type="date" class="filter-input" id="livechat-pickupFrom">
+        <span style="font-size:11px;color:var(--tx3);">to</span>
+        <input type="date" class="filter-input" id="livechat-pickupTo">
+        <span class="date-hint">Showing today — select a date range to view other days</span>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Country</span>
+        <select class="filter-select" id="livechat-country"><option value="">All Countries</option></select>
+        <span class="filter-label">Category</span>
+        <select class="filter-select" id="livechat-category"><option value="">All Categories</option></select>
+        <span class="filter-label">Agent</span>
+        <select class="filter-select" id="livechat-agent"><option value="">All Agents</option></select>
+        <span class="filter-label">Sentiment</span>
+        <select class="filter-select" id="livechat-sentiment"><option value="">All</option><option value="POSITIVE">Positive</option><option value="NEUTRAL">Neutral</option><option value="NEGATIVE">Negative</option></select>
+      </div>
+    </div>
+    <div class="advisory-banner" id="livechat-advisory">
+      ⚠️ <span><strong>Large date range selected</strong> — this may take longer to load.</span>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-tile"><div class="kpi-label">Total Chats</div><div class="kpi-value" id="kpi-livechat-total">—</div></div>
+      <div class="kpi-tile"><div class="kpi-label">AI Chats</div><div class="kpi-value" id="kpi-livechat-ai">—</div><div class="kpi-sub" id="kpi-livechat-aipct"></div></div>
+      <div class="kpi-tile"><div class="kpi-label">Escalated</div><div class="kpi-value" id="kpi-livechat-esc">—</div></div>
+      <div class="kpi-tile"><div class="kpi-label">Unique Listings</div><div class="kpi-value" id="kpi-livechat-listings">—</div></div>
+    </div>
+    <div class="convo-section">
+      <div class="convo-loading" id="loading-livechat"><div class="spinner"></div><span>Loading live chats...</span></div>
+      <div id="content-livechat" style="display:none;">
+        <div class="convo-table-wrap"><table class="convo-table"><thead id="thead-livechat"></thead><tbody id="tbody-livechat"></tbody></table></div>
+        <div class="convo-empty" id="empty-livechat" style="display:none;">No live chats match the current filters.</div>
+        <div class="convo-footer"><span id="footer-livechat"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHATSAPP -->
+  <div class="tab-panel" id="panel-whatsapp">
+    <div class="filter-bar">
+      <div class="filter-row">
+        <span class="filter-label">Type</span>
+        <div class="seg-group seg-agenttype" id="whatsapp-agentType">
+          <button class="seg-btn btn-all on" data-val="">All</button>
+          <button class="seg-btn btn-admin" data-val="Admin">Admin</button>
+          <button class="seg-btn btn-ai" data-val="AI">AI</button>
+        </div>
+        <div class="filter-spacer"></div>
+        <button class="btn-export" id="whatsapp-exportBtn">⬇ Export CSV</button>
+        <button class="btn-reset" id="whatsapp-resetBtn">Reset</button>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Chat Date</span>
+        <input type="date" class="filter-input" id="whatsapp-dateFrom">
+        <span style="font-size:11px;color:var(--tx3);">to</span>
+        <input type="date" class="filter-input" id="whatsapp-dateTo">
+        <div class="filter-sep"></div>
+        <span class="filter-label">Pickup Date</span>
+        <input type="date" class="filter-input" id="whatsapp-pickupFrom">
+        <span style="font-size:11px;color:var(--tx3);">to</span>
+        <input type="date" class="filter-input" id="whatsapp-pickupTo">
+        <span class="date-hint">Showing today — select a date range to view other days</span>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Country</span>
+        <select class="filter-select" id="whatsapp-country"><option value="">All Countries</option></select>
+        <span class="filter-label">Category</span>
+        <select class="filter-select" id="whatsapp-category"><option value="">All Categories</option></select>
+        <span class="filter-label">Agent</span>
+        <select class="filter-select" id="whatsapp-agent"><option value="">All Agents</option></select>
+        <span class="filter-label">Sentiment</span>
+        <select class="filter-select" id="whatsapp-sentiment"><option value="">All</option><option value="POSITIVE">Positive</option><option value="NEUTRAL">Neutral</option><option value="NEGATIVE">Negative</option></select>
+      </div>
+    </div>
+    <div class="advisory-banner" id="whatsapp-advisory">
+      ⚠️ <span><strong>Large date range selected</strong> — this may take longer to load.</span>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-tile"><div class="kpi-label">Total Chats</div><div class="kpi-value" id="kpi-whatsapp-total">—</div></div>
+      <div class="kpi-tile"><div class="kpi-label">AI Chats</div><div class="kpi-value" id="kpi-whatsapp-ai">—</div><div class="kpi-sub" id="kpi-whatsapp-aipct"></div></div>
+      <div class="kpi-tile"><div class="kpi-label">Escalated</div><div class="kpi-value" id="kpi-whatsapp-esc">—</div></div>
+      <div class="kpi-tile"><div class="kpi-label">Unique Listings</div><div class="kpi-value" id="kpi-whatsapp-listings">—</div></div>
+    </div>
+    <div class="convo-section">
+      <div class="convo-loading" id="loading-whatsapp"><div class="spinner"></div><span>Loading WhatsApp chats...</span></div>
+      <div id="content-whatsapp" style="display:none;">
+        <div class="convo-table-wrap"><table class="convo-table"><thead id="thead-whatsapp"></thead><tbody id="tbody-whatsapp"></tbody></table></div>
+        <div class="convo-empty" id="empty-whatsapp" style="display:none;">No WhatsApp chats match the current filters.</div>
+        <div class="convo-footer"><span id="footer-whatsapp"></span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  var _data    = { calls: [], livechat: [], whatsapp: [] };
+  var _loaded  = { calls: false, livechat: false, whatsapp: false };
+  var _sort    = {
+    calls:    { col: 'INTERACTION_DATETIME', dir: 'desc' },
+    livechat: { col: 'INTERACTION_DATETIME', dir: 'desc' },
+    whatsapp: { col: 'INTERACTION_DATETIME', dir: 'desc' }
+  };
+  var _usearch  = '';
+  var _activeTab = 'calls';
+
+  // Phone search state
+  var _phoneFilter = '';
+  var _phoneLookupData = [];
+  var _phoneLookupLoaded = false;
+  var _phoneLookupLoading = false;
+  var _phoneChannelFilter = '';
+
+  function normPhone(s) { return (s || '').replace(/\D/g, ''); }
+  function phoneMatch(stored, filter) {
+    var s = normPhone(stored), f = normPhone(filter);
+    // Both must have enough digits to be a real number — guards against empty/short
+    // fields (LiveChat session IDs, blank outbound WA) which JS indexOf('') would
+    // otherwise treat as a universal match. Compare the last 9-10 significant digits
+    // so 07988639813 matches +447988639813 on their shared suffix.
+    if (s.length < 9 || f.length < 9) return false;
+    var n = Math.min(s.length, f.length, 10);
+    return n >= 9 && s.slice(-n) === f.slice(-n);
+  }
+
+  var COLS = {
+    calls: [
+      { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
+      { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
+      { key: 'CUSTOMER_PHONE',        label: 'Phone',    w: '120px' },
+      { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
+      { key: 'AGENT_TYPE',            label: 'Type',     w: '75px'  },
+      { key: 'COUNTRY',               label: 'Country',  w: '80px'  },
+      { key: 'LISTING_CATEGORY_NAME', label: 'Category', w: '110px' },
+      { key: 'DURATION_SECONDS',      label: 'Duration', w: '75px'  },
+      { key: 'SENTIMENT',             label: 'Sentiment',w: '90px'  },
+      { key: 'PICKUP_DATE',           label: 'Pickup',   w: '90px'  }
+    ],
+    livechat: [
+      { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
+      { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
+      { key: 'CUSTOMER_PHONE',        label: 'Phone',    w: '120px' },
+      { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
+      { key: 'AGENT_TYPE',            label: 'Type',     w: '75px'  },
+      { key: 'COUNTRY',               label: 'Country',  w: '80px'  },
+      { key: 'LISTING_CATEGORY_NAME', label: 'Category', w: '110px' },
+      { key: 'INTERACTION_TYPE',      label: 'Intent',   w: '120px' },
+      { key: 'SENTIMENT',             label: 'Sentiment',w: '90px'  },
+      { key: 'ESCALATED',             label: 'Escalated',w: '75px'  },
+      { key: 'PICKUP_DATE',           label: 'Pickup',   w: '90px'  }
+    ],
+    whatsapp: [
+      { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
+      { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
+      { key: 'CUSTOMER_PHONE',        label: 'Phone',    w: '120px' },
+      { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
+      { key: 'AGENT_TYPE',            label: 'Type',     w: '75px'  },
+      { key: 'COUNTRY',               label: 'Country',  w: '80px'  },
+      { key: 'LISTING_CATEGORY_NAME', label: 'Category', w: '110px' },
+      { key: 'INTERACTION_TYPE',      label: 'Intent',   w: '120px' },
+      { key: 'SENTIMENT',             label: 'Sentiment',w: '90px'  },
+      { key: 'ESCALATED',             label: 'Escalated',w: '75px'  },
+      { key: 'PICKUP_DATE',           label: 'Pickup',   w: '90px'  }
+    ]
+  };
+
+  var PHONE_COLS = [
+    { key: 'CHANNEL',               label: 'Channel',  w: '100px' },
+    { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
+    { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
+    { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
+    { key: 'AGENT_TYPE',            label: 'Type',     w: '75px'  },
+    { key: 'COUNTRY',               label: 'Country',  w: '80px'  },
+    { key: 'DURATION_SECONDS',      label: 'Duration', w: '75px'  },
+    { key: 'SENTIMENT',             label: 'Sentiment',w: '90px'  },
+    { key: 'PICKUP_DATE',           label: 'Pickup',   w: '90px'  }
+  ];
+
+  // Theme
+  var themeBtn = document.getElementById('themeToggle');
+  var savedTheme = localStorage.getItem('av-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  themeBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+  themeBtn.addEventListener('click', function() {
+    var cur  = document.documentElement.getAttribute('data-theme');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('av-theme', next);
+    themeBtn.textContent = next === 'dark' ? '☀️' : '🌙';
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', function() {
+    if (AVDashboard && AVDashboard.logout) AVDashboard.logout();
+  });
+  async function initUser() {
+    var el = document.getElementById('hdrUserName');
+    try {
+      var u = AVDashboard.getCurrentUser && await AVDashboard.getCurrentUser();
+      if (u && u.name) {
+        el.textContent = u.name;
+      } else if (u && u.email) {
+        el.textContent = u.email.split('@')[0].split('.').map(function(w) {
+          return w.charAt(0).toUpperCase() + w.slice(1);
+        }).join(' ');
+      } else {
+        el.textContent = 'Unknown';
+      }
+    } catch (e) { el.textContent = 'Unknown'; }
+  }
+
+  // Tabs
+  document.querySelectorAll('.main-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() { switchTab(tab.getAttribute('data-tab')); });
+  });
+  function switchTab(name) {
+    _activeTab = name;
+    document.querySelectorAll('.main-tab').forEach(function(t) {
+      t.classList.toggle('active', t.getAttribute('data-tab') === name);
+    });
+    document.querySelectorAll('.tab-panel').forEach(function(p) {
+      p.classList.toggle('active', p.id === 'panel-' + name);
+    });
+    if (!_loaded[name]) loadTab(name);
+    else renderTable(name);
+  }
+
+  var _queryMap = {
+    calls:    'interaction_hub_calls',
+    livechat: 'interaction_hub_livechat',
+    whatsapp: 'interaction_hub_whatsapp'
+  };
+
+  async function loadTab(tab) {
+    var loading = document.getElementById('loading-' + tab);
+    var content = document.getElementById('content-' + tab);
+    loading.style.display = 'flex';
+    content.style.display = 'none';
+    try {
+      var result  = await AVDashboard.runQuery(_queryMap[tab]);
+      _data[tab]  = result.rows || [];
+      _loaded[tab] = true;
+      populateDropdowns(tab);
+      setDefaultDates(tab);
+      var countEl = document.getElementById('count' + tab.charAt(0).toUpperCase() + tab.slice(1));
+      if (countEl) countEl.textContent = _data[tab].length;
+      loading.style.display = 'none';
+      content.style.display = 'block';
+      renderTable(tab);
+      // If phone mode is active, re-render phone results with newly loaded tab data
+      if (_phoneFilter) renderPhoneResults();
+    } catch (e) {
+      loading.textContent = 'Failed to load: ' + (e.message || String(e));
+      console.error('[interaction-hub] load error [' + tab + ']:', e);
+    }
+  }
+
+  function setDefaultDates(tab) {
+    var today = new Date().toISOString().slice(0, 10);
+    var df = document.getElementById(tab + '-dateFrom');
+    var dt = document.getElementById(tab + '-dateTo');
+    if (df && !df.value) df.value = today;
+    if (dt && !dt.value) dt.value = today;
+  }
+
+  function populateDropdowns(tab) {
+    var countries = {}, categories = {}, agents = {};
+    _data[tab].forEach(function(r) {
+      if (r.COUNTRY)               countries[r.COUNTRY]               = true;
+      if (r.LISTING_CATEGORY_NAME) categories[r.LISTING_CATEGORY_NAME] = true;
+      if (r.AGENT_NAME)            agents[r.AGENT_NAME]               = true;
+    });
+    fillSelect(tab + '-country',  countries);
+    fillSelect(tab + '-category', categories);
+    fillSelect(tab + '-agent',    agents);
+  }
+  function fillSelect(id, mapObj) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    while (sel.options.length > 1) sel.remove(1);
+    Object.keys(mapObj).sort().forEach(function(k) {
+      var opt = document.createElement('option');
+      opt.value = k; opt.textContent = k; sel.appendChild(opt);
+    });
+  }
+
+  ['calls', 'livechat', 'whatsapp'].forEach(function(tab) {
+    ['dateFrom', 'dateTo', 'pickupFrom', 'pickupTo'].forEach(function(f) {
+      var el = document.getElementById(tab + '-' + f);
+      if (el) el.addEventListener('change', function() { checkAdvisory(tab); renderTable(tab); });
+    });
+    ['country', 'category', 'agent', 'sentiment'].forEach(function(f) {
+      var el = document.getElementById(tab + '-' + f);
+      if (el) el.addEventListener('change', function() { renderTable(tab); });
+    });
+    document.querySelectorAll('#' + tab + '-agentType .seg-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('#' + tab + '-agentType .seg-btn').forEach(function(b) { b.classList.remove('on'); });
+        btn.classList.add('on');
+        renderTable(tab);
+      });
+    });
+    var exportBtn = document.getElementById(tab + '-exportBtn');
+    if (exportBtn) exportBtn.addEventListener('click', function() { exportCSV(tab); });
+    var resetBtn  = document.getElementById(tab + '-resetBtn');
+    if (resetBtn)  resetBtn.addEventListener('click', function() { resetFilters(tab); });
+  });
+
+  function checkAdvisory(tab) {
+    var df = document.getElementById(tab + '-dateFrom');
+    var dt = document.getElementById(tab + '-dateTo');
+    var banner = document.getElementById(tab + '-advisory');
+    if (!df || !dt || !banner) return;
+    var days = df.value && dt.value ? (new Date(dt.value) - new Date(df.value)) / 86400000 : 0;
+    banner.classList.toggle('show', days > 90);
+  }
+  function resetFilters(tab) {
+    ['country', 'category', 'agent', 'sentiment'].forEach(function(f) {
+      var el = document.getElementById(tab + '-' + f); if (el) el.value = '';
+    });
+    ['dateFrom', 'dateTo', 'pickupFrom', 'pickupTo'].forEach(function(f) {
+      var el = document.getElementById(tab + '-' + f); if (el) el.value = '';
+    });
+    document.querySelectorAll('#' + tab + '-agentType .seg-btn').forEach(function(b, i) { b.classList.toggle('on', i === 0); });
+    document.getElementById(tab + '-advisory').classList.remove('show');
+    setDefaultDates(tab);
+    renderTable(tab);
+  }
+
+  function getFiltered(tab) {
+    var rows = _data[tab];
+    var df  = val(tab + '-dateFrom'), dt = val(tab + '-dateTo');
+    var pf  = val(tab + '-pickupFrom'), pt = val(tab + '-pickupTo');
+    var country   = val(tab + '-country');
+    var category  = val(tab + '-category');
+    var agent     = val(tab + '-agent');
+    var sentiment = val(tab + '-sentiment');
+    var atBtn     = document.querySelector('#' + tab + '-agentType .seg-btn.on');
+    var agentType = atBtn ? atBtn.getAttribute('data-val') : '';
+    var search    = _usearch;
+
+    return rows.filter(function(r) {
+      var ts = r.INTERACTION_DATETIME ? String(r.INTERACTION_DATETIME).slice(0, 10) : '';
+      if (df && ts && ts < df) return false;
+      if (dt && ts && ts > dt) return false;
+      var pu = r.PICKUP_DATE ? String(r.PICKUP_DATE).slice(0, 10) : '';
+      if (pf && pu && pu < pf) return false;
+      if (pt && pu && pu > pt) return false;
+      if (country   && r.COUNTRY              !== country)               return false;
+      if (category  && r.LISTING_CATEGORY_NAME !== category)             return false;
+      if (agent     && r.AGENT_NAME            !== agent)                return false;
+      if (sentiment && (r.SENTIMENT || '').toUpperCase() !== sentiment)  return false;
+      if (agentType && r.AGENT_TYPE            !== agentType)            return false;
+      if (search) {
+        var hay = [r.LISTING_ID, r.CUSTOMER_PHONE, r.CUSTOMER_EMAIL, r.CUSTOMER_NAME, r.AGENT_NAME, r.AGENT_EMAIL, r.INTERACTION_ID]
+          .filter(Boolean).join(' ').toLowerCase();
+        var terms = search.split(/\s+/);
+        for (var i = 0; i < terms.length; i++) { if (hay.indexOf(terms[i]) === -1) return false; }
+      }
+      return true;
+    });
+  }
+  function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+  // ===== PHONE SEARCH =====
+
+  function enterPhoneMode(phone) {
+    _phoneLookupData = [];
+    _phoneLookupLoaded = false;
+    _phoneFilter = phone;
+    document.getElementById('mainTabs').style.display = 'none';
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.style.display = 'none'; });
+    document.getElementById('panel-phone').style.display = 'block';
+    document.getElementById('phoneSearchClear').style.display = 'inline-flex';
+    renderPhoneResults();
+    // Trigger loading of unloaded tabs in background
+    ['calls', 'livechat', 'whatsapp'].forEach(function(tab) {
+      if (!_loaded[tab]) loadTab(tab);
+    });
+  }
+
+  function exitPhoneMode() {
+    _phoneFilter = '';
+    _phoneLookupData = [];
+    _phoneLookupLoaded = false;
+    _phoneChannelFilter = '';
+    document.querySelectorAll('#phoneChannelSeg .seg-btn').forEach(function(b, i) { b.classList.toggle('on', i === 0); });
+    document.getElementById('panel-phone').style.display = 'none';
+    document.getElementById('mainTabs').style.display = '';
+    // Restore active tab
+    document.querySelectorAll('.tab-panel').forEach(function(p) {
+      p.classList.toggle('active', p.id === 'panel-' + _activeTab);
+    });
+    document.getElementById('phoneSearch').value = '';
+    document.getElementById('phoneSearchClear').style.display = 'none';
+    // Re-show main tabs sticky
+    document.getElementById('mainTabs').style.display = '';
+  }
+
+  function getPhoneMatchesFromTab(tab, normFilter) {
+    if (!_loaded[tab]) return [];
+    return _data[tab].filter(function(r) {
+      return phoneMatch(r.CUSTOMER_PHONE, _phoneFilter);
+    });
+  }
+
+  function renderPhoneResults() {
+    if (!_phoneFilter) return;
+    var norm = normPhone(_phoneFilter);
+    if (norm.length < 7) return;
+
+    var loading = document.getElementById('loading-phone');
+    var content = document.getElementById('content-phone');
+    var banner  = document.getElementById('phoneBanner');
+    var thead   = document.getElementById('thead-phone');
+    var tbody   = document.getElementById('tbody-phone');
+    var empty   = document.getElementById('empty-phone');
+    var footer  = document.getElementById('footer-phone');
+    var loadBtn = document.getElementById('loadFullHistoryBtn');
+
+    // Collect from all loaded tabs (no date filter applied)
+    var allRows = [];
+    var seen = {};
+    ['calls', 'livechat', 'whatsapp'].forEach(function(tab) {
+      getPhoneMatchesFromTab(tab, norm).forEach(function(r) {
+        var id = r.INTERACTION_ID || (String(r.INTERACTION_DATETIME) + r.CUSTOMER_PHONE);
+        if (!seen[id]) { allRows.push(r); seen[id] = true; }
+      });
+    });
+
+    // Merge 12-month lookup data (de-duplicated)
+    _phoneLookupData.forEach(function(r) {
+      if (!phoneMatch(r.CUSTOMER_PHONE, _phoneFilter)) return;
+      var id = r.INTERACTION_ID || (String(r.INTERACTION_DATETIME) + r.CUSTOMER_PHONE);
+      if (!seen[id]) { allRows.push(r); seen[id] = true; }
+    });
+
+    // Sort newest first
+    allRows.sort(function(a, b) {
+      var va = String(a.INTERACTION_DATETIME || ''), vb = String(b.INTERACTION_DATETIME || '');
+      return vb.localeCompare(va);
+    });
+
+    var window = _phoneLookupLoaded ? '12 months' : '7 days';
+    var callCount = allRows.filter(function(r) { return r.CHANNEL === 'Call'; }).length;
+    var chatCount = allRows.filter(function(r) { return r.CHANNEL === 'LiveChat'; }).length;
+    var waCount   = allRows.filter(function(r) { return r.CHANNEL === 'WhatsApp'; }).length;
+    var loadingTabs = ['calls','livechat','whatsapp'].filter(function(t) { return !_loaded[t]; }).length;
+
+    // Update channel filter counts (from full set, before channel filter)
+    setText('chCount-all',      ' (' + allRows.length + ')');
+    setText('chCount-call',     ' (' + callCount + ')');
+    setText('chCount-livechat', ' (' + chatCount + ')');
+    setText('chCount-whatsapp', ' (' + waCount + ')');
+
+    // Apply channel filter to displayed rows
+    var displayRows = _phoneChannelFilter ? allRows.filter(function(r) { return r.CHANNEL === _phoneChannelFilter; }) : allRows;
+
+    var bannerText = '📞 Phone lookup: <strong>' + _phoneFilter + '</strong>';
+    if (loadingTabs > 0) {
+      bannerText += ' — <em style="color:var(--amb)">Loading ' + loadingTabs + ' channel' + (loadingTabs > 1 ? 's' : '') + '…</em>';
+    } else {
+      bannerText += ' — found <strong>' + allRows.length + '</strong> interaction' + (allRows.length !== 1 ? 's' : '') + ' across ' + window + ' history (📞 ' + callCount + ' · 💬 ' + chatCount + ' · 📱 ' + waCount + ')';
+    }
+    banner.innerHTML = bannerText;
+
+    // Build table header
+    thead.textContent = '';
+    tbody.textContent = '';
+    var htr = document.createElement('tr');
+    var iconTh = document.createElement('th'); iconTh.style.width = '28px'; htr.appendChild(iconTh);
+    PHONE_COLS.forEach(function(c) {
+      var th = document.createElement('th'); th.style.width = c.w; th.textContent = c.label;
+      htr.appendChild(th);
+    });
+    thead.appendChild(htr);
+
+    empty.style.display = (displayRows.length === 0 && loadingTabs === 0) ? 'block' : 'none';
+    content.style.display = 'block';
+    loading.style.display = 'none';
+
+    displayRows.forEach(function(r) {
+      var row = document.createElement('tr');
+      var iconTd = document.createElement('td');
+      iconTd.style.width = '28px'; iconTd.style.textAlign = 'center';
+      var iconSpan = document.createElement('span'); iconSpan.className = 'row-expand-icon'; iconSpan.textContent = '▸';
+      iconTd.appendChild(iconSpan); row.appendChild(iconTd);
+
+      PHONE_COLS.forEach(function(c) {
+        var td = document.createElement('td'); td.title = r[c.key] != null ? String(r[c.key]) : '';
+        var v = r[c.key];
+
+        if (c.key === 'CHANNEL') {
+          var badge = document.createElement('span');
+          var cls = v === 'Call' ? 'call' : v === 'LiveChat' ? 'livechat' : 'whatsapp';
+          badge.className = 'channel-badge channel-badge-' + cls;
+          badge.textContent = (v === 'Call' ? '📞 ' : v === 'LiveChat' ? '💬 ' : '📱 ') + (v || '—');
+          td.appendChild(badge);
+        } else if (c.key === 'INTERACTION_DATETIME' && v) {
+          var parts = String(v).split(' ');
+          td.appendChild(document.createTextNode(parts[0]));
+          td.appendChild(document.createElement('br'));
+          var ts = document.createElement('span');
+          ts.style.color = 'var(--tx3)'; ts.style.fontSize = '10px';
+          ts.textContent = (parts[1] || '').slice(0, 5);
+          td.appendChild(ts);
+          td.style.whiteSpace = 'normal'; td.style.lineHeight = '1.3';
+        } else if (c.key === 'LISTING_ID' && v) {
+          var a = document.createElement('a');
+          a.href = 'https://www.anyvan.com/administer/listing/' + v;
+          a.target = '_blank';
+          a.style.color = 'var(--ind)'; a.style.fontWeight = '700'; a.style.textDecoration = 'none';
+          a.textContent = v;
+          a.addEventListener('click', function(e) { e.stopPropagation(); });
+          td.appendChild(a);
+        } else if (c.key === 'AGENT_TYPE') {
+          var chip = document.createElement('span');
+          chip.className = 'agent-chip ' + (v === 'AI' ? 'agent-ai' : 'agent-admin');
+          chip.textContent = v || '—'; td.appendChild(chip);
+        } else if (c.key === 'SENTIMENT') {
+          var s = (v || '').toUpperCase();
+          var sChip = document.createElement('span');
+          sChip.className = 'sentiment-chip ' + (s === 'POSITIVE' ? 'sentiment-positive' : s === 'NEGATIVE' ? 'sentiment-negative' : s === 'NEUTRAL' ? 'sentiment-neutral' : 'sentiment-unknown');
+          sChip.textContent = v || '—'; td.appendChild(sChip);
+        } else if (c.key === 'DURATION_SECONDS' && v != null) {
+          var m = Math.floor(v / 60), s2 = Math.round(v % 60);
+          td.textContent = m + ':' + (s2 < 10 ? '0' : '') + s2;
+        } else if (c.key === 'PICKUP_DATE' && v) {
+          td.textContent = fmtDate(v);
+        } else {
+          td.textContent = v != null ? v : '—';
+        }
+        row.appendChild(td);
+      });
+
+      row.addEventListener('click', function() { toggleExpand('phone', row, r, PHONE_COLS.length + 1); });
+      tbody.appendChild(row);
+    });
+
+    // Load history button
+    if (_phoneLookupLoaded) {
+      loadBtn.style.display = 'none';
+    } else {
+      loadBtn.style.display = '';
+      loadBtn.disabled = _phoneLookupLoading;
+      loadBtn.textContent = _phoneLookupLoading ? 'Loading 12-month history…' : '📅 Load Full History (12 months)';
+    }
+
+    footer.textContent = displayRows.length > 0
+      ? 'Showing ' + displayRows.length + (_phoneChannelFilter ? ' ' + _phoneChannelFilter : '') + ' interaction' + (displayRows.length !== 1 ? 's' : '') + ' for ' + _phoneFilter + ' (' + window + ')'
+      : '';
+  }
+
+  async function loadPhoneLookup() {
+    if (_phoneLookupLoading || _phoneLookupLoaded) return;
+    _phoneLookupLoading = true;
+    var loadBtn = document.getElementById('loadFullHistoryBtn');
+    loadBtn.disabled = true;
+    loadBtn.textContent = 'Loading 12-month history…';
+    var loading = document.getElementById('loading-phone');
+    loading.style.display = 'flex';
+    loading.querySelector('span').textContent = 'Loading 12-month history — this may take 30–60s if the warehouse is warming up…';
+    try {
+      var digits = normPhone(_phoneFilter);
+      var suffix = digits.slice(-10);
+      var result = await AVDashboard.runQuery('interaction_hub_phone_lookup', { phone_suffix: suffix });
+      _phoneLookupData = result.rows || [];
+      _phoneLookupLoaded = true;
+    } catch (e) {
+      alert('Failed to load full history: ' + (e.message || String(e)));
+      loadBtn.disabled = false;
+      loadBtn.textContent = '📅 Load Full History (12 months)';
+    } finally {
+      _phoneLookupLoading = false;
+      loading.style.display = 'none';
+      renderPhoneResults();
+    }
+  }
+
+  // Phone search input handlers
+  var phoneSearchInput = document.getElementById('phoneSearch');
+  var phoneSearchBtn   = document.getElementById('phoneSearchBtn');
+  var phoneSearchClear = document.getElementById('phoneSearchClear');
+
+  function doPhoneSearch() {
+    var phone = phoneSearchInput.value.trim();
+    if (normPhone(phone).length < 7) {
+      phoneSearchInput.focus();
+      phoneSearchInput.style.borderColor = 'var(--red)';
+      setTimeout(function() { phoneSearchInput.style.borderColor = ''; }, 1500);
+      return;
+    }
+    enterPhoneMode(phone);
+  }
+  phoneSearchBtn.addEventListener('click', doPhoneSearch);
+  phoneSearchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doPhoneSearch(); });
+  phoneSearchClear.addEventListener('click', exitPhoneMode);
+  document.getElementById('loadFullHistoryBtn').addEventListener('click', loadPhoneLookup);
+
+  document.querySelectorAll('#phoneChannelSeg .seg-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('#phoneChannelSeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+      _phoneChannelFilter = btn.getAttribute('data-ch') || '';
+      renderPhoneResults();
+    });
+  });
+
+  // ===== TABLE RENDERING =====
+
+  function renderTable(tab) {
+    if (!_loaded[tab]) return;
+    var cols   = COLS[tab];
+    var thead  = document.getElementById('thead-' + tab);
+    var tbody  = document.getElementById('tbody-' + tab);
+    var empty  = document.getElementById('empty-' + tab);
+    var footer = document.getElementById('footer-' + tab);
+    var sort   = _sort[tab];
+    thead.textContent = '';
+    tbody.textContent = '';
+
+    var htr = document.createElement('tr');
+    var iconTh = document.createElement('th'); iconTh.style.width = '28px'; htr.appendChild(iconTh);
+    cols.forEach(function(c) {
+      var th = document.createElement('th');
+      th.style.width = c.w;
+      th.textContent = c.label + (sort.col === c.key ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '');
+      (function(col) {
+        th.addEventListener('click', function() {
+          if (sort.col === col) sort.dir = sort.dir === 'asc' ? 'desc' : 'asc';
+          else { sort.col = col; sort.dir = col === 'INTERACTION_DATETIME' ? 'desc' : 'asc'; }
+          renderTable(tab);
+        });
+      })(c.key);
+      htr.appendChild(th);
+    });
+    thead.appendChild(htr);
+
+    var data = getFiltered(tab);
+    data.sort(function(a, b) {
+      var va = a[sort.col], vb = b[sort.col];
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1; if (vb == null) return -1;
+      if (typeof va === 'number' && typeof vb === 'number') return sort.dir === 'asc' ? va - vb : vb - va;
+      va = String(va); vb = String(vb);
+      return sort.dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+
+    empty.style.display = data.length === 0 ? 'block' : 'none';
+
+    data.forEach(function(r) {
+      var row = document.createElement('tr');
+      var iconTd = document.createElement('td');
+      iconTd.style.width = '28px'; iconTd.style.textAlign = 'center';
+      var icon = document.createElement('span'); icon.className = 'row-expand-icon'; icon.textContent = '▸';
+      iconTd.appendChild(icon); row.appendChild(iconTd);
+
+      cols.forEach(function(c) {
+        var td = document.createElement('td'); td.title = r[c.key] != null ? String(r[c.key]) : '';
+        var v = r[c.key];
+
+        if (c.key === 'INTERACTION_DATETIME' && v) {
+          var parts = String(v).split(' ');
+          td.appendChild(document.createTextNode(parts[0]));
+          td.appendChild(document.createElement('br'));
+          var ts = document.createElement('span');
+          ts.style.color = 'var(--tx3)'; ts.style.fontSize = '10px';
+          ts.textContent = (parts[1] || '').slice(0, 5);
+          td.appendChild(ts);
+          td.style.whiteSpace = 'normal'; td.style.lineHeight = '1.3';
+        } else if (c.key === 'LISTING_ID' && v) {
+          var a = document.createElement('a');
+          a.href = 'https://www.anyvan.com/administer/listing/' + v;
+          a.target = '_blank';
+          a.style.color = 'var(--ind)'; a.style.fontWeight = '700'; a.style.textDecoration = 'none';
+          a.textContent = v;
+          a.addEventListener('click', function(e) { e.stopPropagation(); });
+          td.appendChild(a);
+        } else if (c.key === 'AGENT_TYPE') {
+          var chip = document.createElement('span');
+          chip.className = 'agent-chip ' + (v === 'AI' ? 'agent-ai' : 'agent-admin');
+          chip.textContent = v || '—'; td.appendChild(chip);
+        } else if (c.key === 'SENTIMENT') {
+          var s = (v || '').toUpperCase();
+          var sChip = document.createElement('span');
+          sChip.className = 'sentiment-chip ' + (s === 'POSITIVE' ? 'sentiment-positive' : s === 'NEGATIVE' ? 'sentiment-negative' : s === 'NEUTRAL' ? 'sentiment-neutral' : 'sentiment-unknown');
+          sChip.textContent = v || '—'; td.appendChild(sChip);
+        } else if (c.key === 'ESCALATED') {
+          var escSpan = document.createElement('span');
+          escSpan.className = v ? 'esc-yes' : 'esc-no';
+          escSpan.textContent = v ? 'Yes' : 'No'; td.appendChild(escSpan);
+        } else if (c.key === 'DURATION_SECONDS' && v != null) {
+          var m = Math.floor(v / 60), s2 = Math.round(v % 60);
+          td.textContent = m + ':' + (s2 < 10 ? '0' : '') + s2;
+        } else if (c.key === 'PICKUP_DATE' && v) {
+          td.textContent = fmtDate(v);
+        } else {
+          td.textContent = v != null ? v : '—';
+        }
+        row.appendChild(td);
+      });
+
+      row.addEventListener('click', function() { toggleExpand(tab, row, r, cols.length + 1); });
+      tbody.appendChild(row);
+    });
+
+    updateKPIs(tab, data);
+    if (footer) footer.textContent = 'Showing ' + data.length + ' of ' + _data[tab].length + ' interactions';
+    updateSearchCounts();
+  }
+
+  function toggleExpand(tab, row, r, colspan) {
+    var next = row.nextElementSibling;
+    if (next && next.classList.contains('convo-expand-row')) {
+      next.remove(); row.classList.remove('convo-expanded');
+      row.querySelector('.row-expand-icon').style.transform = ''; return;
+    }
+    var prev = document.querySelector('#tbody-' + tab + ' .convo-expand-row');
+    if (prev) {
+      prev.previousElementSibling.classList.remove('convo-expanded');
+      prev.previousElementSibling.querySelector('.row-expand-icon').style.transform = '';
+      prev.remove();
+    }
+    row.classList.add('convo-expanded');
+    row.querySelector('.row-expand-icon').style.transform = 'rotate(90deg)';
+
+    var expandRow = document.createElement('tr'); expandRow.className = 'convo-expand-row';
+    var eTd = document.createElement('td'); eTd.setAttribute('colspan', colspan); eTd.style.padding = '0';
+    var content = document.createElement('div'); content.className = 'convo-expand-content';
+
+    // For phone panel, determine channel from row data; for tab views use tab name
+    var isCalls = (tab === 'calls') || (tab === 'phone' && r.CHANNEL === 'Call');
+
+    var grid = document.createElement('div'); grid.className = 'convo-meta-grid';
+    var metaFields = [
+      { label: 'Interaction ID',   val: r.INTERACTION_ID },
+      { label: 'Date/Time',        val: r.INTERACTION_DATETIME },
+      { label: 'Channel',          val: r.CHANNEL },
+      { label: 'Agent',            val: r.AGENT_NAME },
+      { label: 'Agent Email',      val: r.AGENT_EMAIL },
+      { label: 'Agent Type',       val: r.AGENT_TYPE },
+      { label: 'Customer Phone',   val: r.CUSTOMER_PHONE },
+      { label: 'Listing',          val: r.LISTING_ID },
+      { label: 'Country',          val: r.COUNTRY },
+      { label: 'Category',         val: r.LISTING_CATEGORY_NAME },
+      { label: 'Pickup Date',      val: r.PICKUP_DATE ? fmtDate(r.PICKUP_DATE) : null },
+      { label: 'Listing Status',   val: r.LISTING_STATUS },
+      { label: 'Sentiment',        val: r.SENTIMENT },
+      { label: 'Sentiment Notes',  val: r.SENTIMENT_SUMMARY },
+      { label: 'Interaction Type', val: r.INTERACTION_TYPE }
+    ];
+    if (isCalls && r.DURATION_SECONDS != null) {
+      var dm = Math.floor(r.DURATION_SECONDS / 60), ds = Math.round(r.DURATION_SECONDS % 60);
+      metaFields.splice(7, 0, { label: 'Duration', val: dm + 'm ' + ds + 's' });
+    }
+    if (!isCalls) {
+      metaFields.push({ label: 'Escalated',      val: r.ESCALATED ? 'Yes' : 'No' });
+      metaFields.push({ label: 'Fields Changed', val: r.FIELDS_CHANGED });
+    }
+
+    metaFields.forEach(function(f) {
+      var item = document.createElement('div'); item.className = 'convo-meta-item';
+      var lbl  = document.createElement('div'); lbl.className = 'convo-meta-label'; lbl.textContent = f.label;
+      var vDiv = document.createElement('div'); vDiv.className = 'convo-meta-value';
+      vDiv.textContent = f.val != null ? String(f.val) : '—';
+      item.appendChild(lbl); item.appendChild(vDiv); grid.appendChild(item);
+    });
+    content.appendChild(grid);
+
+    if (isCalls && r.RECORDING_URL) {
+      var audioSect = document.createElement('div');
+      var audioLbl = document.createElement('div'); audioLbl.className = 'convo-meta-label'; audioLbl.style.marginBottom = '6px'; audioLbl.textContent = 'Recording';
+      audioSect.appendChild(audioLbl);
+      var audio = document.createElement('audio'); audio.controls = true; audio.className = 'convo-audio'; audio.src = r.RECORDING_URL;
+      audioSect.appendChild(audio); content.appendChild(audioSect);
+    } else if (!isCalls && r.TRANSCRIPT_URL) {
+      var viewSect = document.createElement('div');
+      var viewLbl = document.createElement('div'); viewLbl.className = 'convo-meta-label'; viewLbl.style.marginBottom = '6px'; viewLbl.textContent = 'Conversation Transcript';
+      viewSect.appendChild(viewLbl);
+      var iframe = document.createElement('iframe'); iframe.className = 'convo-viewer'; iframe.src = r.TRANSCRIPT_URL;
+      iframe.setAttribute('loading', 'lazy'); iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+      viewSect.appendChild(iframe); content.appendChild(viewSect);
+    }
+
+    var actions = document.createElement('div'); actions.className = 'convo-actions';
+    if (isCalls && r.RECORDING_URL) {
+      var aBtn = document.createElement('a'); aBtn.className = 'convo-btn convo-btn-primary'; aBtn.href = r.RECORDING_URL; aBtn.target = '_blank'; aBtn.textContent = '🔊 Open Recording';
+      aBtn.addEventListener('click', function(e) { e.stopPropagation(); }); actions.appendChild(aBtn);
+    }
+    if (!isCalls && r.TRANSCRIPT_URL) {
+      var tBtn = document.createElement('a'); tBtn.className = 'convo-btn convo-btn-primary'; tBtn.href = r.TRANSCRIPT_URL; tBtn.target = '_blank'; tBtn.textContent = '💬 Open Transcript';
+      tBtn.addEventListener('click', function(e) { e.stopPropagation(); }); actions.appendChild(tBtn);
+    }
+    if (r.LISTING_ID) {
+      var lBtn = document.createElement('a'); lBtn.className = 'convo-btn'; lBtn.href = 'https://www.anyvan.com/administer/listing/' + r.LISTING_ID; lBtn.target = '_blank'; lBtn.textContent = '🔗 Admin Panel';
+      lBtn.addEventListener('click', function(e) { e.stopPropagation(); }); actions.appendChild(lBtn);
+    }
+    content.appendChild(actions);
+    eTd.appendChild(content); expandRow.appendChild(eTd);
+    row.parentNode.insertBefore(expandRow, row.nextSibling);
+  }
+
+  function updateKPIs(tab, data) {
+    var ai = data.filter(function(r) { return r.AGENT_TYPE === 'AI'; }).length;
+    var listings = {};
+    data.forEach(function(r) { if (r.LISTING_ID) listings[r.LISTING_ID] = true; });
+    var pct = data.length > 0 ? Math.round(ai / data.length * 100) + '%' : '—';
+    setText('kpi-' + tab + '-total',    data.length.toLocaleString());
+    setText('kpi-' + tab + '-ai',       ai.toLocaleString());
+    setText('kpi-' + tab + '-aipct',    pct + ' of interactions');
+    setText('kpi-' + tab + '-listings', Object.keys(listings).length.toLocaleString());
+    if (tab === 'calls') {
+      var durations = data.filter(function(r) { return r.DURATION_SECONDS > 0; }).map(function(r) { return r.DURATION_SECONDS; });
+      if (durations.length) {
+        var avg = durations.reduce(function(a, b) { return a + b; }, 0) / durations.length;
+        var m = Math.floor(avg / 60), s = Math.round(avg % 60);
+        setText('kpi-calls-dur', m + ':' + (s < 10 ? '0' : '') + s);
+      } else { setText('kpi-calls-dur', '—'); }
+    } else {
+      var esc = data.filter(function(r) { return r.ESCALATED; }).length;
+      setText('kpi-' + tab + '-esc', esc.toLocaleString());
+    }
+  }
+  function setText(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; }
+
+  var usearchInput = document.getElementById('usearchInput');
+  var usearchClear = document.getElementById('usearchClear');
+  var debTimer;
+  usearchInput.addEventListener('input', function() {
+    clearTimeout(debTimer);
+    debTimer = setTimeout(function() {
+      _usearch = usearchInput.value.toLowerCase().trim();
+      renderTable(_activeTab); updateSearchCounts();
+    }, 200);
+  });
+  usearchClear.addEventListener('click', function() {
+    usearchInput.value = ''; _usearch = '';
+    renderTable(_activeTab); updateSearchCounts(); usearchInput.focus();
+  });
+  usearchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { usearchInput.value = ''; _usearch = ''; renderTable(_activeTab); updateSearchCounts(); }
+  });
+  function updateSearchCounts() {
+    var el = document.getElementById('usearchCounts');
+    el.textContent = '';
+    if (!_usearch || !_loaded[_activeTab]) return;
+    var n = getFiltered(_activeTab).length;
+    var strong = document.createElement('strong'); strong.className = 'usearch-counts-strong'; strong.textContent = n;
+    el.appendChild(strong);
+    el.appendChild(document.createTextNode(' match' + (n !== 1 ? 'es' : '') + ' in ' + _activeTab));
+  }
+
+  function exportCSV(tab) {
+    var data = getFiltered(tab);
+    if (!data.length) { alert('No data to export.'); return; }
+    var cols = ['INTERACTION_DATETIME', 'INTERACTION_ID', 'AGENT_NAME', 'AGENT_EMAIL', 'AGENT_TYPE',
+                'CUSTOMER_PHONE', 'LISTING_ID', 'COUNTRY', 'LISTING_CATEGORY_NAME', 'PICKUP_DATE',
+                'LISTING_STATUS', 'SENTIMENT', 'SENTIMENT_SUMMARY', 'INTERACTION_TYPE', 'CHANNEL'];
+    if (tab === 'calls') cols.push('DURATION_SECONDS', 'RECORDING_URL');
+    else cols.push('ESCALATED', 'FIELDS_CHANGED', 'TRANSCRIPT_URL');
+    var csv = cols.join(',') + '\n';
+    data.forEach(function(r) {
+      var row = cols.map(function(c) {
+        var v = r[c]; if (v == null) return '';
+        v = String(v).replace(/"/g, '""');
+        return (v.indexOf(',') !== -1 || v.indexOf('"') !== -1 || v.indexOf('\n') !== -1) ? '"' + v + '"' : v;
+      });
+      csv += row.join(',') + '\n';
+    });
+    var today = new Date().toISOString().slice(0, 10);
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'interaction_hub_' + tab + '_' + today + '.csv'; a.click();
+  }
+
+  function fmtDate(v) {
+    var s = String(v).slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { var p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+    return s;
+  }
+
+  async function init() {
+    await AVDashboard.ensureAuthenticated();
+    await AVDashboard.init();
+    initUser();
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    loadTab('calls');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+</body>
+</html>
