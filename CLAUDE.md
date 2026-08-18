@@ -18,6 +18,9 @@ the form, the builder, or the workflow, and keep it updated in the same PR when 
   · `go-live-guide.md` · `public-hosting.md` — build/wiring/go-live runbooks.
 - `dsr-intake-form.html` — interim internal form on AV Dashboards (retired once Formstack is live).
 - `backend/` — a superseded self-hosted Lambda ticket-creator; parked as reference, **not deployed**.
+- `skills/anyvan-formstack-freshdesk/` — the reusable, org-shareable skill distilled from
+  `docs/conventions.md` (same conventions, generalised beyond DSR). Package with
+  `skill-creator`'s `package_skill.py` to get the uploadable `.skill`; see `skills/README.md`.
 
 ## Guardrails (learned the hard way)
 - **Never commit secrets.** The Formstack PAT (`fs_pat_…`) and any API keys are env-vars only
