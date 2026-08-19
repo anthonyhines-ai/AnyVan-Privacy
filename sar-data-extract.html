@@ -796,12 +796,15 @@ function clearAll() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   var savedTheme = localStorage.getItem('sar_theme');
   if (savedTheme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
     document.getElementById('themeToggle').textContent = '☀';
   }
+
+  await AVDashboard.ensureAuthenticated();
+  await AVDashboard.init();
 
   var name = localStorage.getItem('sar_current_user') || null;
   if (!name) {
