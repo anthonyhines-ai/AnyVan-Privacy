@@ -94,7 +94,7 @@ ORDER BY CREATED_AT;
 - **What/when (all emails):** spine (`CHANNEL='email'`). Template + timestamp for **every** email since 2022.
 - **Rendered body + subject:** `HARMONISED.PRODUCTION.EVENTS_MESSAGING_MESSAGE` (`CHANNEL='EMAIL'`).
   - Join on `REQUEST_METADATA_CONTEXT:listingId::string = :listing_id` **or** `RESOLVED_USER_EMAIL = :email` **or** `USER_ID = :user_id`. Columns: `RENDERED_SUBJECT`, `MESSAGE` (rendered body), `TEMPLATE_KEY`, `CHANNEL`, `RESOLVED_USER_PHONE`, `RESOLVED_USER_CONSENT_MARKETING/_TRANSACTIONAL`, `EVENT_TIMESTAMP`.
-  - **Coverage (verified 2026-08-19):** of **230,843** email rows, **100% have both `MESSAGE` and `RENDERED_SUBJECT`** — i.e. where an email is in this table, the full rendered content is present, **for all email types** (not just t-7/t-1 as the 2026-08-13 draft stated). **BUT the table only starts 2026-05-19** (messaging-gateway era; rollout ongoing). **Emails sent before 2026-05-19, or via a family not yet on the gateway, are send-events only** → reconstruct subject/vars from spine `TOKENS`. **Always check per-listing whether a body row exists** rather than assuming.
+  - **Coverage (verified 2026-08-19):** of **230,843** email rows, **100% have both `MESSAGE` and `RENDERED_SUBJECT`** — i.e. where an email is in this table, the full rendered content is present, **for all email types** (not just t-7/t-1 as the 2026-08-13 draft stated). **BUT the table only starts 2026-05-19** (messaging-gateway era; rollout ongoing). **Emails sent before 2026-05-19, or via a family not yet on the gateway, have no *extractable* body in the warehouse** — but they are **not invisible**: the spine (`LISTING_COMMUNICATION`, §3) logs **every send back to 2022** (template `TYPE` + timestamp), the **subject/vars are reconstructable from `TOKENS`**, and the **admin `/view` preview (§5) renders the actual message** for all email types (confirm it renders pre-2026-05-19 rows at build). So a SAR can always give the subject a **complete index of every email sent** (name + subject + date), and the officer can view/capture the rendered content via `/view` for older emails — only *bulk programmatic body extraction* is limited to 2026-05-19+. Check per-listing whether a stored body row exists before relying on warehouse text.
   - Strip HTML in-query with nested `REGEXP_REPLACE` (remove `<style>`/`<head>`, strip tags, decode entities) — preserve wording, trim footer boilerplate.
 - **CTA/link previews inside the email:** the tokens/body contain `…/eclick/…/edit-instant/{listing_id}` and `/dashboard` links (the customer's booking-management links).
 
@@ -170,7 +170,7 @@ ORDER BY HS_EMAIL_EVENT_EMAIL_SENT_DATE;
 
 | Channel | Timeline (what/when) | Content/body | Delivery status | Per-message preview link |
 |---|---|---|---|---|
-| Transactional email | ✅ all (spine, 2022+) | ✅ full **from 2026-05-19** (`EVENTS_MESSAGING_MESSAGE`); before that send-event only | dispatch flag (+ gateway status tables) | ✅ admin `/view` |
+| Transactional email | ✅ all (spine, 2022+) | ✅ full extractable **from 2026-05-19** (`EVENTS_MESSAGING_MESSAGE`); pre-2026-05-19 = full send index + subject (`TOKENS`) + admin `/view` renders content (just not extractable text) | dispatch flag (+ gateway status tables) | ✅ admin `/view` |
 | SMS | ✅ all | ✅ full (`TOKENS.message`) | ❌ (not in Twilio) | ✅ admin `/view` |
 | WhatsApp (automated intro/day-of) | via Twilio (2025+) | ✅ full (Twilio `TWILIO_MESSAGE`) | ✅ Twilio | ❌ none (Twilio only) |
 | WhatsApp (feedback template) | ✅ spine (2025-03-17+) | ✅ (Twilio) | ✅ Twilio | ⚠️ admin view dead-end |
@@ -234,7 +234,7 @@ Input: email and/or listing_id (and/or Freshdesk ticket → SAR-Comms-Lookup-Ref
 
 | Item | Why it matters | Action |
 |---|---|---|
-| Pre-2026-05-19 email bodies not stored | Older emails are send-event/metadata only | Reconstruct subject/vars from spine `TOKENS`; state the caveat in the SAR pack |
+| Pre-2026-05-19 email bodies not *extractable* in-warehouse | Older emails have no stored body text | Still list them via the spine (name + subject from `TOKENS` + date) and view/capture content via admin `/view`; only bulk text extraction is limited |
 | `MARKETING_EMAIL` read locked (HubSpot) | No rendered marketing-email HTML | Grant read scope, or capture "view in browser" URLs |
 | Automated WhatsApp bodies not in-warehouse | Intro/day-of only in Twilio; no admin record | Persist to `LISTING_COMMUNICATION`, or Twilio API pull |
 | AnyVan SMS not in Twilio | No independent delivery confirmation | Identify the SMS gateway's delivery log (gateway status tables) |

@@ -183,9 +183,21 @@ LIMIT 500;
 
 ## 6. Identity gate (soft match + human sign-off)
 
-- **Match, don't trust:** compare the submitted email/phone/listing to the account (`v4_user_lookup` + identity queries). Produce `identity_match_summary`: which identifiers matched, whether the listing belongs to the resolved user, and a match verdict (`strong` / `partial` / `no_match`).
-- **Release nothing automatically.** The Freshdesk note carries an explicit **"AUTHORISATION REQUIRED"** block the officer must complete before sharing.
-- **Stronger path (optional, later):** if an ID document was uploaded, `formstack_upload_interpret` vision-checks it against the account name — surfaced as extra evidence, still officer-gated.
+- **Three-point cross-check (don't trust the form):** compare each submitted value to the account and record a per-field verdict:
+
+  | Formstack field | Compared to | Source |
+  |---|---|---|
+  | Full name | `FULL_NAME` | `DIM_USER_CUSTOMER` / `v4_user_lookup` |
+  | Email | `EMAIL_ADDRESS` | `DIM_USER_CUSTOMER` / `v4_user_lookup` |
+  | Phone | `PRIMARY_PHONE_NUMBER`, `SECONDARY_PHONE_NUMBER` + extra phones | `DIM_USER_CUSTOMER` + `extra_phones` |
+
+  Also confirm the quoted listing belongs to the resolved user. Roll up to `identity_match_summary` with a verdict (`strong` = name+email+phone all match · `partial` · `no_match`).
+- **Route by requester type** (form field #12):
+  - **Data subject (customer)** → the three-point check above.
+  - **Transport Provider (TP)** → match the provider record instead (`v4_user_lookup` `roleName = TP` + `provider` fields; `CONFORMED.PRODUCTION.DIM_USER_TRANSPORTPROVIDER`). *(TP comms sources differ from the consumer set — scope in a follow-up.)*
+  - **Third party acting on behalf** (solicitor, family, agent) → **manual admin check** of the proof-of-authority upload (field #13). Automated matching is not sufficient; the workflow assembles **nothing** until an admin confirms authority.
+- **Release nothing automatically.** The Freshdesk note carries an explicit **"AUTHORISATION REQUIRED"** block the officer completes before sharing.
+- **Stronger path (optional):** an uploaded ID document is vision-checked against the account name via `formstack_upload_interpret` — extra evidence, still officer-gated.
 - **Higher-risk types** (`erasure`/`rectification`/`objection`): confirm-what-exists only; no data pull, no action — officer handles.
 
 ---
@@ -219,7 +231,15 @@ The private note contains, in order:
 4. **`portability_json`** — the machine-readable export (mapping-doc §10 shape) for CSV/JSON portability.
 5. **Coverage caveats** — pre-2026-05-19 email bodies absent; marketing = subject/metadata only; Twilio recordings via Flex; Snowflake `data_as_of` staleness (15–60 min).
 
-**Delivery:** officer verifies identity, downloads any Aircall URL / Twilio-Flex audio, compiles the customer-facing **Google Doc / CSV / JSON**, shares it, and resolves the ticket (set `responder_id` to close).
+**Delivery — two supported paths:**
+1. **Freshdesk-compiled (baseline):** officer verifies identity, downloads any Aircall URL / Twilio-Flex audio, compiles the customer-facing **Google Doc / CSV / JSON** from the note, shares it, resolves the ticket (`responder_id` to close).
+2. **AV Dashboards export (recommended for the file):** the officer opens a pre-built, parameterised **"DSR / SAR export" AV Dashboard** (filtered by the subject's email/listing) to review the full comms and **export CSV/file** directly — better than hand-building a doc for large data sets. The Freshdesk ticket carries a **deep link** to the pre-filtered dashboard.
+
+### Can the workflow talk to AV Dashboards?
+**Not directly** — AV Dashboards is **not** in the workflow action/tool catalogue (verified 2026-08-19), so no workflow step can call it. **The integration point is Snowflake**, which both sides use: the workflow reads it (`snowflake_query`) and can write the request to it (`EVENTBUS_EVENT_PUBLISH`); **AV Dashboards reads the same Snowflake** to render and export. So the pattern is **workflow → Snowflake → dashboard**, never workflow → dashboard.
+- Build the "DSR export" dashboard with the `av-dashboards` / `anyvan-dashboard-design` skills; it runs the §4 source queries, parameterised by email/listing, with a CSV/file export control.
+- It is **`@anyvan.com`-authenticated** (officer-facing) — keep customer delivery officer-mediated; do **not** expose the dashboard to customers (partner-access grants exist but are out of scope for SAR).
+- *Build-time confirms:* deep-link / filter parameterisation, and the export-to-file control.
 
 ---
 
@@ -249,7 +269,7 @@ The private note contains, in order:
 
 | Intended step | Platform reality | Design choice |
 |---|---|---|
-| "Put it in a Google Doc & share" | No workflow action builds/shares a file | Officer compiles from the Freshdesk note (matches current practice) |
+| "Put it in a Google Doc & share" | No workflow action builds/shares a file; workflow can't call AV Dashboards directly | Officer compiles from the Freshdesk note, **or** exports the file from a parameterised DSR AV Dashboard (workflow → Snowflake → dashboard) — see §8 |
 | "Provide a call download URL" | Aircall URL ✅; Twilio = SID only | Aircall inline; Twilio via Flex "copy link for download" → attach file |
 | "Validate the output" | Platform validates only the AI's decision JSON | Explicit completeness checklist (§9) + officer sign-off |
 | "Check the requester is allowed" | No built-in identity gate | Soft match (§6) + mandatory officer authorisation |
@@ -264,7 +284,11 @@ The private note contains, in order:
 4. In the admin UI: **Test query** each Snowflake read (EXPLAIN + Run sample), dry-run the chain, then **manually promote** to ACTIVE (promotion is intentionally not scriptable).
 5. First live requests: shadow with the officer; confirm identity-match verdicts and coverage caveats before trusting.
 
-**Out of scope now (follow-ups):** the automated Twilio Recordings-API fetch; unlocking HubSpot `MARKETING_EMAIL` for bodies; persisting automated-WhatsApp bodies to the spine; any Google-Doc auto-generation service.
+**Companion build (recommended, parallel):** the parameterised **"DSR / SAR export" AV Dashboard** (§8) — the officer's review + file-export surface, reading the same Snowflake sources.
+
+**TP identity path:** scope the Transport-Provider requester flow (provider record match + which comms sources apply to TPs) — deferred from v1.
+
+**Out of scope now (follow-ups):** the automated Twilio Recordings-API fetch; unlocking HubSpot `MARKETING_EMAIL` for bodies; persisting automated-WhatsApp bodies to the spine; any fully-automated Google-Doc generation service.
 
 ---
 

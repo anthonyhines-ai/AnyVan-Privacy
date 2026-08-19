@@ -27,6 +27,8 @@ The submission fires `FORMSTACK_FORM_SUBMITTED`, which triggers the workflow. Th
 | 9 | Delivery email (if different) | `field_IIIIIII` | `text` | ➖ | Where the pack is sent; defaults to #2 |
 | 10 | Proof of identity (upload) | `field_JJJJJJJ` | (file) | ➖ | For the stronger-verification path (§6); read via `formstack_upload` / `formstack_upload_interpret` |
 | 11 | Declaration / consent | `field_KKKKKKK` | `choice` | ✅ | "I am the data subject (or authorised)" checkbox |
+| 12 | Requester type | `field_LLLLLLL` | `choice` | ✅ | Data subject (customer) · Transport Provider (TP) · Third party acting on behalf — **routes the identity checks** (§6) |
+| 13 | Proof of authority (upload) | `field_MMMMMMM` | (file) | ➖ | Required when #12 = third party (letter of authority / power of attorney) — triggers a **manual admin check** |
 
 > `value_type` values match the `FORMSTACK_SUBMISSION_UPDATE` action's allowed set: `text | name | address | choice`.
 
@@ -91,7 +93,7 @@ Emitted by the assembly step — the shape is defined once in [`customer-communi
 
 ## 6. Identity verification (soft match + human sign-off)
 
-The form's email/phone/listing are **claims, not proof**. The workflow **matches** them to the account (`v4_user_lookup` + identity queries) and records a match result, but **releases nothing automatically** — a privacy officer authorises before release. The optional ID upload (field #10) supports a **stronger** path later (`formstack_upload_interpret` vision-check vs the account). Full logic in the workflow-design doc §"Identity gate".
+The form's name/email/phone/listing are **claims, not proof**. The workflow runs a **three-point cross-check** — Formstack **name vs `FULL_NAME`**, **email vs `EMAIL_ADDRESS`**, **phone vs `PRIMARY/SECONDARY_PHONE_NUMBER` (+ extra phones)** — via `v4_user_lookup` + the identity queries, records a per-field match result, but **releases nothing automatically**. It **routes by requester type** (field #12): **customer** → the match above; **TP** → match the provider record (`v4_user_lookup` `roleName=TP` / `DIM_USER_TRANSPORTPROVIDER`); **third party** → **manual admin check** of the proof of authority (field #13) before anything is assembled. The optional ID upload (field #10) supports a stronger `formstack_upload_interpret` vision-check. Full logic in the workflow-design doc §"Identity gate".
 
 ---
 

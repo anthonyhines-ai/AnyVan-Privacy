@@ -27,7 +27,7 @@ the (DRY_RUN) workflow is the next cycle; it needs the workflow-system JWT, the 
 
 ### Key decisions baked in
 
-- **Identity:** soft-match the request to the account + **mandatory privacy-officer sign-off** before any release.
-- **Delivery:** workflow assembles → Freshdesk note → officer compiles & shares (Google Doc / CSV / JSON).
+- **Identity:** three-point cross-check (name / email / phone vs our system), routed by requester type (customer · TP · third-party→manual admin check) + **mandatory privacy-officer sign-off** before any release.
+- **Delivery:** workflow assembles → Freshdesk note → officer compiles & shares, **or** exports the file from a parameterised DSR **AV Dashboard** (workflow → Snowflake → dashboard).
 - **Call recordings:** Aircall URL direct from Snowflake; Twilio via the Flex download-and-attach step.
 - **Validation:** an explicit completeness / SLA / third-party-PII-redaction checklist on every ticket.
