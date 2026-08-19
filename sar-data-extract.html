@@ -623,20 +623,35 @@ function runSAR() {
     var params = {email: email};
     if (q.needsPhone) params.phone_suffix = _phoneSuffix;
 
-    AVDashboard.runQuery(q.name, params).then(function(res) {
-      var rows = res.rows || [];
-      _sarData[key] = rows;
-      _sarMeta[key] = {status:'success', count:rows.length, cached: res.cached !== false};
-      document.getElementById('cnt-' + key).textContent = rows.length;
-      if (el) el.innerHTML = buildTable(rows);
-      checkAllDone();
-    }).catch(function(err) {
+    try {
+      var promise = AVDashboard.runQuery(q.name, params);
+      if (!promise || typeof promise.then !== 'function') {
+        throw new Error('runQuery returned non-promise: ' + typeof promise);
+      }
+      promise.then(function(res) {
+        console.log('[SAR] ' + key + ' response:', JSON.stringify(res).substring(0, 500));
+        var rows = res.rows || res.data || (Array.isArray(res) ? res : []);
+        _sarData[key] = rows;
+        _sarMeta[key] = {status:'success', count:rows.length, cached: res.cached !== false};
+        document.getElementById('cnt-' + key).textContent = rows.length;
+        if (el) el.innerHTML = buildTable(rows);
+        checkAllDone();
+      }).catch(function(err) {
+        console.error('[SAR] ' + key + ' query error:', err);
+        _sarData[key] = [];
+        _sarMeta[key] = {status:'error', error:String(err.message || err)};
+        document.getElementById('cnt-' + key).textContent = '!';
+        if (el) el.innerHTML = '<div class="data-empty" style="color:var(--red)">Error: ' + esc(err.message || err) + '</div>';
+        checkAllDone();
+      });
+    } catch(syncErr) {
+      console.error('[SAR] ' + key + ' sync error:', syncErr);
       _sarData[key] = [];
-      _sarMeta[key] = {status:'error', error:String(err)};
+      _sarMeta[key] = {status:'error', error:'Sync: ' + String(syncErr.message || syncErr)};
       document.getElementById('cnt-' + key).textContent = '!';
-      if (el) el.innerHTML = '<div class="data-empty" style="color:var(--red)">Error: ' + esc(err) + '</div>';
+      if (el) el.innerHTML = '<div class="data-empty" style="color:var(--red)">Error: ' + esc(syncErr.message || syncErr) + '</div>';
       checkAllDone();
-    });
+    }
   });
 }
 
@@ -684,7 +699,8 @@ function buildOverview() {
                      m.status === 'error' ? statusChip('Error') :
                      statusChip('Skipped');
 
-    summaryRows += '<tr><td style="font-weight:700">' + esc(q.label) + '</td><td>' + count + '</td><td>' + statusHtml + '</td><td>' + (dateCol ? getDateRange(rows, dateCol) : '—') + '</td></tr>';
+    var errorDetail = m.status === 'error' ? '<br><span style="font-size:10px;color:var(--red)">' + esc(m.error) + '</span>' : '';
+    summaryRows += '<tr><td style="font-weight:700">' + esc(q.label) + '</td><td>' + count + '</td><td>' + statusHtml + errorDetail + '</td><td>' + (dateCol ? getDateRange(rows, dateCol) : '—') + '</td></tr>';
   });
 
   kpiHtml += '<div class="kpi-tile"><div class="kpi-label">Total Records</div><div class="kpi-value">' + totalRecords.toLocaleString() + '</div></div>';
