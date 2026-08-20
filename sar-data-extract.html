@@ -596,7 +596,7 @@ function runOneQuery(key, attempt) {
 
   if (el) el.innerHTML = '<div class="data-loading"><div class="spinner"></div>Loading ' + esc(q.label) + (attempt ? '… (retry ' + attempt + ')' : '…') + '</div>';
 
-  return AVDashboard.runQuery(q.name, params).then(function(res) {
+  return AVDashboard.runQuery(q.name, { parameters: params }).then(function(res) {
     var rows = res.rows || res.data || (Array.isArray(res) ? res : []);
     _sarData[key] = rows;
     _sarMeta[key] = {status:'success', count:rows.length, cached: res.cached !== false};
