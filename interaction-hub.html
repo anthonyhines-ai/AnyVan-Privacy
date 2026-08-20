@@ -1138,13 +1138,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     });
     content.appendChild(grid);
 
-    if (isCalls && r.RECORDING_URL) {
-      var audioSect = document.createElement('div');
-      var audioLbl = document.createElement('div'); audioLbl.className = 'convo-meta-label'; audioLbl.style.marginBottom = '6px'; audioLbl.textContent = 'Recording';
-      audioSect.appendChild(audioLbl);
-      var audio = document.createElement('audio'); audio.controls = true; audio.className = 'convo-audio'; audio.src = r.RECORDING_URL;
-      audioSect.appendChild(audio); content.appendChild(audioSect);
-    } else if (!isCalls && r.TRANSCRIPT_URL) {
+    if (!isCalls && r.TRANSCRIPT_URL) {
       var viewSect = document.createElement('div');
       var viewLbl = document.createElement('div'); viewLbl.className = 'convo-meta-label'; viewLbl.style.marginBottom = '6px'; viewLbl.textContent = 'Conversation Transcript';
       viewSect.appendChild(viewLbl);
@@ -1155,7 +1149,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 
     var actions = document.createElement('div'); actions.className = 'convo-actions';
     if (isCalls && r.RECORDING_URL) {
-      var aBtn = document.createElement('a'); aBtn.className = 'convo-btn convo-btn-primary'; aBtn.href = r.RECORDING_URL; aBtn.target = '_blank'; aBtn.textContent = '🔊 Open Recording';
+      var aBtn = document.createElement('a'); aBtn.className = 'convo-btn convo-btn-primary'; aBtn.href = r.RECORDING_URL; aBtn.target = '_blank'; aBtn.rel = 'noopener'; aBtn.textContent = '🎧 Listen to Recording';
       aBtn.addEventListener('click', function(e) { e.stopPropagation(); }); actions.appendChild(aBtn);
     }
     if (!isCalls && r.TRANSCRIPT_URL) {
