@@ -142,7 +142,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 }
 </style>
 </head>
-<body>
+<body av-track-source="dashboard-sar-data-extract">
 
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
@@ -637,11 +637,15 @@ function runSAR() {
         if (el) el.innerHTML = buildTable(rows);
         checkAllDone();
       }).catch(function(err) {
-        console.error('[SAR] ' + key + ' query error:', err);
+        var errDetail = {message: err.message, status: err.status, statusCode: err.statusCode, code: err.code, name: err.name};
+        try { errDetail.keys = Object.keys(err); } catch(e2) {}
+        try { errDetail.full = JSON.stringify(err); } catch(e2) { errDetail.full = String(err); }
+        console.error('[SAR] ' + key + ' query error (detail):', errDetail);
         _sarData[key] = [];
-        _sarMeta[key] = {status:'error', error:String(err.message || err)};
+        var errMsg = err.message || err.error || String(err);
+        _sarMeta[key] = {status:'error', error:errMsg};
         document.getElementById('cnt-' + key).textContent = '!';
-        if (el) el.innerHTML = '<div class="data-empty" style="color:var(--red)">Error: ' + esc(err.message || err) + '</div>';
+        if (el) el.innerHTML = '<div class="data-empty" style="color:var(--red)">Error: ' + esc(errMsg) + '<br><span style="font-size:10px;color:var(--tx3)">Query: ' + esc(q.name) + ' · Check browser console for details</span></div>';
         checkAllDone();
       });
     } catch(syncErr) {
@@ -804,7 +808,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   await AVDashboard.ensureAuthenticated();
-  await AVDashboard.init();
+  var initResult = await AVDashboard.init();
+  console.log('[SAR] AVDashboard.init() result:', initResult);
 
   var name = localStorage.getItem('sar_current_user') || null;
   if (!name) {
