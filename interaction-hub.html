@@ -208,15 +208,23 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         <button class="seg-btn" data-ch="LiveChat">💬 Live Chat<span class="ch-count" id="chCount-livechat"></span></button>
         <button class="seg-btn" data-ch="WhatsApp">📱 WhatsApp<span class="ch-count" id="chCount-whatsapp"></span></button>
       </div>
+      <div class="filter-sep"></div>
+      <span class="filter-label">History</span>
+      <div class="seg-group" id="phoneWindowSeg">
+        <button class="seg-btn on" data-days="30">30 days</button>
+        <button class="seg-btn" data-days="90">90 days</button>
+        <button class="seg-btn" data-days="180">6 months</button>
+        <button class="seg-btn" data-days="365">12 months</button>
+      </div>
+      <span class="date-hint" style="margin-left:6px;">Retention limit: 12 months</span>
     </div>
     <div class="convo-section">
       <div class="convo-loading" id="loading-phone" style="display:none;"><div class="spinner"></div><span>Searching...</span></div>
       <div id="content-phone" style="display:none;">
         <div class="convo-table-wrap"><table class="convo-table"><thead id="thead-phone"></thead><tbody id="tbody-phone"></tbody></table></div>
-        <div class="convo-empty" id="empty-phone" style="display:none;">No interactions found for this number in the loaded data. Try "Load Full History" below to search further back.</div>
+        <div class="convo-empty" id="empty-phone" style="display:none;">No interactions found for this number in the selected window. Expand the History window above to search further back (up to 12 months).</div>
         <div class="convo-footer">
           <span id="footer-phone" style="flex:1;"></span>
-          <button class="btn-load-history" id="loadFullHistoryBtn">📅 Load Full History (12 months)</button>
         </div>
       </div>
     </div>
@@ -414,9 +422,23 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   // Phone search state
   var _phoneFilter = '';
   var _phoneLookupData = [];
-  var _phoneLookupLoaded = false;
+  var _phoneLookupDays = 0;          // window (in days) the loaded server data represents; 0 = none yet
   var _phoneLookupLoading = false;
   var _phoneChannelFilter = '';
+  var _phoneDefaultWindow = 30;      // default history window on entering phone mode
+  var _phoneWindowDays = 30;         // currently selected history window (max 365 = retention limit)
+
+  function windowCutoff(days) {
+    var d = new Date();
+    d.setDate(d.getDate() - days);
+    return d.toISOString().slice(0, 10);
+  }
+  function windowLabel(days) {
+    if (days >= 365) return '12 months';
+    if (days >= 180) return '6 months';
+    if (days >= 90) return '90 days';
+    return days + ' days';
+  }
 
   function normPhone(s) { return (s || '').replace(/\D/g, ''); }
   function phoneMatch(stored, filter) {
@@ -672,25 +694,36 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 
   function enterPhoneMode(phone) {
     _phoneLookupData = [];
-    _phoneLookupLoaded = false;
+    _phoneLookupDays = 0;
+    _phoneWindowDays = _phoneDefaultWindow;
     _phoneFilter = phone;
+    // Reset window control to default (30 days)
+    document.querySelectorAll('#phoneWindowSeg .seg-btn').forEach(function(b) {
+      b.classList.toggle('on', b.getAttribute('data-days') === String(_phoneDefaultWindow));
+    });
     document.getElementById('mainTabs').style.display = 'none';
     document.querySelectorAll('.tab-panel').forEach(function(p) { p.style.display = 'none'; });
     document.getElementById('panel-phone').style.display = 'block';
     document.getElementById('phoneSearchClear').style.display = 'inline-flex';
     renderPhoneResults();
-    // Trigger loading of unloaded tabs in background
+    // Trigger loading of unloaded tabs in background (instant recent matches)
     ['calls', 'livechat', 'whatsapp'].forEach(function(tab) {
       if (!_loaded[tab]) loadTab(tab);
     });
+    // Auto-load the default 30-day server-side history for this number
+    loadPhoneLookup(_phoneDefaultWindow);
   }
 
   function exitPhoneMode() {
     _phoneFilter = '';
     _phoneLookupData = [];
-    _phoneLookupLoaded = false;
+    _phoneLookupDays = 0;
+    _phoneWindowDays = _phoneDefaultWindow;
     _phoneChannelFilter = '';
     document.querySelectorAll('#phoneChannelSeg .seg-btn').forEach(function(b, i) { b.classList.toggle('on', i === 0); });
+    document.querySelectorAll('#phoneWindowSeg .seg-btn').forEach(function(b) {
+      b.classList.toggle('on', b.getAttribute('data-days') === String(_phoneDefaultWindow));
+    });
     document.getElementById('panel-phone').style.display = 'none';
     document.getElementById('mainTabs').style.display = '';
     // Restore active tab
@@ -722,9 +755,8 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     var tbody   = document.getElementById('tbody-phone');
     var empty   = document.getElementById('empty-phone');
     var footer  = document.getElementById('footer-phone');
-    var loadBtn = document.getElementById('loadFullHistoryBtn');
 
-    // Collect from all loaded tabs (no date filter applied)
+    // Collect from all loaded tabs (recent 7-day data — instant, always within window)
     var allRows = [];
     var seen = {};
     ['calls', 'livechat', 'whatsapp'].forEach(function(tab) {
@@ -734,9 +766,13 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       });
     });
 
-    // Merge 12-month lookup data (de-duplicated)
+    // Merge server-side lookup data (de-duplicated), limited to the selected window.
+    // _phoneLookupData may hold a larger window than currently selected, so apply a cutoff.
+    var cutoff = windowCutoff(_phoneWindowDays);
     _phoneLookupData.forEach(function(r) {
       if (!phoneMatch(r.CUSTOMER_PHONE, _phoneFilter)) return;
+      var d = r.INTERACTION_DATETIME ? String(r.INTERACTION_DATETIME).slice(0, 10) : '';
+      if (cutoff && d && d < cutoff) return;
       var id = r.INTERACTION_ID || (String(r.INTERACTION_DATETIME) + r.CUSTOMER_PHONE);
       if (!seen[id]) { allRows.push(r); seen[id] = true; }
     });
@@ -747,7 +783,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       return vb.localeCompare(va);
     });
 
-    var window = _phoneLookupLoaded ? '12 months' : '7 days';
+    var windowTxt = _phoneLookupDays > 0 ? 'last ' + windowLabel(_phoneWindowDays) : 'last 7 days';
     var callCount = allRows.filter(function(r) { return r.CHANNEL === 'Call'; }).length;
     var chatCount = allRows.filter(function(r) { return r.CHANNEL === 'LiveChat'; }).length;
     var waCount   = allRows.filter(function(r) { return r.CHANNEL === 'WhatsApp'; }).length;
@@ -763,10 +799,12 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     var displayRows = _phoneChannelFilter ? allRows.filter(function(r) { return r.CHANNEL === _phoneChannelFilter; }) : allRows;
 
     var bannerText = '📞 Phone lookup: <strong>' + _phoneFilter + '</strong>';
-    if (loadingTabs > 0) {
+    if (_phoneLookupLoading) {
+      bannerText += ' — <em style="color:var(--amb)">Loading ' + windowLabel(_phoneWindowDays) + ' history…</em>';
+    } else if (loadingTabs > 0) {
       bannerText += ' — <em style="color:var(--amb)">Loading ' + loadingTabs + ' channel' + (loadingTabs > 1 ? 's' : '') + '…</em>';
     } else {
-      bannerText += ' — found <strong>' + allRows.length + '</strong> interaction' + (allRows.length !== 1 ? 's' : '') + ' across ' + window + ' history (📞 ' + callCount + ' · 💬 ' + chatCount + ' · 📱 ' + waCount + ')';
+      bannerText += ' — found <strong>' + allRows.length + '</strong> interaction' + (allRows.length !== 1 ? 's' : '') + ' across ' + windowTxt + ' (📞 ' + callCount + ' · 💬 ' + chatCount + ' · 📱 ' + waCount + ')';
     }
     banner.innerHTML = bannerText;
 
@@ -843,43 +881,59 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       tbody.appendChild(row);
     });
 
-    // Load history button
-    if (_phoneLookupLoaded) {
-      loadBtn.style.display = 'none';
-    } else {
-      loadBtn.style.display = '';
-      loadBtn.disabled = _phoneLookupLoading;
-      loadBtn.textContent = _phoneLookupLoading ? 'Loading 12-month history…' : '📅 Load Full History (12 months)';
-    }
+    // Reflect loading state on the window control
+    document.querySelectorAll('#phoneWindowSeg .seg-btn').forEach(function(b) {
+      b.disabled = _phoneLookupLoading;
+      b.style.opacity = _phoneLookupLoading ? '0.5' : '';
+      b.style.cursor = _phoneLookupLoading ? 'not-allowed' : '';
+    });
 
     footer.textContent = displayRows.length > 0
-      ? 'Showing ' + displayRows.length + (_phoneChannelFilter ? ' ' + _phoneChannelFilter : '') + ' interaction' + (displayRows.length !== 1 ? 's' : '') + ' for ' + _phoneFilter + ' (' + window + ')'
+      ? 'Showing ' + displayRows.length + (_phoneChannelFilter ? ' ' + _phoneChannelFilter : '') + ' interaction' + (displayRows.length !== 1 ? 's' : '') + ' for ' + _phoneFilter + ' (' + windowTxt + ')'
       : '';
   }
 
-  async function loadPhoneLookup() {
-    if (_phoneLookupLoading || _phoneLookupLoaded) return;
+  // Load the phone lookup for a given window (days), with retry on transient
+  // warehouse/timeout failures. Skips re-querying if a >= window is already loaded.
+  async function loadPhoneLookup(days) {
+    days = Math.min(days || _phoneDefaultWindow, 365); // cap at 12-month retention limit
+    if (_phoneLookupLoading) return;
+    if (_phoneLookupDays >= days) { renderPhoneResults(); return; } // already have this window (or larger)
     _phoneLookupLoading = true;
-    var loadBtn = document.getElementById('loadFullHistoryBtn');
-    loadBtn.disabled = true;
-    loadBtn.textContent = 'Loading 12-month history…';
+    renderPhoneResults();
     var loading = document.getElementById('loading-phone');
-    loading.style.display = 'flex';
-    loading.querySelector('span').textContent = 'Loading 12-month history — this may take 30–60s if the warehouse is warming up…';
+    if (!_phoneLookupData.length) {
+      loading.style.display = 'flex';
+      loading.querySelector('span').textContent = 'Loading ' + windowLabel(days) + ' history…';
+    }
     try {
       var digits = normPhone(_phoneFilter);
       var suffix = digits.slice(-10);
-      var result = await AVDashboard.runQuery('interaction_hub_phone_lookup', { phone_suffix: suffix });
+      var result = await runPhoneQueryWithRetry(suffix, days);
       _phoneLookupData = result.rows || [];
-      _phoneLookupLoaded = true;
+      _phoneLookupDays = days;
     } catch (e) {
-      alert('Failed to load full history: ' + (e.message || String(e)));
-      loadBtn.disabled = false;
-      loadBtn.textContent = '📅 Load Full History (12 months)';
+      console.error('[interaction-hub] phone lookup error:', e);
+      alert('Failed to load ' + windowLabel(days) + ' history: ' + (e.message || String(e)) + '\n\nPlease try again in a moment — the data warehouse may be warming up.');
     } finally {
       _phoneLookupLoading = false;
       loading.style.display = 'none';
       renderPhoneResults();
+    }
+  }
+
+  async function runPhoneQueryWithRetry(suffix, days, attempt) {
+    attempt = attempt || 0;
+    try {
+      return await AVDashboard.runQuery('interaction_hub_phone_lookup', { parameters: { phone_suffix: suffix, days: days } });
+    } catch (e) {
+      var msg = (e && (e.message || e.error)) ? (e.message || e.error) : String(e);
+      if (attempt < 2 && /execution failed|timeout|timed out|\b50\d\b|throttl|too many/i.test(msg)) {
+        console.warn('[interaction-hub] phone lookup transient failure, retrying:', msg);
+        await new Promise(function(r) { setTimeout(r, 2000 * (attempt + 1)); });
+        return runPhoneQueryWithRetry(suffix, days, attempt + 1);
+      }
+      throw e;
     }
   }
 
@@ -901,7 +955,6 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   phoneSearchBtn.addEventListener('click', doPhoneSearch);
   phoneSearchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doPhoneSearch(); });
   phoneSearchClear.addEventListener('click', exitPhoneMode);
-  document.getElementById('loadFullHistoryBtn').addEventListener('click', loadPhoneLookup);
 
   document.querySelectorAll('#phoneChannelSeg .seg-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -909,6 +962,18 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       btn.classList.add('on');
       _phoneChannelFilter = btn.getAttribute('data-ch') || '';
       renderPhoneResults();
+    });
+  });
+
+  // History window control — expand up to the 12-month retention limit
+  document.querySelectorAll('#phoneWindowSeg .seg-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (_phoneLookupLoading) return;
+      var days = parseInt(btn.getAttribute('data-days'), 10) || _phoneDefaultWindow;
+      document.querySelectorAll('#phoneWindowSeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+      _phoneWindowDays = days;
+      loadPhoneLookup(days);
     });
   });
 
