@@ -358,7 +358,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       <ul>
         <li>Enter the customer's <strong>email address</strong> (required) — this drives lookups across all email-indexed tables.</li>
         <li>Optionally enter a <strong>phone number</strong> — this enables Twilio call, SMS, and transcript lookups. All formats accepted (07xxx, +44xxx, 44xxx).</li>
-        <li>Click <strong>Extract SAR</strong> to run all 12 queries in parallel.</li>
+        <li>Click <strong>Extract SAR</strong> to run all 12 data-source queries (staged to keep the warehouse responsive; failed queries auto-retry).</li>
         <li>Use <strong>Export Full SAR (JSON)</strong> for a complete GDPR-portable data package.</li>
         <li>Use per-tab <strong>Export CSV</strong> for individual data sources.</li>
       </ul>
@@ -584,7 +584,62 @@ function getDateRange(rows, col) {
   return fmt(dates[0]) + ' → ' + fmt(dates[dates.length - 1]);
 }
 
-function runSAR() {
+// Run a single query with retry-on-failure. Transient warehouse/timeout
+// failures (Snowflake warehouse cold-start or API Gateway timeout under
+// concurrency) surface as "Query execution failed" / 500 — retry those.
+function runOneQuery(key, attempt) {
+  attempt = attempt || 0;
+  var q = QUERIES[key];
+  var el = document.getElementById(key + 'Content');
+  var params = {email: _searchEmail};
+  if (q.needsPhone) params.phone_suffix = _phoneSuffix;
+
+  if (el) el.innerHTML = '<div class="data-loading"><div class="spinner"></div>Loading ' + esc(q.label) + (attempt ? '… (retry ' + attempt + ')' : '…') + '</div>';
+
+  return AVDashboard.runQuery(q.name, params).then(function(res) {
+    var rows = res.rows || res.data || (Array.isArray(res) ? res : []);
+    _sarData[key] = rows;
+    _sarMeta[key] = {status:'success', count:rows.length, cached: res.cached !== false};
+    document.getElementById('cnt-' + key).textContent = rows.length;
+    if (el) el.innerHTML = buildTable(rows);
+  }).catch(function(err) {
+    var msg = (err && (err.message || err.error)) ? (err.message || err.error) : String(err);
+    var transient = /execution failed|timeout|timed out|\b50\d\b|\b503\b|throttl|too many/i.test(msg);
+    if (attempt < 2 && transient) {
+      var delay = 2000 * (attempt + 1); // 2s, then 4s — lets the warehouse finish resuming
+      console.warn('[SAR] ' + key + ' transient failure, retrying in ' + delay + 'ms:', msg);
+      return new Promise(function(resolve) { setTimeout(resolve, delay); })
+        .then(function() { return runOneQuery(key, attempt + 1); });
+    }
+    console.error('[SAR] ' + key + ' failed after ' + (attempt + 1) + ' attempt(s):', err);
+    _sarData[key] = [];
+    _sarMeta[key] = {status:'error', error: msg};
+    document.getElementById('cnt-' + key).textContent = '!';
+    if (el) el.innerHTML = '<div class="data-empty" style="color:var(--red)">Error: ' + esc(msg) + '<br><span style="font-size:10px;color:var(--tx3)">Query: ' + esc(q.name) + ' · Check browser console for details</span></div>';
+  });
+}
+
+// Run keys with a bounded concurrency pool (avoids overwhelming the
+// warehouse with all queries at once, which caused parallel timeouts).
+function runPool(keys, limit) {
+  return new Promise(function(resolve) {
+    var i = 0, active = 0, done = 0, total = keys.length;
+    if (!total) return resolve();
+    function next() {
+      while (active < limit && i < total) {
+        var key = keys[i++];
+        active++;
+        runOneQuery(key).then(function() {
+          active--; done++;
+          if (done === total) resolve(); else next();
+        });
+      }
+    }
+    next();
+  });
+}
+
+async function runSAR() {
   var email = document.getElementById('emailInput').value.trim();
   if (!email) {
     document.getElementById('emailInput').focus();
@@ -605,58 +660,39 @@ function runSAR() {
   document.getElementById('panel-overview').style.display = 'block';
   switchTab('overview');
 
+  // Set initial state; collect the queries that will actually run.
+  var toRun = [];
   Object.keys(QUERIES).forEach(function(key) {
     var q = QUERIES[key];
     var el = document.getElementById(key + 'Content');
-    if (el) el.innerHTML = '<div class="data-loading"><div class="spinner"></div>Loading ' + esc(q.label) + '…</div>';
-    document.getElementById('cnt-' + key).textContent = '…';
-
     if (q.needsPhone && !_phoneSuffix) {
       _sarData[key] = [];
       _sarMeta[key] = {status:'skipped', reason:'No phone provided'};
       if (el) el.innerHTML = '<div class="data-empty">Phone number required — not provided</div>';
       document.getElementById('cnt-' + key).textContent = '—';
-      checkAllDone();
       return;
     }
-
-    var params = {email: email};
-    if (q.needsPhone) params.phone_suffix = _phoneSuffix;
-
-    try {
-      var promise = AVDashboard.runQuery(q.name, params);
-      if (!promise || typeof promise.then !== 'function') {
-        throw new Error('runQuery returned non-promise: ' + typeof promise);
-      }
-      promise.then(function(res) {
-        console.log('[SAR] ' + key + ' response:', JSON.stringify(res).substring(0, 500));
-        var rows = res.rows || res.data || (Array.isArray(res) ? res : []);
-        _sarData[key] = rows;
-        _sarMeta[key] = {status:'success', count:rows.length, cached: res.cached !== false};
-        document.getElementById('cnt-' + key).textContent = rows.length;
-        if (el) el.innerHTML = buildTable(rows);
-        checkAllDone();
-      }).catch(function(err) {
-        var errDetail = {message: err.message, status: err.status, statusCode: err.statusCode, code: err.code, name: err.name};
-        try { errDetail.keys = Object.keys(err); } catch(e2) {}
-        try { errDetail.full = JSON.stringify(err); } catch(e2) { errDetail.full = String(err); }
-        console.error('[SAR] ' + key + ' query error (detail):', errDetail);
-        _sarData[key] = [];
-        var errMsg = err.message || err.error || String(err);
-        _sarMeta[key] = {status:'error', error:errMsg};
-        document.getElementById('cnt-' + key).textContent = '!';
-        if (el) el.innerHTML = '<div class="data-empty" style="color:var(--red)">Error: ' + esc(errMsg) + '<br><span style="font-size:10px;color:var(--tx3)">Query: ' + esc(q.name) + ' · Check browser console for details</span></div>';
-        checkAllDone();
-      });
-    } catch(syncErr) {
-      console.error('[SAR] ' + key + ' sync error:', syncErr);
-      _sarData[key] = [];
-      _sarMeta[key] = {status:'error', error:'Sync: ' + String(syncErr.message || syncErr)};
-      document.getElementById('cnt-' + key).textContent = '!';
-      if (el) el.innerHTML = '<div class="data-empty" style="color:var(--red)">Error: ' + esc(syncErr.message || syncErr) + '</div>';
-      checkAllDone();
-    }
+    if (el) el.innerHTML = '<div class="data-loading"><div class="spinner"></div>Queued — ' + esc(q.label) + '…</div>';
+    document.getElementById('cnt-' + key).textContent = '…';
+    toRun.push(key);
   });
+
+  try {
+    if (toRun.length) {
+      // Warm the warehouse with a single lightweight query first (profile if
+      // present). This absorbs the cold-start resume cost; the remaining
+      // queries then run against a warm warehouse with bounded concurrency.
+      var warmIdx = toRun.indexOf('profile');
+      if (warmIdx < 0) warmIdx = 0;
+      var warmKey = toRun.splice(warmIdx, 1)[0];
+      await runOneQuery(warmKey);
+      await runPool(toRun, 3);
+    }
+  } catch (e) {
+    console.error('[SAR] runSAR orchestration error:', e);
+  } finally {
+    checkAllDone();
+  }
 }
 
 function checkAllDone() {
