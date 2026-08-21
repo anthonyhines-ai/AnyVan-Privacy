@@ -8,11 +8,14 @@ One sequential runbook to take the DSR intake form live for **UK customers (publ
 > Freshdesk custom fields — so **Stage 1 is optional and can be skipped**; start at Stage 2.
 > Stage 2 can be largely automated with `workflow/build-formstack-form.js`.
 >
-> **Progress:** Stage 2 is **done** — the form is built in the AnyVanforms account (**id
-> `6559077`**, https://AnyVanforms.formstack.com/forms/anyvan__data_subject_request_dsr_2). Field
-> ids are recorded in `docs/dsr-field-mapping.md` and the form id is set in `workflow/create.sh`.
-> Remaining: finish the builder-only config (region/retention/reCAPTCHA/theme/confirmation email)
-> and review/publish, then Stages 4–8 (workflow → launch).
+> **Progress:** Stage 2 is **largely done** — the form is built in the AnyVanforms account (**id
+> `6559077`**, https://AnyVanforms.formstack.com/forms/anyvan__data_subject_request_dsr_2). The
+> original field ids are recorded in `docs/dsr-field-mapping.md` and the form id is set in
+> `workflow/create.sh`. **Still to do on the form:** run the additive `--form 6559077` apply (with
+> a fresh PAT) to add the DSRR-template-alignment fields — all 8 statutory rights, ID verification,
+> address, third-party contact, declaration — then record their ids (the `new` rows in the mapping
+> doc). After that, finish the builder-only config (region/retention/reCAPTCHA/theme/confirmation
+> email) and review/publish, then Stages 4–8 (workflow → launch).
 
 ```
 Freshdesk fields ──► Formstack form ──► record field ids ──► create workflow (DRY_RUN)
@@ -43,13 +46,25 @@ response and added to the workflow action.
 ---
 
 ## Stage 2 — Build the Formstack form  · owner: Formstack builder
-Detail: `docs/formstack-dsr-build.md`. **Automated route (recommended):**
+Detail: `docs/formstack-dsr-build.md`. `FORMSTACK_TOKEN` is a **V2025 Personal Access Token**
+(`fs_pat_…`) — not an OAuth token, and the API base is `…/api/v2025` (a `…/api/v2` base 401s).
+The PAT pasted during the first build is considered exposed; use a **freshly-rotated** one.
+
+**The form already exists (id `6559077`)** — extend it with the additive updater rather than
+recreating it (a full create would duplicate every field):
 ```bash
-FORMSTACK_TOKEN=<your oauth token> node workflow/build-formstack-form.js
+node workflow/build-formstack-form.js --form 6559077 --dry-run   # preview the additions
+FORMSTACK_TOKEN=<fresh fs_pat_...> node workflow/build-formstack-form.js --form 6559077
+```
+This adds only the new DSRR-alignment fields and refreshes the request-type options; **record the
+new field ids in `docs/dsr-field-mapping.md` afterwards** (the rows marked `new`).
+
+**Building a fresh form instead?** Full create (prints the whole field-id map):
+```bash
+FORMSTACK_TOKEN=<fresh fs_pat_...> node workflow/build-formstack-form.js
 # preview first with:  node workflow/build-formstack-form.js --dry-run
 ```
-This creates the form with all fields + conditional logic and **prints the field-id map**. Then
-finish in the builder:
+Then finish in the builder:
 1. Set the four `sec_*` sections to **"Start a New Page"** for the 4-step layout.
 2. Confirm the third-party **file upload** (PDF/JPG/PNG, 10MB/file) and the two hidden fields
    `source` + `agent` (for the admin entry point).

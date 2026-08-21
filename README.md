@@ -3,7 +3,12 @@
 Source-of-truth for AnyVan's privacy tooling — starting with the **Data Subject
 Request (DSR) intake form** and its Freshdesk integration.
 
-## What's here
+## Read first
+
+**`docs/conventions.md`** — the consolidated, hard-won conventions and gotchas (Formstack V2025
+API, number/date formatting, Freshdesk `cf_*` caveats, the workflow-system). Read it before
+touching the form, the builder, or the workflow. `CLAUDE.md` carries the same guardrails plus the
+ways-of-working lessons and is auto-loaded each session.
 
 ## Direction
 
@@ -19,7 +24,7 @@ and is parked (not deployed).
 | `docs/go-live-guide.md` | **Start here** — the end-to-end, stage-by-stage runbook (owners + commands + checkpoints) to take the form live. |
 | `docs/formstack-dsr-build.md` | **Build spec** for the DSR form in Formstack (pages, conditional logic, file upload, EU region/retention/spam, two entry points). |
 | `docs/formstack-to-freshdesk-workflow.md` | **Runbook** to wire the Formstack form → workflow-system → Freshdesk. |
-| `workflow/build-formstack-form.js` | Script that **creates the Formstack form** (fields + conditional logic) via the Formstack v2 API and prints the field-id map. Runs `--dry-run` with no token. |
+| `workflow/build-formstack-form.js` | Script that **builds/updates the Formstack form** (fields + conditional logic) via the Formstack **V2025** API and prints the field-id map. Supports `--dry-run` (no token), a full create, and an additive `--form <id>` mode for the live form. |
 | `workflow/` | The workflow definition: `actions.json`, `config_prompt.md`, `user_prompt.md`, `create.sh`. |
 | `docs/dsr-field-mapping.md` | Single source of truth: form question → Formstack field id → Freshdesk field/tag. |
 | `docs/freshdesk-custom-fields.md` | The `cf_*` custom fields to create in Freshdesk admin (and how to confirm their live keys). |
@@ -27,6 +32,9 @@ and is parked (not deployed).
 | `backend/` | **Superseded** Lambda (Freshdesk ticket creator) + SAM template + tests. Kept as reference/fallback; not deployed in the Formstack direction. See `docs/backend-runbook.md`. |
 | `docs/public-hosting.md` | Hosting decision (Formstack) + the rejected self-hosted alternative. |
 | `docs/dsr-intake-form-handoff.md` | Original handoff notes describing the form. |
+| `docs/conventions.md` | **Read first** — consolidated conventions & gotchas (V2025 API, number/date formatting, Freshdesk `cf_*`, workflow-system). |
+| `CLAUDE.md` | Repo orientation, guardrails, and ways-of-working lessons; auto-loaded each session. |
+| `skills/anyvan-formstack-freshdesk/` | Reusable, org-shareable skill distilled from `docs/conventions.md` (generalised beyond DSR). See `skills/README.md`. |
 
 ## Status
 
@@ -34,8 +42,11 @@ and is parked (not deployed).
   UK-PII processor — no procurement gate.
 - **Formstack form:** **built** in the AnyVanforms account — id `6559077`
   (`https://AnyVanforms.formstack.com/forms/anyvan__data_subject_request_dsr_2`), created by
-  `workflow/build-formstack-form.js`. Pending: builder config (EU/UK region, retention,
-  reCAPTCHA, theme, confirmation email) + review/publish.
+  `workflow/build-formstack-form.js`, and **aligned to the official DSRR template** (all 8
+  statutory rights + Marketing Opt-Out, ID verification, address, third-party contact,
+  declaration). Pending: run the additive `--form 6559077` apply (fresh PAT) to add those
+  alignment fields to the live form + record their ids, then builder config (EU/UK region,
+  retention, reCAPTCHA, theme, confirmation email) + review/publish.
 - **Custom form:** live at `https://dashboards.anyvan.com/operations/dsr-intake-form`
   (internal, `@anyvan.com` login), in **test mode**. Checkbox bug fixed and deployed (v1).
   Interim staff tool until the Formstack form is live.
