@@ -244,7 +244,8 @@ FROM CONFORMED.PRODUCTION.MASTER_PRE_LISTING WHERE USER_EMAIL ILIKE 'jonathanjam
 - **Numbers get corrected.** A number no longer on the account (`DIM_USER_CUSTOMER` / `ADDRESS`
   return 0) can still have historic communications — always search the raw comms tables by the
   number itself, not just the account.
-- Times are as stored in the warehouse (UTC); convert to local before sharing externally.
+- **Timezone — all warehouse timestamps here are UTC** (raw application tables included; verified in §8).
+  On UK dates in BST (late-Mar → late-Oct), local time = UTC+1. Convert before sharing externally.
 
 ---
 
@@ -264,15 +265,19 @@ FROM CONFORMED.PRODUCTION.MASTER_PRE_LISTING WHERE USER_EMAIL ILIKE 'jonathanjam
 Follow-up questions during review: **where did we get `07736348212` from** (given listing `9593885`
 is the mother's booking), and **who edited the number and when.**
 
+> 🕒 **All timestamps here are UTC** (verified — on booking `9593885`, `LISTING.CREATED_AT` = `15:17:27`
+> is 49 s before the booking-confirmation email at `15:18:16 Z`, so the raw application tables are UTC,
+> not UK local). On 21 Aug 2026, BST = UTC+1, so the correction time **`22:17:51` UTC = `23:17:51` BST**.
+
 ### 8.1 Source — a legacy account-profile number, not a booking entry
 
 `07736348212` is a contact number stored on the **customer's AnyVan account** (`HARMONISED.PRODUCTION.USER_PHONE_NUMBER`,
 user `3609439`) — **not** taken from the mother's booking. Two numbers are linked to the account:
 
-| Number | Linked to account (`USER_PHONE_NUMBER.CREATED_AT`) | Flags |
+| Number | Linked to account (`USER_PHONE_NUMBER.CREATED_AT`, UTC) | Flags |
 |---|---|---|
 | **`+447736348212`** (target) | **2018-10-14 15:56** | `IS_CONTACT` |
-| `+447545703175` (mother's correct number) | **2026-08-21 22:17:51** | `IS_CONTACT`, `IS_SMS`, `IS_ALTERNATIVE` |
+| `+447545703175` (mother's correct number) | **2026-08-21 22:17:51** (= 23:17:51 BST) | `IS_CONTACT`, `IS_SMS`, `IS_ALTERNATIVE` |
 
 - The number has been the account's contact number since **October 2018**, and outbound comms resolve
   the recipient from this account/profile number (`RESOLVED_USER_PHONE`) — which is why both bookings'
@@ -288,11 +293,11 @@ user `3609439`) — **not** taken from the mother's booking. Two numbers are lin
 
 ### 8.2 Who edited it, and when
 
-| Event | When | Actor (per available data) |
+| Event | When (UTC) | Actor (per available data) |
 |---|---|---|
 | `07736348212` linked to the account | **2018-10-14** | **Not recorded** — `USER_PHONE_NUMBER` has no actor column; predates warehouse action logs |
 | `07736348212` written to HubSpot contact `43728856` | 2025-03-08 19:11 | **Automated** — `SOURCE = INTEGRATION` (AnyVan→HubSpot sync, id `1298926`), then workflow auto-validation (Twilio lookup: EE mobile). No human. |
-| `07545703175` added to the account (the correction) | **2026-08-21 22:17:51** | **No named editor in the data** (see below) |
+| `07545703175` added to the account (the correction) | **2026-08-21 22:17:51** (23:17:51 BST) | **No named editor in the data** (see below) |
 
 To attribute the 21 Aug correction, every warehouse actor log was checked — **none records an edit at that time:**
 - `LISTING_ADMIN_ACTION_LOG` (9593885): no action on 21 Aug — only agents *opening* the listing on 24 Aug
@@ -306,7 +311,7 @@ correction was a **customer self-serve / system update, not a CS-agent edit**, a
 legacy 2018 account value propagated automatically — not an agent typo.
 
 > A definitively **named** actor for the 22:17 change is **not** in the warehouse; it would sit in the AnyVan
-> backend user-service audit (who authenticated / changed the profile at `2026-08-21 22:17:51`) — retrievable
+> backend user-service audit (who authenticated / changed the profile at `2026-08-21 22:17:51` UTC) — retrievable
 > by Engineering/Ops — or in a Freshdesk/CS ticket from that evening if a customer contact prompted it.
 
 ### 8.3 Provenance tables (reusable)
