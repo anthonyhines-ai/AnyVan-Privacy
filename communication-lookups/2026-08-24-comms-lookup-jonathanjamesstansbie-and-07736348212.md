@@ -101,6 +101,8 @@ sender and recipient — i.e. WhatsApp, not SMS. There are **no plain-SMS** mess
   (Twilio Conversation `CH127cf778a4c443f9aad159b6d72131d3`) — the same messages, **not** additional ones.
 - No human-agent WhatsApp: `MART_SALES_OPS.PRODUCTION.FACT_WHATSAPP_ACTIVITY` (agent-handled
   conversations) returns 0 for this number — consistent with all traffic being automated.
+- A later, **separate** booking (`9594495`, placed the same evening while signed in) sent its own
+  "David" WhatsApp — correctly to `07545703175` — at 2026-08-21 21:28:02 UTC. See §8.2.
 
 ### 3.4 📞 Phone calls — `07736348212`
 
@@ -142,7 +144,7 @@ together, both trace to the **Stansbie household in Darlington**:
 | Party | Details |
 |---|---|
 | **Account holder** | **Corrin Stansbie** — user `3609439`, email `edwinastansbie@gmail.com`, **current phone `07545703175`**. HubSpot contact `43728856` (lifecycle *evangelist* / repeat customer; last contacted 2026-08-24). |
-| **`07736348212`** | The account holder's **son's** number (per his own inbound WhatsApp #2). Was stored as the booking contact number in 2025 and again for the Aug-2026 booking; **since replaced by `07545703175`.** |
+| **`07736348212`** | The account holder's **son's** number (per his own inbound WhatsApp #2). Was the legacy contact number stored on the account; **since replaced by `07545703175`.** |
 | **`jonathanjamesstansbie@gmail.com`** | Almost certainly the same son (Jonathan James Stansbie). Used once to request an online quote (2025-05-05, expired). Sparse HubSpot contact `119375817269`, no engagements. |
 
 **Bookings under account `3609439`:**
@@ -151,10 +153,11 @@ together, both trace to the **Stansbie household in Darlington**:
 |---|---|---|---|---|
 | `8750349` (AV8750349) | 18 Campion Road, **DL1 2YZ** → 41 Wordsworth Road, **DL1 5BE** (Darlington) | created 2025-03-03; pickup 2025-03-13 | **Cancelled** | "Miss Edwina" |
 | `9593885` | 41 Wordsworth Road, **DL1 5BE** → 45 Zetland Street, **DL3 0NF** (Darlington) | created 2026-08-21; pickup 2026-08-26 | **Active** | "Corrin Stansbie" |
+| `9594495` | (later booking placed the same evening, signed in — updated the account number; see §8.2) | created 2026-08-21 21:17 UTC | — | — |
 
 The WhatsApp thread in §3.3 maps directly onto these: messages #1–#5 relate to the
 2025 booking `8750349`, message #6 to the 2026 booking `9593885`. The current linked
-address records for both listings now hold `07545703175`, confirming the number correction.
+address records now hold `07545703175`, confirming the number correction.
 
 ---
 
@@ -164,11 +167,11 @@ address records for both listings now hold `07545703175`, confirming the number 
    messages containing another person's booking details (Corrin Stansbie's move) to
    `07736348212`. The recipient replied that it was the **wrong number** and that it belonged
    to **"her son"**, supplying the correct number `07545703175`.
-2. **Repeat mis-contact in 2026.** Despite the 2025 correction, `07736348212` was still the
+2. **Repeat mis-contact in 2026.** Despite the 2025 flag, `07736348212` was still the
    number on the account for the **August 2026** booking (`9593885`) and received a further
-   automated WhatsApp on **2026-08-21**. The account/address has since been corrected to
-   `07545703175`. Worth confirming with Ops when/why the number persisted between the 2025
-   flag and the 2026 correction. **(Now answered — see §8.)**
+   automated WhatsApp on **2026-08-21**. Root cause and correction are set out in §8 —
+   the initial booking was placed signed out (so it could not overwrite the saved account
+   number), and a later signed-in booking that evening corrected it to `07545703175`.
 3. **Email never contacted.** `jonathanjamesstansbie@gmail.com` generated a single online quote
    (2025-05-05) that expired; **no email, SMS, WhatsApp or call was ever sent to it.**
 4. **All WhatsApp traffic was automated** (bot "David" intro, CS auto-menu, pre-move reminders)
@@ -244,8 +247,9 @@ FROM CONFORMED.PRODUCTION.MASTER_PRE_LISTING WHERE USER_EMAIL ILIKE 'jonathanjam
 - **Numbers get corrected.** A number no longer on the account (`DIM_USER_CUSTOMER` / `ADDRESS`
   return 0) can still have historic communications — always search the raw comms tables by the
   number itself, not just the account.
-- **Timezone — all warehouse timestamps here are UTC** (raw application tables included; verified in §8).
-  On UK dates in BST (late-Mar → late-Oct), local time = UTC+1. Convert before sharing externally.
+- **Timezone — mixed by table.** Comms/booking tables (`TWILIO_MESSAGE`, `EVENTS_MESSAGING_MESSAGE`, `LISTING`,
+  `PRE_LISTING`) are **UTC**; `USER_PHONE_NUMBER` is **UK local (BST in summer)** — see §8. Confirm a table's
+  basis before quoting a time, and convert before sharing externally.
 
 ---
 
@@ -265,54 +269,55 @@ FROM CONFORMED.PRODUCTION.MASTER_PRE_LISTING WHERE USER_EMAIL ILIKE 'jonathanjam
 Follow-up questions during review: **where did we get `07736348212` from** (given listing `9593885`
 is the mother's booking), and **who edited the number and when.**
 
-> 🕒 **All timestamps here are UTC** (verified — on booking `9593885`, `LISTING.CREATED_AT` = `15:17:27`
-> is 49 s before the booking-confirmation email at `15:18:16 Z`, so the raw application tables are UTC,
-> not UK local). On 21 Aug 2026, BST = UTC+1, so the correction time **`22:17:51` UTC = `23:17:51` BST**.
+> 🕒 **Timezone — mixed by table, so read each one carefully.** The comms & booking tables (`TWILIO_MESSAGE`,
+> `EVENTS_MESSAGING_MESSAGE`, `LISTING`, `PRE_LISTING`) are **UTC** (verified: on booking `9593885`,
+> `LISTING.CREATED_AT` `15:17:27` is 49 s before the confirmation email at `15:18:16 Z`).
+> **`USER_PHONE_NUMBER.CREATED_AT` is UK local time (BST in summer)** — verified in §8.2: its account-number
+> correction reads `22:17:51`, which is **BST = `21:17:51` UTC**, matching the subsequent signed-in booking
+> `9594495` (`21:17:52` UTC) to the second. *(Correction: an earlier draft of this note mislabelled that
+> `22:17:51` value as UTC / 23:17 BST — it is 22:17 BST = 21:17 UTC.)*
 
 ### 8.1 Source — a legacy account-profile number, not a booking entry
 
 `07736348212` is a contact number stored on the **customer's AnyVan account** (`HARMONISED.PRODUCTION.USER_PHONE_NUMBER`,
 user `3609439`) — **not** taken from the mother's booking. Two numbers are linked to the account:
 
-| Number | Linked to account (`USER_PHONE_NUMBER.CREATED_AT`, UTC) | Flags |
+| Number | Linked to account (`USER_PHONE_NUMBER.CREATED_AT`, **UK local / BST**) | Flags |
 |---|---|---|
-| **`+447736348212`** (target) | **2018-10-14 15:56** | `IS_CONTACT` |
-| `+447545703175` (mother's correct number) | **2026-08-21 22:17:51** (= 23:17:51 BST) | `IS_CONTACT`, `IS_SMS`, `IS_ALTERNATIVE` |
+| **`+447736348212`** (target) | **2018-10-14 15:56** (GMT) | `IS_CONTACT` |
+| `+447545703175` (mother's correct number) | **2026-08-21 22:17:51 BST** (= 21:17:51 UTC) | `IS_CONTACT`, `IS_SMS`, `IS_ALTERNATIVE` |
 
 - The number has been the account's contact number since **October 2018**, and outbound comms resolve
-  the recipient from this account/profile number (`RESOLVED_USER_PHONE`) — which is why both bookings'
-  automated messages went to it.
+  the recipient from this account/profile number (`RESOLVED_USER_PHONE`) — which is why the signed-out
+  booking's automated messages went to it.
 - **Every booking artefact held the _correct_ number `07545703175`:** the quote/checkout
-  (`PRE_LISTING_PHONE_NUMBER`, all 7 quote iterations across 2025 + 2026) and the collection/delivery
+  (`PRE_LISTING_PHONE_NUMBER`, all quote iterations across 2025 + 2026) and the collection/delivery
   address (`ADDRESS`). The wrong number was **never** entered on a booking — it came solely from the
   stale account profile. The old number `07736348212` is also **still linked** to the account (not removed).
 
-> **Root cause:** customer comms resolve the recipient from the **account-profile phone**, not the number
-> entered on the booking. A stale 2018 profile number therefore overrode the correct booking contact
-> number — across two bookings and despite the March-2025 wrong-number flag.
+> **Root cause:** outbound customer comms resolve the recipient from the **account-profile phone**, not the
+> number entered on the booking — so a stale 2018 profile number overrode the correct booking contact number,
+> until the account profile itself was updated by a later signed-in booking (see §8.2).
 
-### 8.2 Who edited it, and when
+### 8.2 Who changed it, and when — confirmed
 
-| Event | When (UTC) | Actor (per available data) |
+The account-number correction was **the customer's own doing, through a later booking made while signed in** —
+not a CS-agent edit and not a manual profile change. Confirmed sequence for 21 Aug 2026 (booking/comms times
+**UTC**; `USER_PHONE_NUMBER` time **BST**):
+
+| Event | Time | Detail |
 |---|---|---|
-| `07736348212` linked to the account | **2018-10-14** | **Not recorded** — `USER_PHONE_NUMBER` has no actor column; predates warehouse action logs |
-| `07736348212` written to HubSpot contact `43728856` | 2025-03-08 19:11 | **Automated** — `SOURCE = INTEGRATION` (AnyVan→HubSpot sync, id `1298926`), then workflow auto-validation (Twilio lookup: EE mobile). No human. |
-| `07545703175` added to the account (the correction) | **2026-08-21 22:17:51** (23:17:51 BST) | **No named editor in the data** (see below) |
+| `07736348212` linked to the account | **2018-10-14** | Legacy contact number since account setup; actor not in warehouse. |
+| `07736348212` synced into HubSpot `43728856` | 2025-03-08 19:11 UTC | Automated `SOURCE = INTEGRATION` (id `1298926`) + workflow validation. No human. |
+| **Initial** booking `9593885` placed **signed out** | **15:17:52 UTC** (quote `29590468` 15:09, blank `USER_ID` = guest) | Correct number captured on the booking's collection/delivery contact, but a signed-out booking **cannot write back to the account profile** (security), so the stale account number stayed. |
+| → its automated comms | 15:18–15:27 UTC | Resolved from the **account** number → sent to the old `07736348212`. |
+| **Subsequent** booking `9594495` placed **signed in** | **21:17:52 UTC** (`USER_ID 3609439`) | Being authenticated, this **updated the account's primary contact number** to `07545703175` (`USER_PHONE_NUMBER` `22:17:51` BST = `21:17:51` UTC — same second). |
+| → its automated comms | 21:28:02 UTC | Resolved from the now-updated account number → correctly sent to `07545703175`. |
 
-To attribute the 21 Aug correction, every warehouse actor log was checked — **none records an edit at that time:**
-- `LISTING_ADMIN_ACTION_LOG` (9593885): no action on 21 Aug — only agents *opening* the listing on 24 Aug
-  plus one allocation; nothing at 22:17.
-- `FCT_LISTING_EDITS_ALL` (9593885): only the **customer** (Corrin Stansbie, self-serve) editing *items* on
-  **23 Aug** — and this log does not track contact-number fields.
-- `USER_LOG` (user 3609439): no rows in the 20–25 Aug window.
-
-`USER_PHONE_NUMBER` stores **only when** a number was linked, not who linked it. On the evidence the
-correction was a **customer self-serve / system update, not a CS-agent edit**, and the original number was a
-legacy 2018 account value propagated automatically — not an agent typo.
-
-> A definitively **named** actor for the 22:17 change is **not** in the warehouse; it would sit in the AnyVan
-> backend user-service audit (who authenticated / changed the profile at `2026-08-21 22:17:51` UTC) — retrievable
-> by Engineering/Ops — or in a Freshdesk/CS ticket from that evening if a customer contact prompted it.
+This matches the operational explanation from AnyVan Privacy/Ops and is corroborated end-to-end in the data: the
+signed-out initial booking couldn't overwrite the saved number; the later signed-in booking did. The empty
+warehouse actor logs (`LISTING_ADMIN_ACTION_LOG`, `FCT_LISTING_EDITS_ALL`, `USER_LOG` — no agent action at the
+update time) are therefore expected — **no agent touched it**; the customer's own signed-in booking made the change.
 
 ### 8.3 Provenance tables (reusable)
 
@@ -320,9 +325,10 @@ legacy 2018 account value propagated automatically — not an agent typo.
 |---|---|---|
 | What phone(s) are on the account & when added | `HARMONISED.PRODUCTION.USER_PHONE_NUMBER` ⋈ `PHONE_NUMBER` | `USER_ID`, `PHONE_NUMBER_ID`, `CREATED_AT`, `RAW_INPUT`, `IS_CONTACT`/`IS_SMS`/`IS_ALTERNATIVE`; `FULL_NUMBER` |
 | What number the customer entered at quote | `HARMONISED.PRODUCTION.PRE_LISTING_PHONE_NUMBER` ⋈ `PHONE_NUMBER` | `PRE_LISTING_ID`, `PHONE_NUMBER_ID`, `ADMIN_ID` (who entered), `CREATED_AT` |
+| Login state of a booking (guest vs signed in) | `HARMONISED.PRODUCTION.PRE_LISTING` / `LISTING` | `USER_ID` (blank = not signed in), `USER_EMAIL`, `CREATED_AT` |
 | Who edited a booking (and how) | `MART_SALES_OPS.PRODUCTION.FCT_LISTING_EDITS_ALL` | `CHANGED_BY`, `USER_NAME`, `USER_TYPE`, `IS_ADMIN`/`IS_CUSTOMER`, `CHANGE_TYPE`, `DATE_CHANGED` (no contact-number field) |
 | Admin actions on a listing | `HARMONISED.PRODUCTION.LISTING_ADMIN_ACTION_LOG` | `LISTING_ID`, `ACTION`, `USER_ID` (admin), `CREATED_AT`, `DETAILS` |
 | HubSpot property change source/actor | `HARMONISED.PRODUCTION.HUBSPOT_CONTACT_PROPERTY_HISTORY` | `CONTACT_ID`, `NAME`, `VALUE`, `SOURCE`, `SOURCE_ID`, `TIMESTAMP` |
 
-> ⚠️ No warehouse table attributes an AnyVan **account phone** change to a named person — that audit lives in
-> the backend user-service, not Snowflake.
+> ⚠️ `USER_PHONE_NUMBER` records **when** a number was linked but has no actor column; attribution here comes
+> from correlating that timestamp with the signed-in booking that triggered it, not from a named-editor field.
