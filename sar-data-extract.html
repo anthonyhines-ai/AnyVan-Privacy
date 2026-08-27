@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AnyVan | SAR Data Extract</title>
+<meta name="av-dashboard-api" content="https://63g6ly45b0.execute-api.eu-west-1.amazonaws.com/production">
+<script src="https://assets.anyvan.com/tracking/av-track.7fa8936e.js"></script>
+<script>window.av && window.av.configureTracking && window.av.configureTracking({ baseUrl: 'https://www.anyvan.com' })</script>
+<script src="https://assets.anyvan.com/av-dashboards/av-dashboard.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f5f5f7;--sf:#ffffff;--sf2:#f5f5f7;--bd:#d2d2d7;--bd2:#c7c7cc;
+  --tx:#1d1d1f;--tx2:#6e6e73;--tx3:#86868b;--ind:#5a5fcf;--red:#d93025;
+  --amb:#c07a00;--grn:#1a7f37;--pur:#7c3aed;--yel:#a16207;--ora:#c2410c;
+}
+[data-theme="dark"] {
+  --bg:#0c0e16;--sf:#161a24;--sf2:#1c2030;--bd:#2a2f40;--bd2:#353a4e;
+  --tx:#eaedf2;--tx2:#9da4b4;--tx3:#6b7280;--ind:#6366f1;--red:#ef4444;
+  --amb:#f59e0b;--grn:#22c55e;--pur:#a855f7;--yel:#eab308;--ora:#f97316;
+}
+*,*::before,*::after{transition:background-color .35s ease,color .28s ease,border-color .35s ease,box-shadow .35s ease;box-sizing:border-box;}
+body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;-webkit-font-smoothing:antialiased;}
+.hdr{position:sticky;top:0;z-index:40;background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:56px;}
+.hdr-left{display:flex;align-items:center;gap:12px;}
+.hdr-title{font-size:22px;font-weight:900;color:var(--tx);}
+.hdr-title span{color:var(--tx3);font-weight:400;}
+.hdr-right{display:flex;align-items:center;gap:12px;}
+.hdr-meta{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
+.hdr-meta-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700;}
+.hdr-meta-value{font-size:11px;color:var(--tx2);}
+.hdr-divider{width:1px;height:32px;background:var(--bd);}
+.theme-toggle{width:32px;height:32px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.theme-toggle:hover{border-color:var(--ind);}
+.btn-logout{padding:6px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:12px;font-weight:700;cursor:pointer;}
+.btn-logout:hover{border-color:var(--red);color:var(--red);}
+
+.info-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--bd);background:var(--sf2);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-weight:700;}
+.info-btn:hover,.info-btn-active{border-color:var(--ind);color:var(--ind);}
+
+.search-section{background:var(--sf);border-bottom:1px solid var(--bd);padding:20px;position:sticky;top:56px;z-index:35;}
+.search-card{max-width:800px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+.search-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.search-field{display:flex;flex-direction:column;gap:4px;}
+.search-field label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700;}
+.search-field input{padding:10px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:14px;font-weight:700;font-family:'Lato',sans-serif;width:320px;}
+.search-field input:focus{border-color:var(--ind);outline:none;box-shadow:0 0 0 3px rgba(99,102,241,.12);}
+.search-field input::placeholder{color:var(--tx3);font-weight:400;}
+.search-field.phone input{width:220px;}
+.btn-search{padding:10px 24px;border-radius:8px;border:1px solid var(--ind);background:var(--ind);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;white-space:nowrap;height:42px;}
+.btn-search:hover{opacity:.9;}
+.btn-search:disabled{opacity:.5;cursor:not-allowed;}
+.btn-clear{padding:10px 16px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:12px;font-weight:700;cursor:pointer;height:42px;display:none;}
+.btn-clear:hover{border-color:var(--red);color:var(--red);}
+.search-hint{font-size:11px;color:var(--tx3);line-height:1.5;}
+
+.main-tabs{display:flex;gap:0;padding:0 20px;background:var(--sf);border-bottom:1px solid var(--bd);position:sticky;top:148px;z-index:34;overflow-x:auto;}
+.main-tab{padding:12px 18px;font-size:12px;font-weight:700;color:var(--tx2);cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.main-tab:hover{color:var(--ind);}
+.main-tab.active{color:var(--ind);border-bottom-color:var(--ind);}
+.tab-count{font-size:10px;font-weight:400;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:1px 7px;color:var(--tx3);}
+.main-tab.active .tab-count{background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.2);color:var(--ind);}
+
+.main{max-width:1600px;margin:0 auto;padding:20px 20px 60px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;}
+.kpi-tile{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;}
+.kpi-label{font-size:9px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:var(--tx3);margin-bottom:6px;}
+.kpi-value{font-size:26px;font-weight:900;line-height:1;color:var(--tx);}
+.kpi-sub{font-size:11px;color:var(--tx2);margin-top:3px;}
+
+.data-section{background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.data-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bd);background:var(--sf2);}
+.data-title{font-size:13px;font-weight:700;color:var(--tx);}
+.data-count{font-size:11px;color:var(--tx3);}
+.data-actions{display:flex;gap:8px;}
+.btn-export{padding:4px 14px;border-radius:6px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:11px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;}
+.btn-export:hover{border-color:var(--ind);color:var(--ind);}
+
+.data-table-wrap{overflow-x:auto;max-height:600px;overflow-y:auto;}
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table thead{position:sticky;top:0;z-index:2;}
+.data-table thead th{background:var(--sf2);padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--tx3);border-bottom:1px solid var(--bd);white-space:nowrap;}
+.data-table tbody tr{border-bottom:1px solid var(--bd);}
+.data-table tbody tr:hover{background:rgba(99,102,241,.04);}
+.data-table td{padding:7px 10px;vertical-align:middle;white-space:nowrap;max-width:300px;overflow:hidden;text-overflow:ellipsis;}
+.data-table td.wrap{white-space:normal;max-width:400px;}
+
+.data-empty{text-align:center;padding:50px;color:var(--tx3);font-size:13px;}
+.data-loading{text-align:center;padding:40px;color:var(--tx3);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:12px;}
+.spinner{width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--ind);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.status-chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+.status-success{background:rgba(26,127,55,.1);color:var(--grn);}
+.status-pending{background:rgba(192,122,0,.1);color:var(--amb);}
+.status-failed{background:rgba(217,48,37,.1);color:var(--red);}
+.status-info{background:rgba(99,102,241,.1);color:var(--ind);}
+
+.prompt-screen{display:flex;align-items:center;justify-content:center;min-height:400px;flex-direction:column;gap:16px;color:var(--tx3);}
+.prompt-icon{font-size:48px;opacity:.3;}
+.prompt-text{font-size:14px;font-weight:700;}
+.prompt-sub{font-size:12px;}
+
+.export-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;margin-bottom:16px;}
+.export-bar-label{font-size:11px;font-weight:700;color:var(--tx2);}
+.btn-export-all{padding:8px 20px;border-radius:8px;border:1px solid var(--ind);background:rgba(99,102,241,.06);color:var(--ind);font-size:12px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;}
+.btn-export-all:hover{background:var(--ind);color:#fff;}
+.btn-export-all:disabled{opacity:.5;cursor:not-allowed;}
+
+.loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.loading-overlay.hidden{display:none;}
+.loading-text{font-size:14px;color:var(--tx2);font-weight:700;}
+
+.info-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;justify-content:flex-end;backdrop-filter:blur(2px);}
+.info-overlay.open{display:flex;}
+.info-panel{width:560px;max-width:96vw;height:100vh;overflow-y:auto;background:var(--sf);border-left:1px solid var(--bd);animation:drawerIn .22s ease;padding:24px;}
+@keyframes drawerIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.info-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--tx3);}
+.info-close:hover{border-color:var(--red);color:var(--red);}
+.info-section{margin-bottom:24px;}
+.info-section h3{font-size:14px;font-weight:900;margin:0 0 8px;color:var(--tx);}
+.info-section p,.info-section li{font-size:13px;color:var(--tx2);line-height:1.6;margin:0 0 6px;}
+.info-section ul{padding-left:18px;margin:0;}
+.info-accordion{border:1px solid var(--bd);border-radius:8px;margin-bottom:8px;overflow:hidden;}
+.info-accordion-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--sf2);font-size:12px;font-weight:700;color:var(--tx);}
+.info-accordion-header:hover{color:var(--ind);}
+.info-accordion-body{display:none;padding:12px 14px;font-size:12px;color:var(--tx2);line-height:1.6;border-top:1px solid var(--bd);}
+.info-accordion.open .info-accordion-body{display:block;}
+.info-accordion-chevron{transition:transform .2s;}
+.info-accordion.open .info-accordion-chevron{transform:rotate(180deg);}
+
+@media(max-width:768px){
+  .search-row{flex-direction:column;align-items:stretch;}
+  .search-field input{width:100%;}
+  .kpi-strip{grid-template-columns:repeat(2,1fr);}
+  .main-tabs{padding:0 10px;}
+  .main-tab{padding:10px 12px;font-size:11px;}
+}
+</style>
+</head>
+<body av-track-source="dashboard-sar-data-extract">
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Initialising SAR Data Extract…</div>
+</div>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-title">AnyVan <span>|</span> SAR Data Extract</div>
+    <button class="info-btn" id="infoBtn" onclick="toggleInfo()">i</button>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-meta">
+      <span class="hdr-meta-label">Last Updated</span>
+      <span class="hdr-meta-value" id="hdrUpdated">—</span>
+    </div>
+    <div class="hdr-divider"></div>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☽</button>
+    <button class="btn-logout" onclick="AVDashboard.logout()">Logout</button>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="search-section" id="searchSection">
+  <div class="search-card">
+    <div class="search-row">
+      <div class="search-field">
+        <label>Customer Email (required)</label>
+        <input type="email" id="emailInput" placeholder="customer@example.com" autofocus>
+      </div>
+      <div class="search-field phone">
+        <label>Phone (optional)</label>
+        <input type="tel" id="phoneInput" placeholder="07xxx xxxxxx">
+      </div>
+      <button class="btn-search" id="btnSearch" onclick="runSAR()">Extract SAR</button>
+      <button class="btn-clear" id="btnClear" onclick="clearAll()">Clear</button>
+    </div>
+    <div class="search-hint">
+      Enter the customer's email to pull all personal data across AnyVan systems. Phone number enables call, SMS, and transcript lookups. All UK/ES/FR formats accepted.
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="main-tabs" id="tabBar" style="display:none;">
+  <div class="main-tab active" data-tab="overview" onclick="switchTab('overview')">Overview</div>
+  <div class="main-tab" data-tab="profile" onclick="switchTab('profile')">Profile <span class="tab-count" id="cnt-profile">0</span></div>
+  <div class="main-tab" data-tab="listings" onclick="switchTab('listings')">Listings <span class="tab-count" id="cnt-listings">0</span></div>
+  <div class="main-tab" data-tab="payments" onclick="switchTab('payments')">Payments <span class="tab-count" id="cnt-payments">0</span></div>
+  <div class="main-tab" data-tab="stripe" onclick="switchTab('stripe')">Stripe <span class="tab-count" id="cnt-stripe">0</span></div>
+  <div class="main-tab" data-tab="calls" onclick="switchTab('calls')">Calls <span class="tab-count" id="cnt-calls">0</span></div>
+  <div class="main-tab" data-tab="sms" onclick="switchTab('sms')">SMS <span class="tab-count" id="cnt-sms">0</span></div>
+  <div class="main-tab" data-tab="transcripts" onclick="switchTab('transcripts')">Transcripts <span class="tab-count" id="cnt-transcripts">0</span></div>
+  <div class="main-tab" data-tab="emails" onclick="switchTab('emails')">Emails <span class="tab-count" id="cnt-emails">0</span></div>
+  <div class="main-tab" data-tab="freshdesk" onclick="switchTab('freshdesk')">Freshdesk <span class="tab-count" id="cnt-freshdesk">0</span></div>
+  <div class="main-tab" data-tab="comms" onclick="switchTab('comms')">Comms <span class="tab-count" id="cnt-comms">0</span></div>
+  <div class="main-tab" data-tab="feedback" onclick="switchTab('feedback')">Feedback <span class="tab-count" id="cnt-feedback">0</span></div>
+  <div class="main-tab" data-tab="prelisting" onclick="switchTab('prelisting')">Pre-Listing <span class="tab-count" id="cnt-prelisting">0</span></div>
+</div>
+
+<!-- Main content -->
+<div class="main" id="mainContent">
+  <!-- Prompt screen (before search) -->
+  <div class="prompt-screen" id="promptScreen">
+    <div class="prompt-icon">🔒</div>
+    <div class="prompt-text">Subject Access Request Data Extract</div>
+    <div class="prompt-sub">Enter a customer email above to extract all personal data held across AnyVan systems.</div>
+  </div>
+
+  <!-- Overview tab -->
+  <div class="tab-panel active" id="panel-overview" style="display:none;">
+    <div class="export-bar">
+      <div class="export-bar-label">GDPR Article 20 — Data Portability</div>
+      <div style="flex:1"></div>
+      <button class="btn-export-all" id="btnExportJSON" onclick="exportAllJSON()">Export Full SAR (JSON)</button>
+      <button class="btn-export" onclick="exportAllCSV()">Export All Tables (CSV)</button>
+    </div>
+    <div class="kpi-strip" id="overviewKPIs"></div>
+    <div class="data-section">
+      <div class="data-header">
+        <div class="data-title">Data Source Summary</div>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table" id="summaryTable">
+          <thead><tr><th>Data Source</th><th>Records</th><th>Status</th><th>Date Range</th></tr></thead>
+          <tbody id="summaryBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile tab -->
+  <div class="tab-panel" id="panel-profile">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Customer Profile</div><div class="data-actions"><button class="btn-export" onclick="exportTab('profile')">Export CSV</button></div></div>
+      <div id="profileContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Listings tab -->
+  <div class="tab-panel" id="panel-listings">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Listings</div><div class="data-actions"><button class="btn-export" onclick="exportTab('listings')">Export CSV</button></div></div>
+      <div id="listingsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Payments tab -->
+  <div class="tab-panel" id="panel-payments">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Payments (AnyVan)</div><div class="data-actions"><button class="btn-export" onclick="exportTab('payments')">Export CSV</button></div></div>
+      <div id="paymentsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Stripe tab -->
+  <div class="tab-panel" id="panel-stripe">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Stripe Payments (UK/ES/FR)</div><div class="data-actions"><button class="btn-export" onclick="exportTab('stripe')">Export CSV</button></div></div>
+      <div id="stripeContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Calls tab -->
+  <div class="tab-panel" id="panel-calls">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Twilio Calls</div><div class="data-actions"><button class="btn-export" onclick="exportTab('calls')">Export CSV</button></div></div>
+      <div id="callsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- SMS tab -->
+  <div class="tab-panel" id="panel-sms">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Twilio SMS Messages</div><div class="data-actions"><button class="btn-export" onclick="exportTab('sms')">Export CSV</button></div></div>
+      <div id="smsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Transcripts tab -->
+  <div class="tab-panel" id="panel-transcripts">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Call Transcripts</div><div class="data-actions"><button class="btn-export" onclick="exportTab('transcripts')">Export CSV</button></div></div>
+      <div id="transcriptsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Emails tab -->
+  <div class="tab-panel" id="panel-emails">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Email Events (HubSpot)</div><div class="data-actions"><button class="btn-export" onclick="exportTab('emails')">Export CSV</button></div></div>
+      <div id="emailsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Freshdesk tab -->
+  <div class="tab-panel" id="panel-freshdesk">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Freshdesk Tickets</div><div class="data-actions"><button class="btn-export" onclick="exportTab('freshdesk')">Export CSV</button></div></div>
+      <div id="freshdeskContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Comms tab -->
+  <div class="tab-panel" id="panel-comms">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Listing Communications</div><div class="data-actions"><button class="btn-export" onclick="exportTab('comms')">Export CSV</button></div></div>
+      <div id="commsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Feedback tab -->
+  <div class="tab-panel" id="panel-feedback">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Listing Feedback</div><div class="data-actions"><button class="btn-export" onclick="exportTab('feedback')">Export CSV</button></div></div>
+      <div id="feedbackContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Pre-listing tab -->
+  <div class="tab-panel" id="panel-prelisting">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Pre-Listing Emails</div><div class="data-actions"><button class="btn-export" onclick="exportTab('prelisting')">Export CSV</button></div></div>
+      <div id="prelistingContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div style="position:fixed;bottom:0;left:0;right:0;height:28px;background:var(--sf);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 20px;gap:8px;z-index:50">
+  <span style="font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700">Logged in as</span>
+  <span id="hdrUserName" onclick="openUserPicker()" style="font-size:11px;font-weight:700;color:var(--ind);cursor:pointer;padding:2px 8px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:5px">— Set your name</span>
+  <div style="flex:1"></div>
+  <span style="font-size:9.5px;color:var(--tx3)">SAR Data Extract · Privacy & Compliance</span>
+</div>
+<div style="height:28px"></div>
+
+<!-- Info panel -->
+<div class="info-overlay" id="infoOverlay" onclick="closeInfoOnOverlay(event)">
+  <div class="info-panel" style="position:relative;">
+    <button class="info-close" onclick="toggleInfo()">✕</button>
+    <div class="info-section">
+      <h3>📋 Overview</h3>
+      <p>The SAR Data Extract dashboard pulls all personal data held about an AnyVan customer across 12 data sources, supporting GDPR Subject Access Requests (Article 15) and Data Portability (Article 20).</p>
+    </div>
+    <div class="info-section">
+      <h3>👤 Owner</h3>
+      <p>Anthony Hines-Yarde · Privacy & Compliance<br>Live · v1</p>
+    </div>
+    <div class="info-section">
+      <h3>🔍 How to Use</h3>
+      <ul>
+        <li>Enter the customer's <strong>email address</strong> (required) — this drives lookups across all email-indexed tables.</li>
+        <li>Optionally enter a <strong>phone number</strong> — this enables Twilio call, SMS, and transcript lookups. All formats accepted (07xxx, +44xxx, 44xxx).</li>
+        <li>Click <strong>Extract SAR</strong> to run all 12 data-source queries (staged to keep the warehouse responsive; failed queries auto-retry).</li>
+        <li>Use <strong>Export Full SAR (JSON)</strong> for a complete GDPR-portable data package.</li>
+        <li>Use per-tab <strong>Export CSV</strong> for individual data sources.</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3>🗄 Data Sources</h3>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Customer Profile (DIM_USER_CUSTOMER) <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Name, email, phone, country, language, consent flags, login history. Matched by email.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Listings (LISTING) <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">All customer listings — title, status, dates, bids, feedback. Linked via USER_ID from profile. Max 500 rows.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Payments (PAYMENT) <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">AnyVan payment records — amount, method, status, transaction IDs. Linked via USER_ID. Max 1000 rows.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Stripe Payments (UK/ES/FR) <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Stripe payment intents across all 3 territories. Matched by RECEIPT_EMAIL. Max 1000 rows.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Twilio Calls <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Call records — direction, duration, timestamps. Matched by phone suffix (last 10 digits). Requires phone input.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Twilio SMS <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">SMS message records — direction, body, status. Matched by phone suffix. Requires phone input.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Call Transcripts <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Speech-to-text transcripts segmented by speaker. Matched by phone digits. Requires phone input. Max 5000 segments.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Email Events — HubSpot <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">HubSpot email event log — sends, opens, clicks, bounces. Matched by email. Note: Mandrill transactional emails are not yet in Snowflake.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Freshdesk Tickets <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Support tickets — subject, description, status, priority. Matched by REQUESTER_EMAIL. Max 1000 rows.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Listing Communications <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">System communications tied to listings — emails, SMS, notifications. Linked via USER_ID → listings. Max 2000 rows.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Listing Feedback <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Customer feedback and ratings on listings. Linked via USER_ID → listings.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Pre-Listing Emails <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Emails sent before listing activation — templates, timestamps. Matched by email.</div>
+      </div>
+    </div>
+    <div class="info-section">
+      <h3>⚠️ Known Gaps</h3>
+      <ul>
+        <li><strong>Mandrill transactional emails</strong> — not currently in Snowflake. Only HubSpot marketing/CRM email events are available.</li>
+        <li><strong>Twilio Conversations (WhatsApp/chat)</strong> — not yet included. TWILIO_CONVERSATION_MESSAGE lacks a direct customer phone join column.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- User picker modal -->
+<div id="userPickerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+  <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:24px;width:340px;max-width:92vw;">
+    <div style="font-size:14px;font-weight:900;margin-bottom:14px;color:var(--tx);">Select Your Name</div>
+    <select id="userPickerSelect" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:13px;font-family:'Lato',sans-serif;margin-bottom:14px;">
+      <option value="">— Choose —</option>
+    </select>
+    <button onclick="confirmUserPicker()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--ind);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;">Confirm</button>
+  </div>
+</div>
+
+<script>
+var TEAM_MEMBERS = ['Rafeeqah Patton','Inathi Mxutu','Thea Williams','Sarah Rich',
+  'Alex Khan','Caroline Sterling','Denzil Britz','Anthony Hines-Yarde',
+  'Tyla Oelofse','Sissel Philander','Nikita Bailey'];
+
+var _sarData = {};
+var _sarMeta = {};
+var _searchEmail = '';
+var _searchPhone = '';
+var _phoneSuffix = '';
+
+var QUERIES = {
+  profile: {name:'sar_customer_profile', needsPhone:false, label:'Customer Profile'},
+  listings: {name:'sar_listings', needsPhone:false, label:'Listings'},
+  payments: {name:'sar_payments', needsPhone:false, label:'Payments'},
+  stripe: {name:'sar_stripe_payments', needsPhone:false, label:'Stripe Payments'},
+  calls: {name:'sar_calls', needsPhone:true, label:'Twilio Calls'},
+  sms: {name:'sar_sms', needsPhone:true, label:'Twilio SMS'},
+  transcripts: {name:'sar_call_transcripts', needsPhone:true, label:'Call Transcripts'},
+  emails: {name:'sar_hubspot_emails', needsPhone:false, label:'Email Events (HubSpot)'},
+  freshdesk: {name:'sar_freshdesk', needsPhone:false, label:'Freshdesk Tickets'},
+  comms: {name:'sar_listing_comms', needsPhone:false, label:'Listing Communications'},
+  feedback: {name:'sar_listing_feedback', needsPhone:false, label:'Listing Feedback'},
+  prelisting: {name:'sar_prelisting_emails', needsPhone:false, label:'Pre-Listing Emails'}
+};
+
+function normPhone(raw) {
+  var digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('0')) digits = '44' + digits.substring(1);
+  return digits.slice(-10);
+}
+
+function isDark() {
+  return document.documentElement.getAttribute('data-theme') === 'dark';
+}
+
+function toggleTheme() {
+  var d = document.documentElement;
+  var dark = d.getAttribute('data-theme') === 'dark';
+  d.setAttribute('data-theme', dark ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = dark ? '☽' : '☀';
+  localStorage.setItem('sar_theme', dark ? 'light' : 'dark');
+}
+
+function toggleInfo() {
+  var overlay = document.getElementById('infoOverlay');
+  var btn = document.getElementById('infoBtn');
+  if (!overlay) return;
+  var open = overlay.classList.toggle('open');
+  if (btn) btn.classList.toggle('info-btn-active', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
+function closeInfoOnOverlay(e) {
+  if (e.target === document.getElementById('infoOverlay')) toggleInfo();
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.main-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === tabId);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p) {
+    p.classList.toggle('active', p.id === 'panel-' + tabId);
+  });
+}
+
+function updateTimestamp() {
+  var now = new Date().toLocaleString('en-GB', {
+    timeZone:'Europe/London', year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', hour12:false
+  }).replace(',', '');
+  document.getElementById('hdrUpdated').textContent = now;
+}
+
+function openUserPicker() {
+  var sel = document.getElementById('userPickerSelect');
+  sel.innerHTML = '<option value="">— Choose —</option>';
+  TEAM_MEMBERS.forEach(function(n) {
+    var o = document.createElement('option');
+    o.value = n; o.textContent = n;
+    sel.appendChild(o);
+  });
+  var cur = localStorage.getItem('sar_current_user');
+  if (cur) sel.value = cur;
+  document.getElementById('userPickerOverlay').style.display = 'flex';
+}
+
+function confirmUserPicker() {
+  var sel = document.getElementById('userPickerSelect');
+  if (!sel.value) return;
+  localStorage.setItem('sar_current_user', sel.value);
+  window._avCurrentUser = sel.value;
+  document.getElementById('hdrUserName').textContent = sel.value;
+  document.getElementById('userPickerOverlay').style.display = 'none';
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(v) {
+  if (!v) return '—';
+  try {
+    var d = new Date(v);
+    if (isNaN(d)) return esc(v);
+    return d.toLocaleString('en-GB', {timeZone:'Europe/London', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false}).replace(',','');
+  } catch(e) { return esc(v); }
+}
+
+function buildTable(rows, columns) {
+  if (!rows || !rows.length) return '<div class="data-empty">No records found</div>';
+  var cols = columns || Object.keys(rows[0]);
+  var html = '<div class="data-table-wrap"><table class="data-table"><thead><tr>';
+  cols.forEach(function(c) { html += '<th>' + esc(c) + '</th>'; });
+  html += '</tr></thead><tbody>';
+  rows.forEach(function(r) {
+    html += '<tr>';
+    cols.forEach(function(c) {
+      var v = r[c];
+      var isDate = /(_AT|_DATE|TIMESTAMP|CREATED|UPDATED|SENT_AT|START_TIME|END_TIME|SETTLED_AT|FAILED_AT|VOIDED_AT|AUTHORISED_AT|CANCELED_AT|EVENT_TIMESTAMP|LAST_LOGIN|SEG_START|SEG_END)$/i.test(c);
+      var cls = /^(DESCRIPTION|BODY|SEGMENT_TEXT|DETAILS|SUBJECT|SPECIAL_INSTRUCTIONS|DESCRIPTION_TEXT|CUSTOMER_FEEDBACK_COMMENT|FEEDBACK_COMMENT|ANNOTATION)$/i.test(c) ? ' class="wrap"' : '';
+      html += '<td' + cls + '>' + (isDate ? fmtDate(v) : esc(v)) + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function statusChip(status) {
+  if (!status) return '';
+  var s = String(status).toLowerCase();
+  var cls = 'status-info';
+  if (/complet|success|deliver|paid|settled|sent/.test(s)) cls = 'status-success';
+  else if (/pend|progress|open|queue|ring|busy/.test(s)) cls = 'status-pending';
+  else if (/fail|cancel|void|error|reject|bounce/.test(s)) cls = 'status-failed';
+  return '<span class="status-chip ' + cls + '">' + esc(status) + '</span>';
+}
+
+function getDateRange(rows, col) {
+  if (!rows || !rows.length) return '—';
+  var dates = rows.map(function(r) { return r[col]; }).filter(Boolean).map(function(d) { return new Date(d); }).filter(function(d) { return !isNaN(d); });
+  if (!dates.length) return '—';
+  dates.sort(function(a, b) { return a - b; });
+  var fmt = function(d) { return d.toLocaleDateString('en-GB', {timeZone:'Europe/London'}); };
+  return fmt(dates[0]) + ' → ' + fmt(dates[dates.length - 1]);
+}
+
+// Run a single query with retry-on-failure. Transient warehouse/timeout
+// failures (Snowflake warehouse cold-start or API Gateway timeout under
+// concurrency) surface as "Query execution failed" / 500 — retry those.
+function runOneQuery(key, attempt) {
+  attempt = attempt || 0;
+  var q = QUERIES[key];
+  var el = document.getElementById(key + 'Content');
+  var params = {email: _searchEmail};
+  if (q.needsPhone) params.phone_suffix = _phoneSuffix;
+
+  if (el) el.innerHTML = '<div class="data-loading"><div class="spinner"></div>Loading ' + esc(q.label) + (attempt ? '… (retry ' + attempt + ')' : '…') + '</div>';
+
+  return AVDashboard.runQuery(q.name, { parameters: params }).then(function(res) {
+    var rows = res.rows || res.data || (Array.isArray(res) ? res : []);
+    _sarData[key] = rows;
+    _sarMeta[key] = {status:'success', count:rows.length, cached: res.cached !== false};
+    document.getElementById('cnt-' + key).textContent = rows.length;
+    if (el) el.innerHTML = buildTable(rows);
+  }).catch(function(err) {
+    var msg = (err && (err.message || err.error)) ? (err.message || err.error) : String(err);
+    var transient = /execution failed|timeout|timed out|\b50\d\b|\b503\b|throttl|too many/i.test(msg);
+    if (attempt < 2 && transient) {
+      var delay = 2000 * (attempt + 1); // 2s, then 4s — lets the warehouse finish resuming
+      console.warn('[SAR] ' + key + ' transient failure, retrying in ' + delay + 'ms:', msg);
+      return new Promise(function(resolve) { setTimeout(resolve, delay); })
+        .then(function() { return runOneQuery(key, attempt + 1); });
+    }
+    console.error('[SAR] ' + key + ' failed after ' + (attempt + 1) + ' attempt(s):', err);
+    _sarData[key] = [];
+    _sarMeta[key] = {status:'error', error: msg};
+    document.getElementById('cnt-' + key).textContent = '!';
+    if (el) el.innerHTML = '<div class="data-empty" style="color:var(--red)">Error: ' + esc(msg) + '<br><span style="font-size:10px;color:var(--tx3)">Query: ' + esc(q.name) + ' · Check browser console for details</span></div>';
+  });
+}
+
+// Run keys with a bounded concurrency pool (avoids overwhelming the
+// warehouse with all queries at once, which caused parallel timeouts).
+function runPool(keys, limit) {
+  return new Promise(function(resolve) {
+    var i = 0, active = 0, done = 0, total = keys.length;
+    if (!total) return resolve();
+    function next() {
+      while (active < limit && i < total) {
+        var key = keys[i++];
+        active++;
+        runOneQuery(key).then(function() {
+          active--; done++;
+          if (done === total) resolve(); else next();
+        });
+      }
+    }
+    next();
+  });
+}
+
+async function runSAR() {
+  var email = document.getElementById('emailInput').value.trim();
+  if (!email) {
+    document.getElementById('emailInput').focus();
+    return;
+  }
+  var phone = document.getElementById('phoneInput').value.trim();
+  _searchEmail = email;
+  _searchPhone = phone;
+  _phoneSuffix = phone ? normPhone(phone) : '';
+  _sarData = {};
+  _sarMeta = {};
+
+  document.getElementById('btnSearch').disabled = true;
+  document.getElementById('btnSearch').textContent = 'Extracting…';
+  document.getElementById('btnClear').style.display = 'inline-block';
+  document.getElementById('tabBar').style.display = 'flex';
+  document.getElementById('promptScreen').style.display = 'none';
+  document.getElementById('panel-overview').style.display = 'block';
+  switchTab('overview');
+
+  // Set initial state; collect the queries that will actually run.
+  var toRun = [];
+  Object.keys(QUERIES).forEach(function(key) {
+    var q = QUERIES[key];
+    var el = document.getElementById(key + 'Content');
+    if (q.needsPhone && !_phoneSuffix) {
+      _sarData[key] = [];
+      _sarMeta[key] = {status:'skipped', reason:'No phone provided'};
+      if (el) el.innerHTML = '<div class="data-empty">Phone number required — not provided</div>';
+      document.getElementById('cnt-' + key).textContent = '—';
+      return;
+    }
+    if (el) el.innerHTML = '<div class="data-loading"><div class="spinner"></div>Queued — ' + esc(q.label) + '…</div>';
+    document.getElementById('cnt-' + key).textContent = '…';
+    toRun.push(key);
+  });
+
+  try {
+    if (toRun.length) {
+      // Warm the warehouse with a single lightweight query first (profile if
+      // present). This absorbs the cold-start resume cost; the remaining
+      // queries then run against a warm warehouse with bounded concurrency.
+      var warmIdx = toRun.indexOf('profile');
+      if (warmIdx < 0) warmIdx = 0;
+      var warmKey = toRun.splice(warmIdx, 1)[0];
+      await runOneQuery(warmKey);
+      await runPool(toRun, 3);
+    }
+  } catch (e) {
+    console.error('[SAR] runSAR orchestration error:', e);
+  } finally {
+    checkAllDone();
+  }
+}
+
+function checkAllDone() {
+  var keys = Object.keys(QUERIES);
+  var done = keys.every(function(k) { return _sarMeta[k]; });
+  if (!done) return;
+
+  document.getElementById('btnSearch').disabled = false;
+  document.getElementById('btnSearch').textContent = 'Extract SAR';
+  updateTimestamp();
+  buildOverview();
+}
+
+function buildOverview() {
+  var totalRecords = 0;
+  var sourcesOK = 0;
+  var sourcesErr = 0;
+  var sourcesSkipped = 0;
+
+  var kpiHtml = '';
+  var summaryRows = '';
+  var keys = Object.keys(QUERIES);
+
+  keys.forEach(function(k) {
+    var q = QUERIES[k];
+    var m = _sarMeta[k] || {};
+    var rows = _sarData[k] || [];
+    var count = rows.length;
+    totalRecords += count;
+
+    if (m.status === 'success') sourcesOK++;
+    else if (m.status === 'error') sourcesErr++;
+    else if (m.status === 'skipped') sourcesSkipped++;
+
+    var dateCol = null;
+    if (rows.length) {
+      var cols = Object.keys(rows[0]);
+      ['CREATED_AT','START_TIME','EVENT_TIMESTAMP','DATE_SENT','SENT_AT','CREATED','SYSTEM_CREATED_DATE'].forEach(function(c) {
+        if (!dateCol && cols.indexOf(c) >= 0) dateCol = c;
+      });
+    }
+
+    var statusHtml = m.status === 'success' ? statusChip('OK') :
+                     m.status === 'error' ? statusChip('Error') :
+                     statusChip('Skipped');
+
+    var errorDetail = m.status === 'error' ? '<br><span style="font-size:10px;color:var(--red)">' + esc(m.error) + '</span>' : '';
+    summaryRows += '<tr><td style="font-weight:700">' + esc(q.label) + '</td><td>' + count + '</td><td>' + statusHtml + errorDetail + '</td><td>' + (dateCol ? getDateRange(rows, dateCol) : '—') + '</td></tr>';
+  });
+
+  kpiHtml += '<div class="kpi-tile"><div class="kpi-label">Total Records</div><div class="kpi-value">' + totalRecords.toLocaleString() + '</div></div>';
+  kpiHtml += '<div class="kpi-tile"><div class="kpi-label">Data Sources</div><div class="kpi-value">' + sourcesOK + ' / ' + keys.length + '</div><div class="kpi-sub">' + (sourcesErr ? sourcesErr + ' errors' : '') + (sourcesSkipped ? (sourcesErr ? ', ' : '') + sourcesSkipped + ' skipped' : '') + '</div></div>';
+  kpiHtml += '<div class="kpi-tile"><div class="kpi-label">Customer Email</div><div class="kpi-value" style="font-size:14px;word-break:break-all;">' + esc(_searchEmail) + '</div></div>';
+  kpiHtml += '<div class="kpi-tile"><div class="kpi-label">Phone Lookup</div><div class="kpi-value" style="font-size:14px;">' + (_phoneSuffix ? esc(_searchPhone) : 'Not provided') + '</div>' + (_phoneSuffix ? '<div class="kpi-sub">Suffix: ' + esc(_phoneSuffix) + '</div>' : '') + '</div>';
+
+  document.getElementById('overviewKPIs').innerHTML = kpiHtml;
+  document.getElementById('summaryBody').innerHTML = summaryRows;
+}
+
+function toCSV(rows) {
+  if (!rows || !rows.length) return '';
+  var cols = Object.keys(rows[0]);
+  var lines = [cols.map(function(c) { return '"' + c.replace(/"/g, '""') + '"'; }).join(',')];
+  rows.forEach(function(r) {
+    lines.push(cols.map(function(c) {
+      var v = r[c];
+      if (v == null) return '';
+      return '"' + String(v).replace(/"/g, '""') + '"';
+    }).join(','));
+  });
+  return lines.join('\n');
+}
+
+function downloadFile(content, filename, type) {
+  var blob = new Blob([content], {type: type || 'text/csv;charset=utf-8;'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function exportTab(key) {
+  var rows = _sarData[key];
+  if (!rows || !rows.length) return;
+  downloadFile(toCSV(rows), 'sar_' + key + '_' + _searchEmail.replace(/[^a-z0-9]/gi, '_') + '.csv');
+}
+
+function exportAllCSV() {
+  Object.keys(QUERIES).forEach(function(k) {
+    if (_sarData[k] && _sarData[k].length) {
+      exportTab(k);
+    }
+  });
+}
+
+function exportAllJSON() {
+  var pkg = {
+    sar_extract: {
+      generated_at: new Date().toISOString(),
+      generated_by: window._avCurrentUser || 'Unknown',
+      customer_email: _searchEmail,
+      customer_phone: _searchPhone || null,
+      phone_suffix: _phoneSuffix || null,
+      gdpr_basis: 'Article 15 — Right of Access / Article 20 — Data Portability'
+    },
+    data: {}
+  };
+  Object.keys(QUERIES).forEach(function(k) {
+    pkg.data[k] = {
+      source: QUERIES[k].label,
+      query: QUERIES[k].name,
+      record_count: (_sarData[k] || []).length,
+      status: (_sarMeta[k] || {}).status || 'not_run',
+      rows: _sarData[k] || []
+    };
+  });
+  var json = JSON.stringify(pkg, null, 2);
+  downloadFile(json, 'sar_full_' + _searchEmail.replace(/[^a-z0-9]/gi, '_') + '.json', 'application/json');
+}
+
+function clearAll() {
+  _sarData = {};
+  _sarMeta = {};
+  _searchEmail = '';
+  _searchPhone = '';
+  _phoneSuffix = '';
+  document.getElementById('emailInput').value = '';
+  document.getElementById('phoneInput').value = '';
+  document.getElementById('btnClear').style.display = 'none';
+  document.getElementById('tabBar').style.display = 'none';
+  document.getElementById('promptScreen').style.display = 'flex';
+  document.getElementById('panel-overview').style.display = 'none';
+  switchTab('overview');
+  Object.keys(QUERIES).forEach(function(k) {
+    document.getElementById('cnt-' + k).textContent = '0';
+    var el = document.getElementById(k + 'Content');
+    if (el) el.innerHTML = '<div class="data-loading"><div class="spinner"></div>Waiting for search…</div>';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+  var savedTheme = localStorage.getItem('sar_theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.getElementById('themeToggle').textContent = '☀';
+  }
+
+  await AVDashboard.ensureAuthenticated();
+  var initResult = await AVDashboard.init();
+  console.log('[SAR] AVDashboard.init() result:', initResult);
+
+  var name = localStorage.getItem('sar_current_user') || null;
+  if (!name) {
+    try {
+      var u = AVDashboard.getCurrentUser && AVDashboard.getCurrentUser();
+      if (u && u.email) {
+        var derived = u.email.split('@')[0].split('.').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+        if (TEAM_MEMBERS.indexOf(derived) >= 0) name = derived;
+      }
+    } catch(e) {}
+  }
+  window._avCurrentUser = name || null;
+  if (name) {
+    document.getElementById('hdrUserName').textContent = name;
+  } else {
+    setTimeout(openUserPicker, 800);
+  }
+
+  document.getElementById('emailInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') runSAR();
+  });
+  document.getElementById('phoneInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') runSAR();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var info = document.getElementById('infoOverlay');
+      if (info && info.classList.contains('open')) toggleInfo();
+      var picker = document.getElementById('userPickerOverlay');
+      if (picker && picker.style.display === 'flex') picker.style.display = 'none';
+    }
+  });
+
+  document.getElementById('loadingOverlay').classList.add('hidden');
+});
+</script>
+</body>
+</html>
