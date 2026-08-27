@@ -1,64 +1,92 @@
 # AnyVan-Privacy
 
-Source-of-truth for AnyVan's privacy tooling — starting with the **Data Subject
-Request (DSR) intake form** and its Freshdesk integration.
+The home for **"All Things Privacy"** at AnyVan. Two kinds of content live here:
 
-## Read first
+- **Reusable tooling & pipelines** — the Data Subject Request (DSR) intake pipeline, internal
+  dashboards, and their docs/scripts.
+- **Investigation records & methodologies** — dated privacy / DSAR lookups, each a Markdown record
+  with the reusable method captured alongside.
 
-**`docs/conventions.md`** — the consolidated, hard-won conventions and gotchas (Formstack V2025
-API, number/date formatting, Freshdesk `cf_*` caveats, the workflow-system). Read it before
-touching the form, the builder, or the workflow. `CLAUDE.md` carries the same guardrails plus the
-ways-of-working lessons and is auto-loaded each session.
+> **Working in this repo?** Read **`CLAUDE.md`** first — it's the operating guide (the PII rule, the
+> golden rules, the work-stream map, and the house style). This README is the human-facing index.
 
-## Direction
+> ⚠️ **PII & git history.** Most records here contain **customer personal data** and persist in git
+> history. Keep records behind their CONFIDENTIAL banner, minimise what you commit, keep bulk
+> verbatim transcripts out of git, and never commit secrets. See `CLAUDE.md`.
 
-Going live for **both UK customers (public) and internal admins** on **one Formstack form**,
-feeding the existing **workflow-system → Freshdesk** (the paved road here — mirrors the live
-"Damage Claim - UK - Formstack" workflow). Rationale and alternatives in
-`docs/public-hosting.md`. The custom HTML form below stays as the **interim internal tool**
-until Formstack is live; the `backend/` Lambda is **superseded** by the workflow-system path
-and is parked (not deployed).
+---
+
+## Work-streams
+
+### 1. DSR intake pipeline — Formstack → workflow-system → Freshdesk
+Going live for **both UK customers (public) and internal admins** on **one Formstack form**, feeding
+the existing **workflow-system → Freshdesk** (mirrors the live "Damage Claim - UK - Formstack"
+workflow). The interim internal HTML form stays until Formstack is live; the `backend/` Lambda is
+**superseded** and parked (not deployed).
 
 | Path | What it is |
 |---|---|
-| `docs/go-live-guide.md` | **Start here** — the end-to-end, stage-by-stage runbook (owners + commands + checkpoints) to take the form live. |
-| `docs/formstack-dsr-build.md` | **Build spec** for the DSR form in Formstack (pages, conditional logic, file upload, EU region/retention/spam, two entry points). |
-| `docs/formstack-to-freshdesk-workflow.md` | **Runbook** to wire the Formstack form → workflow-system → Freshdesk. |
-| `workflow/build-formstack-form.js` | Script that **builds/updates the Formstack form** (fields + conditional logic) via the Formstack **V2025** API and prints the field-id map. Supports `--dry-run` (no token), a full create, and an additive `--form <id>` mode for the live form. |
+| `docs/conventions.md` | **Read first for this work-stream** — consolidated conventions & gotchas (Formstack **V2025** API, number/date formatting, Freshdesk `cf_*`, workflow-system). |
+| `docs/go-live-guide.md` | **Start here** — the end-to-end, stage-by-stage runbook to take the form live. |
+| `docs/formstack-dsr-build.md` | Build spec for the DSR form in Formstack (pages, conditional logic, file upload, EU region/retention/spam). |
+| `workflow/build-formstack-form.js` | Builds/updates the Formstack form via the **V2025** API. `--dry-run` (no token), full create, or additive `--form <id>` for the live form. |
 | `workflow/` | The workflow definition: `actions.json`, `config_prompt.md`, `user_prompt.md`, `create.sh`. |
+| `docs/formstack-to-freshdesk-workflow.md` | Runbook to wire the form → workflow-system → Freshdesk. |
 | `docs/dsr-field-mapping.md` | Single source of truth: form question → Formstack field id → Freshdesk field/tag. |
-| `docs/freshdesk-custom-fields.md` | The `cf_*` custom fields to create in Freshdesk admin (and how to confirm their live keys). |
-| `dsr-intake-form.html` | The custom DSR form (vanilla HTML/JS/CSS). Live internally on AV Dashboards at `operations/dsr-intake-form` — **interim** staff tool. Includes the account-holder checkbox fix. |
-| `backend/` | **Superseded** Lambda (Freshdesk ticket creator) + SAM template + tests. Kept as reference/fallback; not deployed in the Formstack direction. See `docs/backend-runbook.md`. |
+| `docs/freshdesk-custom-fields.md` | The `cf_*` custom fields to create in Freshdesk admin (and how to confirm live keys). |
+| `dsr-intake-form.html` | Interim internal DSR form, live on AV Dashboards `operations/dsr-intake-form`. |
+| `backend/` · `docs/backend-runbook.md` | Superseded self-hosted Lambda; kept as reference/fallback, not deployed. |
 | `docs/public-hosting.md` | Hosting decision (Formstack) + the rejected self-hosted alternative. |
-| `docs/dsr-intake-form-handoff.md` | Original handoff notes describing the form. |
-| `docs/conventions.md` | **Read first** — consolidated conventions & gotchas (V2025 API, number/date formatting, Freshdesk `cf_*`, workflow-system). |
-| `CLAUDE.md` | Repo orientation, guardrails, and ways-of-working lessons; auto-loaded each session. |
-| `skills/anyvan-formstack-freshdesk/` | Reusable, org-shareable skill distilled from `docs/conventions.md` (generalised beyond DSR). See `skills/README.md`. |
+| `skills/anyvan-formstack-freshdesk/` | The org-shareable skill distilled from `docs/conventions.md`. See `skills/README.md`. |
 
-## Status
+**Status:** direction decided (all-Formstack, single form). Form **built** — id `6559077`, **aligned
+to the official DSRR template** (all 8 statutory rights + Marketing Opt-Out, ID verification,
+address, third-party contact, declaration). Pending: run the additive `--form 6559077` apply (fresh
+PAT) + record the new field ids; finish builder config (EU/UK region, retention, reCAPTCHA, theme,
+confirmation email); then create + promote the workflow. See `docs/go-live-guide.md`.
 
-- **Direction:** all-Formstack, single form, both audiences (decided). Formstack is an approved
-  UK-PII processor — no procurement gate.
-- **Formstack form:** **built** in the AnyVanforms account — id `6559077`
-  (`https://AnyVanforms.formstack.com/forms/anyvan__data_subject_request_dsr_2`), created by
-  `workflow/build-formstack-form.js`, and **aligned to the official DSRR template** (all 8
-  statutory rights + Marketing Opt-Out, ID verification, address, third-party contact,
-  declaration). Pending: run the additive `--form 6559077` apply (fresh PAT) to add those
-  alignment fields to the live form + record their ids, then builder config (EU/UK region,
-  retention, reCAPTCHA, theme, confirmation email) + review/publish.
-- **Custom form:** live at `https://dashboards.anyvan.com/operations/dsr-intake-form`
-  (internal, `@anyvan.com` login), in **test mode**. Checkbox bug fixed and deployed (v1).
-  Interim staff tool until the Formstack form is live.
-- **Next:** finish the Formstack builder config, then create the workflow
-  (`docs/formstack-to-freshdesk-workflow.md`) and launch — see `docs/go-live-guide.md`.
-- **Backend Lambda:** built + tested, **superseded** by the workflow-system path; parked.
+### 2. Privacy investigations / lookups & DSAR sweeps
+"Find X about a customer" requests — one dated record per request, plus reusable methodology.
 
-## Deploying the form to AV Dashboards
+| Path | What it is |
+|---|---|
+| `booking-lookups/2026-08-18-phone-number-lookup-07497-700277.md` | Bookings by **phone** (customer / collection / delivery) or **postcode + date** — Template A/B SQL. |
+| `booking-lookups/METHODOLOGY-communication-history.md` | The **channel → table map** for all comms (calls, SMS/WhatsApp, email, chat, tickets), query templates. |
+| `booking-lookups/2026-08-21-communication-history-andrea-canoppia.md` | Worked comms-history record. |
+| `booking-lookups/2026-08-21-customer-transcripts-jennifer-kershaw.md` | Worked transcripts record (WhatsApp/Live Chat/calls) + retrieval method. |
+| `communication-lookups/2026-08-24-comms-lookup-…jonathanjamesstansbie…07736348212.md` | Worked "locate all comms to a contact" record. |
+| `templates/record.md` | House-style skeleton for a new PII investigation record. |
 
-The form already exists on the platform, so updates use an HTTP **`PUT`** (not the
-`update_dashboard` MCP tool, which can truncate). Get a fresh 5-minute token via the
-`AV_Dashboards` MCP `get_upload_token`, then:
+### 3. SAR/DSAR comms-automation design
+The blueprint for automating Subject Access & Portability requests (documentation only — no external
+systems changed).
+
+| Path | What it is |
+|---|---|
+| `dsr-privacy-request-workflow-design.md` | End-to-end workflow: trigger, identity gate, named Snowflake queries, action chain, officer sign-off. |
+| `customer-communications-mapping.md` | Data backbone — email/SMS/WhatsApp/marketing sources, coverage, portability JSON shape. |
+| `SAR-Comms-Lookup-Reference.md` | Calls / 2-way WhatsApp / live chat — Aircall vs Twilio recording access + author classification. |
+| `dsr-intake-form-handoff.md` | Form spec / request-type taxonomy for this design package (see the overlap note in `CLAUDE.md`). |
+
+### 4. Dashboards & phone-number matching
+| Path | What it is |
+|---|---|
+| `sar-data-extract.html` | GDPR SAR extract dashboard — pulls a customer's data across 12 Snowflake sources; JSON (Art. 20) + CSV export. |
+| `interaction-hub.html` | Interaction Hub dashboard (phone-lookup fix: client normalisation + server suffix match). |
+| `interaction-hub/2026-08-26-call-recording-playback-diagnosis.md` | Diagnosis + fix design for call-recording playback/download in the hub. |
+
+### 5. Secure delivery of call recordings (SAR/DSAR)
+| Path | What it is |
+|---|---|
+| `call-recording-delivery/2026-08-20-secure-call-recording-delivery-options.md` | Options appraisal for a secure, GDPR-appropriate alternative to WeTransfer Free. |
+| `templates/options-appraisal.md` | House-style skeleton for a vendor/options appraisal (no-PII, INTERNAL banner). |
+
+---
+
+## Deploying a dashboard to AV Dashboards
+The pages already exist on the platform, so updates use an HTTP **`PUT`** (not the `update_dashboard`
+MCP tool, which can truncate). Get a fresh 5-minute token via the `AV_Dashboards` MCP
+`get_upload_token`, then:
 
 ```bash
 jq -n --rawfile html dsr-intake-form.html \
@@ -73,27 +101,10 @@ curl -X PUT \
   "https://63g6ly45b0.execute-api.eu-west-1.amazonaws.com/production/upload"
 ```
 
-Every upload is auto-versioned; roll back with the `AV_Dashboards` `rollback_dashboard`
-tool. CloudFront caches the HTML — hard-refresh after deploying.
+Every upload is auto-versioned; roll back with the `AV_Dashboards` `rollback_dashboard` tool.
+CloudFront caches the HTML — hard-refresh after deploying.
 
-## Test the backend locally
-
-```bash
-cd backend && node test/local-invoke.js
-```
-
-## Going live (summary — Formstack direction, MVP)
-
-**Full runbook: `docs/go-live-guide.md`.** MVP maps to **tags + a structured description** — no
-Freshdesk custom fields required. In brief:
-1. Build the DSR form in Formstack — `node workflow/build-formstack-form.js` (or by hand from
-   `docs/formstack-dsr-build.md`); record field ids in `docs/dsr-field-mapping.md`.
-2. Create the workflow (Formstack → Freshdesk), test in DRY_RUN, promote in the admin UI —
-   `docs/formstack-to-freshdesk-workflow.md` + `workflow/`.
-3. Publish the public URL (customers) and link the form in `/administer` (staff); retire the
-   interim custom form.
-4. _Later (optional):_ add the `cf_*` custom fields for structured reporting —
-   `docs/freshdesk-custom-fields.md`.
-
-_Rejected alternative (self-hosted Lambda + S3/CloudFront) is documented in
-`docs/public-hosting.md` and `docs/backend-runbook.md` for the record._
+## Skills
+- **`.claude/skills/privacy-records/`** — repo-scoped, auto-loads here; produces a new record/appraisal
+  in house style with the PII guardrail.
+- **`skills/anyvan-formstack-freshdesk/`** — packaged, org-shareable; the DSR-pipeline conventions.
