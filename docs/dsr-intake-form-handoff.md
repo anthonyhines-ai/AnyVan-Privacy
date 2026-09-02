@@ -1,5 +1,10 @@
 # DSR Intake Form — Claude Code Handoff
 
+> **Scope note.** This documents the **interim internal** DSR form on AV Dashboards
+> (`operations/dsr-intake-form`) — the staff tool, retired at cutover. The live customer-facing
+> Formstack path ("AnyVan UK - Privacy Requests") and its go-live runbook are in
+> `docs/go-live-guide.md`.
+
 ## What This Is
 
 A multi-step Data Subject Request intake form for AnyVan, deployed to AV Dashboards for internal testing. Covers all UK GDPR request types for Customers, Transport Partners (sole traders and limited companies), and Authorised Third Parties.
@@ -7,39 +12,6 @@ A multi-step Data Subject Request intake form for AnyVan, deployed to AV Dashboa
 **Live URL:** `https://dashboards.anyvan.com/operations/dsr-intake-form`
 **Dashboard path:** `operations/dsr-intake-form`
 **Status:** Deployed, internal test mode. Submissions display structured JSON payload — not yet wired to Freshdesk.
-
----
-
-## Known Bug To Fix
-
-The account holder confirmation checkbox doesn't work in the deployed HTML version. Root cause: missing space between `checked` attribute and `style` attribute in the template literal, producing `checkedstyle=` as one invalid attribute.
-
-**Fix location:** In `renderStep2()`, the confirm-box checkbox line. Change:
-
-```javascript
-${chk?'checked':''}style="margin-top:3px;
-```
-
-To:
-
-```javascript
-${chk?'checked ':''}style="margin-top:3px;
-```
-
-Also add a fallback click handler on the wrapper div in `bindEvents()`:
-
-```javascript
-const cbw = document.getElementById('confirm-box-wrap');
-if (cbw && ah) cbw.onclick = (e) => {
-  if (e.target === ah) return;
-  S.accountHolder = !S.accountHolder;
-  render();
-};
-```
-
-The fix is already applied in the local file at `/home/claude/dsr-form.html` but was not pushed to AV Dashboards because MCP tools were evicted during the long session.
-
-**Priority:** Push this fix first before any other changes.
 
 ---
 
@@ -165,40 +137,6 @@ All-data SAR adds: `all_data_request` with `date_from`, `date_to`, `reason`
 
 ---
 
-## What Needs Building Next
-
-### 1. Push the checkbox bugfix
-Update `operations/dsr-intake-form` on AV Dashboards. Use `get_upload_token` → `PUT` to the upload API with the fixed HTML.
-
-### 2. Freshdesk custom fields
-Create in Freshdesk admin before wiring the backend:
-- `cf_dsr_type` — dropdown: SAR, Deletion, Rectification, Marketing Opt-Out, Portability
-- `cf_requester_type` — dropdown: Customer, TP Sole Trader, TP Limited, Third Party
-- `cf_booking_reference` — text
-- `cf_tp_username` — text
-
-### 3. Lambda backend (Node.js, AWS Lambda-compatible)
-Receives the JSON payload from the form, then:
-- Creates a Freshdesk ticket with custom fields, tags, and a structured private note
-- Attaches uploaded files to the ticket (base64 pass-through from form → Freshdesk attachment API)
-- Fires the existing webhook classifier
-- Returns the DSR reference to the form
-
-Freshdesk API patterns (from existing SAR automation):
-- Basic auth: API key as username, `"X"` as password (base64 encoded)
-- Create ticket: `POST /api/v2/tickets` with `{subject, description, email, phone, custom_fields, tags}`
-- Add private note: `POST /api/v2/tickets/{id}/notes` with `{body: html, private: true}`
-- Rate limit: sleep 1.5–2s between calls; on HTTP 429, read `Retry-After` header
-
-### 4. S3 + CloudFront hosting
-For external (customer/TP-facing) deployment:
-- Static site on S3 behind CloudFront
-- Subdomain e.g. `privacy.anyvan.com` or path on main site
-- Remove the test banner and AV Dashboards auth
-- Wire form submission to the Lambda via API Gateway
-
----
-
 ## Technical Notes
 
 - The form is vanilla HTML/JS/CSS — no build step, no React dependency
@@ -219,6 +157,4 @@ For external (customer/TP-facing) deployment:
 
 ## Files
 
-- **Deployed HTML:** Fetch current version via `get_dashboard_html` with path `operations/dsr-intake-form`
-- **React mockup:** Available as `data-subject-request-form.jsx` (used for iteration, not deployed)
-- **Local fixed HTML:** Was at `/home/claude/dsr-form.html` in the consumer app session (contains the checkbox bugfix)
+- **Deployed HTML:** Fetch current version via `get_dashboard_html` with path `operations/dsr-intake-form` (also committed in-repo as `dsr-intake-form.html`).

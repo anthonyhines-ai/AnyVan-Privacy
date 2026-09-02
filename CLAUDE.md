@@ -53,7 +53,6 @@ history even if later deleted.**
 ```
 docs/                       # DSR pipeline runbooks + conventions (see work-stream 1)
 workflow/                   # the workflow-system definition + Formstack build script
-backend/                    # superseded self-hosted Lambda — parked, NOT deployed
 skills/                     # packaged, org-shareable skills (anyvan-formstack-freshdesk)
 .claude/skills/             # repo-scoped skills that auto-load here (privacy-records)
 templates/                  # house-style skeletons — copy one to start a new record

@@ -4,18 +4,19 @@ One sequential runbook to take the DSR intake form live for **UK customers (publ
 **internal admins**, on Formstack → workflow-system → Freshdesk. Each stage says **who** does it,
 **what** to do, and the **checkpoint** ("done when"). Deeper detail is in the linked docs.
 
-> **MVP scope:** the initial launch uses ticket **tags + a structured description** — no
-> Freshdesk custom fields — so **Stage 1 is optional and can be skipped**; start at Stage 2.
-> Stage 2 can be largely automated with `workflow/build-formstack-form.js`.
+> **MVP scope:** the initial launch uses ticket **tags + a structured description + the one
+> `cf_privacy_due_date` date field** — no *other* Freshdesk custom fields — so **Stage 1 (the
+> deferred dropdown/text fields) is optional and can be skipped**; start at Stage 2.
 >
-> **Progress:** Stage 2 is **largely done** — the form is built in the AnyVanforms account (**id
-> `6559077`**, https://AnyVanforms.formstack.com/forms/anyvan__data_subject_request_dsr_2). The
-> original field ids are recorded in `docs/dsr-field-mapping.md` and the form id is set in
-> `workflow/create.sh`. **Still to do on the form:** run the additive `--form 6559077` apply (with
-> a fresh PAT) to add the DSRR-template-alignment fields — all 8 statutory rights, ID verification,
-> address, third-party contact, declaration — then record their ids (the `new` rows in the mapping
-> doc). After that, finish the builder-only config (region/retention/reCAPTCHA/theme/confirmation
-> email) and review/publish, then Stages 4–8 (workflow → launch).
+> **Progress:** the form is **built and live in the builder** — id **`6559077`**, renamed
+> **"AnyVan UK - Privacy Requests"**
+> (https://anyvanforms.formstack.com/forms/anyvan_uk_privacy_requests). It was hand-edited in the
+> Formstack builder and has diverged from the original build script, so it is **mapped as-is** — the
+> live field ids and option strings are in `docs/dsr-field-mapping.md` (with the divergence note),
+> and the workflow contract/prompts have been updated to match. **Remaining work:** verify the
+> Formstack → workflow event bridge (Stage 4 needs a `WF_JWT`), configure the Formstack **Email
+> Output** (confirmation email), confirm the `cf_privacy_due_date` live key, then create the DRY_RUN
+> workflow and promote (Stages 4–6), and launch the entry points (Stages 7–8).
 
 ```
 Freshdesk fields ──► Formstack form ──► record field ids ──► create workflow (DRY_RUN)
@@ -36,7 +37,8 @@ Freshdesk fields ──► Formstack form ──► record field ids ──► c
 
 ## Stage 1 (OPTIONAL — skip for MVP) — Freshdesk custom fields  · owner: Freshdesk admin
 Detail: `docs/freshdesk-custom-fields.md`. **Not needed for the MVP launch** (tags + description
-carry everything). Do this later for structured filtering/reporting: create `cf_dsr_type`,
++ the one `cf_privacy_due_date` date field carry everything). Do this later for structured
+filtering/reporting: create `cf_dsr_type`,
 `cf_requester_type`, `cf_booking_reference`, `cf_tp_username`, confirm their live keys via
 `GET /api/v2/ticket_fields`, then add `custom_fields` back into `workflow/actions.json`.
 
@@ -50,8 +52,11 @@ Detail: `docs/formstack-dsr-build.md`. `FORMSTACK_TOKEN` is a **V2025 Personal A
 (`fs_pat_…`) — not an OAuth token, and the API base is `…/api/v2025` (a `…/api/v2` base 401s).
 The PAT pasted during the first build is considered exposed; use a **freshly-rotated** one.
 
-**The form already exists (id `6559077`)** — extend it with the additive updater rather than
-recreating it (a full create would duplicate every field):
+**The form is already built and mapped as-is** (id `6559077`, "AnyVan UK - Privacy Requests") —
+its live field ids and option strings are in `docs/dsr-field-mapping.md`, so the build/update
+commands below are kept for **reference or a rebuild only**. If you do need to extend the form with
+the script, use the additive updater rather than recreating it (a full create would duplicate every
+field):
 ```bash
 node workflow/build-formstack-form.js --form 6559077 --dry-run   # preview the additions
 FORMSTACK_TOKEN=<fresh fs_pat_...> node workflow/build-formstack-form.js --form 6559077
@@ -100,7 +105,8 @@ Detail: `docs/formstack-to-freshdesk-workflow.md`. Files in `workflow/`.
    - `workflow/create.sh` → `FORMSTACK_FORM_ID`.
    - `workflow/user_prompt.md` → confirm the submission-id path (`{event.payload.UniqueID}`)
      against a real event payload.
-   (MVP `actions.json` has no `cf_*` placeholders — it's tags + description only.)
+   (MVP `actions.json` wires the one custom field `cf_privacy_due_date` (the statutory due date),
+   plus tags + description — no other `cf_*` fields until Stage 1 is done.)
 2. Confirm the event + tools exist (no JWT needed):
    ```bash
    python3 "$SK" catalogue --env prod        # SK = path to workflow_edit.py
@@ -157,8 +163,7 @@ _(If tags don't render element-wise, apply the fallback in the workflow runbook 
 
 ## Stage 8 — Cutover & cleanup  · owner: privacy/ops
 1. Announce the form to the privacy/CS team; point them at the `/administer` link.
-2. Retire the interim custom dashboard form (or keep it as an internal fallback). The
-   `backend/` Lambda stays parked (not deployed).
+2. Retire the interim custom dashboard form (or keep it as an internal fallback).
 3. Confirm the downstream verification workflow is resourced for the higher public volume.
 
 **Done when:** DSRs are arriving as Freshdesk tickets from the Formstack form and the team is

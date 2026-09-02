@@ -26,16 +26,17 @@ and `docs/formstack-to-freshdesk-workflow.md` (wiring).
 ## Alternative considered and NOT chosen: self-hosted (S3 + CloudFront)
 Kept for the record. A static build of `dsr-intake-form.html` on S3 behind CloudFront at
 `privacy.anyvan.com` (ACM + Route 53), stripping `AVDashboard.ensureAuthenticated()` and the
-test banner, wiring `CONFIG.API_ENDPOINT` to the Lambda, and adding WAF/CAPTCHA. Rejected
-because it makes AnyVan own an unauthenticated PII surface with **no existing IaC and no
-WAF/CAPTCHA precedent** — more net-new security to build and maintain than Formstack, for no
-offsetting benefit now that Formstack is approved for this data.
+test banner, wiring `CONFIG.API_ENDPOINT` to a self-hosted Lambda backend, and adding
+WAF/CAPTCHA. Rejected because it makes AnyVan own an unauthenticated PII surface with **no
+existing IaC and no WAF/CAPTCHA precedent** — more net-new security to build and maintain than
+Formstack, for no offsetting benefit now that Formstack is approved for this data. (The
+reference Lambda that would have backed this has since been **removed from the repo**.)
 
 ## Interim state
 The bugfixed custom form stays live internally on AV Dashboards (`operations/dsr-intake-form`)
 as the staff tool until the Formstack form is live and adopted, then it's retired (or kept as
-an internal fallback). The `backend/` Lambda is **superseded** by the workflow-system path and
-is parked in-repo (not deployed) — see the README.
+an internal fallback). The reference `backend/` Lambda that this alternative would have used has
+been **removed from the repo** — the workflow-system path supersedes it.
 
 ## Identity verification (unchanged, both channels)
 DSRs still require identity verification **before data is released** (the form's declaration
