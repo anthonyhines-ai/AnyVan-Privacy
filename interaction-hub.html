@@ -125,7 +125,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 .convo-meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:14px;}
 .convo-meta-item{font-size:12px;}
 .convo-meta-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700;margin-bottom:2px;}
-.convo-meta-value{color:var(--tx);}
+.convo-meta-value{color:var(--tx);overflow-wrap:anywhere;}
 .convo-viewer{width:100%;height:520px;border:1px solid var(--bd);border-radius:8px;background:var(--sf2);}
 .convo-audio{width:100%;margin:6px 0 10px;}
 .convo-actions{display:flex;gap:8px;margin-top:12px;}
@@ -133,6 +133,28 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 .convo-btn:hover{border-color:var(--ind);color:var(--ind);}
 .convo-btn-primary{border-color:var(--ind);color:var(--ind);background:rgba(99,102,241,.06);}
 .row-expand-icon{font-size:10px;color:var(--tx3);display:inline-block;transition:transform .15s;}
+.drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.28);opacity:0;visibility:hidden;transition:opacity .2s;z-index:60;}
+.drawer-backdrop.open{opacity:1;visibility:visible;}
+.detail-drawer{position:fixed;top:0;right:0;height:100vh;width:min(560px,94vw);background:var(--sf);border-left:1px solid var(--bd);box-shadow:-14px 0 44px rgba(0,0,0,.20);transform:translateX(100%);transition:transform .24s ease;z-index:61;display:flex;flex-direction:column;}
+.detail-drawer.open{transform:translateX(0);}
+.drawer-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bd);background:var(--sf2);}
+.drawer-title{font-size:14px;font-weight:800;color:var(--tx);}
+.drawer-sub{font-size:11px;color:var(--tx3);margin-top:2px;}
+.drawer-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);cursor:pointer;font-size:15px;line-height:1;flex-shrink:0;}
+.drawer-close:hover{color:var(--ind);border-color:var(--ind);}
+.drawer-body{padding:16px 18px 30px;overflow-y:auto;flex:1;}
+.detail-drawer .convo-viewer{height:58vh;}
+.tx-wrap{margin-top:4px;}
+.tx-msg{display:flex;margin:7px 0;}
+.tx-msg.right{justify-content:flex-end;}
+.tx-bub{max-width:82%;border-radius:12px;padding:7px 11px;font-size:12.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word;}
+.tx-msg.cust .tx-bub{background:var(--ind);color:#fff;}
+.tx-msg.agent .tx-bub{background:var(--sf2);border:1px solid var(--bd);color:var(--tx);}
+.tx-msg.bot .tx-bub{background:var(--sf2);border:1px dashed var(--bd);color:var(--tx3);}
+.tx-who{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;opacity:.8;margin-bottom:2px;}
+.tx-ts{font-weight:400;opacity:.75;}
+.tx-loading{color:var(--tx3);font-size:12px;padding:10px 2px;}
+@media(max-width:768px){.detail-drawer{width:100vw;}}
 .convo-empty{text-align:center;padding:50px;color:var(--tx3);font-size:13px;}
 .convo-footer{padding:8px 16px;border-top:1px solid var(--bd);font-size:11px;color:var(--tx3);display:flex;align-items:center;gap:10px;}
 .sentiment-chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
@@ -497,19 +519,16 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 
   var COLS = {
     calls: [
-      { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
-      { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
-      { key: 'CUSTOMER_PHONE',        label: 'Phone',    w: '120px' },
-      { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
-      { key: 'AGENT_TYPE',            label: 'Type',     w: '75px'  },
-      { key: 'COUNTRY',               label: 'Country',  w: '80px'  },
-      { key: 'LISTING_CATEGORY_NAME', label: 'Category', w: '110px' },
-      { key: 'DURATION_SECONDS',      label: 'Duration', w: '75px'  },
-      { key: 'SENTIMENT',             label: 'Sentiment',w: '90px'  },
-      { key: 'PICKUP_DATE',           label: 'Pickup',   w: '90px'  }
+      { key: 'CHANNEL',               label: 'Communication Channel', w: '150px' },
+      { key: 'INTERACTION_DATETIME',  label: 'Date / Time (UK)',           w: '150px' },
+      { key: 'AGENT_NAME',            label: 'AnyVan Admin',          w: '150px' },
+      { key: 'AGENT_TYPE',            label: 'Admin Type',            w: '95px'  },
+      { key: 'COUNTRY',               label: 'Country',               w: '110px' },
+      { key: 'LISTING_ID',            label: 'Listing ID',            w: '100px' },
+      { key: 'PICKUP_DATE',           label: 'Pickup Date',           w: '100px' }
     ],
     livechat: [
-      { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
+      { key: 'INTERACTION_DATETIME',  label: 'Time (UK)',     w: '115px' },
       { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
       { key: 'CUSTOMER_PHONE',        label: 'Phone',    w: '120px' },
       { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
@@ -522,7 +541,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       { key: 'PICKUP_DATE',           label: 'Pickup',   w: '90px'  }
     ],
     whatsapp: [
-      { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
+      { key: 'INTERACTION_DATETIME',  label: 'Time (UK)',     w: '115px' },
       { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
       { key: 'CUSTOMER_PHONE',        label: 'Phone',    w: '120px' },
       { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
@@ -538,7 +557,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 
   var PHONE_COLS = [
     { key: 'CHANNEL',               label: 'Channel',  w: '100px' },
-    { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
+    { key: 'INTERACTION_DATETIME',  label: 'Time (UK)',     w: '115px' },
     { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
     { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
     { key: 'AGENT_TYPE',            label: 'Type',     w: '75px'  },
@@ -885,16 +904,18 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
           td.appendChild(badge);
         } else if (c.key === 'INTERACTION_DATETIME' && v) {
           var parts = String(v).split(' ');
-          td.appendChild(document.createTextNode(parts[0]));
+          var dpart = parts[0];
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dpart)) { var dp = dpart.split('-'); dpart = dp[2] + '/' + dp[1] + '/' + dp[0]; }
+          td.appendChild(document.createTextNode(dpart));
           td.appendChild(document.createElement('br'));
           var ts = document.createElement('span');
           ts.style.color = 'var(--tx3)'; ts.style.fontSize = '10px';
-          ts.textContent = (parts[1] || '').slice(0, 5);
+          ts.textContent = (parts[1] || '').slice(0, 8);
           td.appendChild(ts);
           td.style.whiteSpace = 'normal'; td.style.lineHeight = '1.3';
         } else if (c.key === 'LISTING_ID' && v) {
           var a = document.createElement('a');
-          a.href = 'https://www.anyvan.com/administer/listing/' + v;
+          a.href = 'https://www.anyvan.com/administer/instant-listings/' + v + '/manage';
           a.target = '_blank';
           a.style.color = 'var(--ind)'; a.style.fontWeight = '700'; a.style.textDecoration = 'none';
           a.textContent = v;
@@ -920,7 +941,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         row.appendChild(td);
       });
 
-      row.addEventListener('click', function() { toggleExpand('phone', row, r, PHONE_COLS.length + 1); });
+      row.addEventListener('click', function() { openDrawer('phone', row, r); });
       tbody.appendChild(row);
     });
 
@@ -1130,16 +1151,18 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 
         if (c.key === 'INTERACTION_DATETIME' && v) {
           var parts = String(v).split(' ');
-          td.appendChild(document.createTextNode(parts[0]));
+          var dpart = parts[0];
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dpart)) { var dp = dpart.split('-'); dpart = dp[2] + '/' + dp[1] + '/' + dp[0]; }
+          td.appendChild(document.createTextNode(dpart));
           td.appendChild(document.createElement('br'));
           var ts = document.createElement('span');
           ts.style.color = 'var(--tx3)'; ts.style.fontSize = '10px';
-          ts.textContent = (parts[1] || '').slice(0, 5);
+          ts.textContent = (parts[1] || '').slice(0, 8);
           td.appendChild(ts);
           td.style.whiteSpace = 'normal'; td.style.lineHeight = '1.3';
         } else if (c.key === 'LISTING_ID' && v) {
           var a = document.createElement('a');
-          a.href = 'https://www.anyvan.com/administer/listing/' + v;
+          a.href = 'https://www.anyvan.com/administer/instant-listings/' + v + '/manage';
           a.target = '_blank';
           a.style.color = 'var(--ind)'; a.style.fontWeight = '700'; a.style.textDecoration = 'none';
           a.textContent = v;
@@ -1169,7 +1192,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         row.appendChild(td);
       });
 
-      row.addEventListener('click', function() { toggleExpand(tab, row, r, cols.length + 1); });
+      row.addEventListener('click', function() { openDrawer(tab, row, r); });
       tbody.appendChild(row);
     });
 
@@ -1178,89 +1201,221 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     updateSearchCounts();
   }
 
-  function toggleExpand(tab, row, r, colspan) {
-    var next = row.nextElementSibling;
-    if (next && next.classList.contains('convo-expand-row')) {
-      next.remove(); row.classList.remove('convo-expanded');
-      row.querySelector('.row-expand-icon').style.transform = ''; return;
+  var _selectedRow = null, _drawerBuilt = false;
+  function ensureDrawer() {
+    if (_drawerBuilt) return;
+    var bd = document.createElement('div'); bd.className = 'drawer-backdrop'; bd.id = 'drawerBackdrop';
+    var dr = document.createElement('aside'); dr.className = 'detail-drawer'; dr.id = 'detailDrawer';
+    dr.innerHTML = '<div class="drawer-header"><div><div class="drawer-title" id="drawerTitle">Interaction</div><div class="drawer-sub" id="drawerSub"></div></div><button class="drawer-close" id="drawerClose" title="Close (Esc)">✕</button></div><div class="drawer-body" id="drawerBody"></div>';
+    document.body.appendChild(bd); document.body.appendChild(dr);
+    bd.addEventListener('click', closeDrawer);
+    document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
+    _drawerBuilt = true;
+  }
+  function closeDrawer() {
+    var dr = document.getElementById('detailDrawer'), bd = document.getElementById('drawerBackdrop');
+    if (dr) dr.classList.remove('open');
+    if (bd) bd.classList.remove('open');
+    if (_selectedRow) {
+      _selectedRow.classList.remove('convo-expanded');
+      var ic = _selectedRow.querySelector('.row-expand-icon'); if (ic) ic.style.transform = '';
+      _selectedRow = null;
     }
-    var prev = document.querySelector('#tbody-' + tab + ' .convo-expand-row');
-    if (prev) {
-      prev.previousElementSibling.classList.remove('convo-expanded');
-      prev.previousElementSibling.querySelector('.row-expand-icon').style.transform = '';
-      prev.remove();
+  }
+
+  // Detail opens in a right-side drawer (does not push/hide the table).
+  function openDrawer(tab, row, r) {
+    ensureDrawer();
+    if (_selectedRow && _selectedRow !== row) {
+      _selectedRow.classList.remove('convo-expanded');
+      var pic = _selectedRow.querySelector('.row-expand-icon'); if (pic) pic.style.transform = '';
     }
+    _selectedRow = row;
     row.classList.add('convo-expanded');
-    row.querySelector('.row-expand-icon').style.transform = 'rotate(90deg)';
+    var ric = row.querySelector('.row-expand-icon'); if (ric) ric.style.transform = 'rotate(90deg)';
 
-    var expandRow = document.createElement('tr'); expandRow.className = 'convo-expand-row';
-    var eTd = document.createElement('td'); eTd.setAttribute('colspan', colspan); eTd.style.padding = '0';
-    var content = document.createElement('div'); content.className = 'convo-expand-content';
-
-    // For phone panel, determine channel from row data; for tab views use tab name
     var isCalls = (tab === 'calls') || (tab === 'phone' && r.CHANNEL === 'Call');
+    document.getElementById('drawerTitle').textContent = (r.CHANNEL || 'Interaction') + (r.LISTING_ID ? (' · AV ' + r.LISTING_ID) : '');
+    document.getElementById('drawerSub').textContent = fmtDateTime(r.INTERACTION_DATETIME) || '';
+    var content = document.getElementById('drawerBody'); content.innerHTML = '';
 
     var grid = document.createElement('div'); grid.className = 'convo-meta-grid';
+    var listingHref = r.LISTING_ID ? ('https://www.anyvan.com/administer/instant-listings/' + r.LISTING_ID + '/manage') : null;
+    // Twilio deep-links for voice calls. Flex Insights = the conversation drill-down (playback);
+    // Console = the call log. Console URL prefers the query-built value (customer leg) and falls
+    // back to the Interaction ID (worker leg) so the link still resolves if the query hasn't been
+    // redeployed yet. Flex URL comes wholesale from the warehouse (never hardcode the Account SID).
+    var flexHref = (isCalls && r.TWILIO_FLEX_URL) ? r.TWILIO_FLEX_URL : null;
+    var consoleHref = (isCalls && r.TWILIO_CONSOLE_URL) ? r.TWILIO_CONSOLE_URL
+      : ((isCalls && r.INTERACTION_ID && String(r.INTERACTION_ID).indexOf('CA') === 0)
+          ? ('https://console.twilio.com/us1/monitor/logs/calls/' + r.INTERACTION_ID) : null);
     var metaFields = [
-      { label: 'Interaction ID',   val: r.INTERACTION_ID },
-      { label: 'Date/Time',        val: r.INTERACTION_DATETIME },
-      { label: 'Channel',          val: r.CHANNEL },
-      { label: 'Agent',            val: r.AGENT_NAME },
-      { label: 'Agent Email',      val: r.AGENT_EMAIL },
-      { label: 'Agent Type',       val: r.AGENT_TYPE },
-      { label: 'Customer Phone',   val: r.CUSTOMER_PHONE },
-      { label: 'Listing',          val: r.LISTING_ID },
-      { label: 'Country',          val: r.COUNTRY },
-      { label: 'Category',         val: r.LISTING_CATEGORY_NAME },
-      { label: 'Pickup Date',      val: r.PICKUP_DATE ? fmtDate(r.PICKUP_DATE) : null },
-      { label: 'Listing Status',   val: r.LISTING_STATUS },
-      { label: 'Sentiment',        val: r.SENTIMENT },
-      { label: 'Sentiment Notes',  val: r.SENTIMENT_SUMMARY },
-      { label: 'Interaction Type', val: r.INTERACTION_TYPE }
+      { label: 'Interaction ID',        val: r.INTERACTION_ID, wrap: true },
+      { label: 'Date / Time (UK)',           val: fmtDateTime(r.INTERACTION_DATETIME) },
+      { label: 'Communication Channel', val: r.CHANNEL },
+      { label: 'AnyVan Admin',          val: r.AGENT_NAME },
+      { label: 'Agent Email',           val: r.AGENT_EMAIL },
+      { label: 'Admin Type',            val: r.AGENT_TYPE },
+      { label: 'Customer Phone',        val: r.CUSTOMER_PHONE },
+      { label: 'Listing ID',            val: r.LISTING_ID, href: listingHref },
+      { label: 'Country',               val: r.COUNTRY },
+      { label: 'Category',              val: r.LISTING_CATEGORY_NAME },
+      { label: 'Pickup Date',           val: r.PICKUP_DATE ? fmtDate(r.PICKUP_DATE) : null },
+      { label: 'Listing Status',        val: r.LISTING_STATUS },
+      { label: 'Sentiment',             val: r.SENTIMENT },
+      { label: 'Sentiment Notes',       val: r.SENTIMENT_SUMMARY },
+      { label: 'Interaction Type',      val: r.INTERACTION_TYPE }
     ];
     if (isCalls && r.DURATION_SECONDS != null) {
       var dm = Math.floor(r.DURATION_SECONDS / 60), ds = Math.round(r.DURATION_SECONDS % 60);
       metaFields.splice(7, 0, { label: 'Duration', val: dm + 'm ' + ds + 's' });
     }
+    // Conversation ID = the Twilio conference SID (CF…) — the key behind the Flex Insights link.
+    if (isCalls && r.CONVERSATION_ID) {
+      metaFields.splice(1, 0, { label: 'Conversation ID', val: r.CONVERSATION_ID, wrap: true });
+    }
     if (!isCalls) {
       metaFields.push({ label: 'Escalated',      val: r.ESCALATED ? 'Yes' : 'No' });
       metaFields.push({ label: 'Fields Changed', val: r.FIELDS_CHANGED });
     }
-
     metaFields.forEach(function(f) {
       var item = document.createElement('div'); item.className = 'convo-meta-item';
       var lbl  = document.createElement('div'); lbl.className = 'convo-meta-label'; lbl.textContent = f.label;
       var vDiv = document.createElement('div'); vDiv.className = 'convo-meta-value';
-      vDiv.textContent = f.val != null ? String(f.val) : '—';
+      if (f.wrap) vDiv.style.wordBreak = 'break-all';
+      if (f.href && f.val != null) {
+        var mLink = document.createElement('a');
+        mLink.href = f.href; mLink.target = '_blank'; mLink.rel = 'noopener';
+        mLink.style.color = 'var(--ind)'; mLink.style.fontWeight = '700'; mLink.style.textDecoration = 'none';
+        mLink.textContent = String(f.val);
+        vDiv.appendChild(mLink);
+      } else {
+        vDiv.textContent = f.val != null ? String(f.val) : '—';
+      }
       item.appendChild(lbl); item.appendChild(vDiv); grid.appendChild(item);
     });
     content.appendChild(grid);
 
-    if (!isCalls && r.TRANSCRIPT_URL) {
-      var viewSect = document.createElement('div');
-      var viewLbl = document.createElement('div'); viewLbl.className = 'convo-meta-label'; viewLbl.style.marginBottom = '6px'; viewLbl.textContent = 'Conversation Transcript';
-      viewSect.appendChild(viewLbl);
-      var iframe = document.createElement('iframe'); iframe.className = 'convo-viewer'; iframe.src = r.TRANSCRIPT_URL;
-      iframe.setAttribute('loading', 'lazy'); iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-      viewSect.appendChild(iframe); content.appendChild(viewSect);
-    }
-
-    var actions = document.createElement('div'); actions.className = 'convo-actions';
+    var actions = document.createElement('div'); actions.className = 'convo-actions'; actions.style.marginTop = '14px';
     if (isCalls && r.RECORDING_URL) {
       var aBtn = document.createElement('a'); aBtn.className = 'convo-btn convo-btn-primary'; aBtn.href = r.RECORDING_URL; aBtn.target = '_blank'; aBtn.rel = 'noopener'; aBtn.textContent = '🎧 Listen to Recording';
-      aBtn.addEventListener('click', function(e) { e.stopPropagation(); }); actions.appendChild(aBtn);
+      actions.appendChild(aBtn);
     }
-    if (!isCalls && r.TRANSCRIPT_URL) {
-      var tBtn = document.createElement('a'); tBtn.className = 'convo-btn convo-btn-primary'; tBtn.href = r.TRANSCRIPT_URL; tBtn.target = '_blank'; tBtn.textContent = '💬 Open Transcript';
-      tBtn.addEventListener('click', function(e) { e.stopPropagation(); }); actions.appendChild(tBtn);
+    if (isCalls && flexHref) {
+      var fBtn = document.createElement('a'); fBtn.className = 'convo-btn convo-btn-primary'; fBtn.href = flexHref; fBtn.target = '_blank'; fBtn.rel = 'noopener'; fBtn.textContent = '▶️ Twilio Flex';
+      actions.appendChild(fBtn);
     }
-    if (r.LISTING_ID) {
-      var lBtn = document.createElement('a'); lBtn.className = 'convo-btn'; lBtn.href = 'https://www.anyvan.com/administer/listing/' + r.LISTING_ID; lBtn.target = '_blank'; lBtn.textContent = '🔗 Admin Panel';
-      lBtn.addEventListener('click', function(e) { e.stopPropagation(); }); actions.appendChild(lBtn);
+    if (isCalls && consoleHref) {
+      var cBtn = document.createElement('a'); cBtn.className = 'convo-btn'; cBtn.href = consoleHref; cBtn.target = '_blank'; cBtn.rel = 'noopener'; cBtn.textContent = '🖥️ Twilio Console';
+      actions.appendChild(cBtn);
+    }
+    if (!isCalls && txConvSid(r)) {
+      var dlBtn = document.createElement('button'); dlBtn.className = 'convo-btn convo-btn-primary'; dlBtn.textContent = '⬇️ Download PDF (redacted)';
+      dlBtn.addEventListener('click', function() { downloadTranscriptPDF(r, dlBtn); });
+      actions.appendChild(dlBtn);
     }
     content.appendChild(actions);
-    eTd.appendChild(content); expandRow.appendChild(eTd);
-    row.parentNode.insertBefore(expandRow, row.nextSibling);
+
+    if (!isCalls && txConvSid(r)) {
+      var viewLbl = document.createElement('div'); viewLbl.className = 'convo-meta-label'; viewLbl.style.margin = '16px 0 6px'; viewLbl.textContent = 'Conversation Transcript';
+      content.appendChild(viewLbl);
+      var txWrap = document.createElement('div'); txWrap.className = 'tx-wrap';
+      txWrap.innerHTML = '<div class="tx-loading">Loading transcript…</div>';
+      content.appendChild(txWrap);
+      renderNativeTranscript(txWrap, r);
+    }
+
+    document.getElementById('detailDrawer').classList.add('open');
+    document.getElementById('drawerBackdrop').classList.add('open');
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function buildTranscriptDoc(r, rows) {
+    var esc = escapeHtml;
+    var roleMap = { CUSTOMER: { name: 'Customer', cls: 'cust right' }, AGENT: { name: 'AnyVan Agent', cls: 'agent left' }, BOT: { name: 'AnyVan (Sophie AI)', cls: 'bot left' } };
+    var bubbles = rows.map(function(m) {
+      var role = roleMap[m.SPEAKER_ROLE] || roleMap.AGENT;
+      var when = fmtDateTime(m.CREATED_AT) || '';
+      var txt = esc(m.MESSAGE).replace(/\n/g, '<br>');
+      return '<div class="msg ' + role.cls + '"><div class="bub"><div class="who">' + esc(role.name) + ' · <span class="ts">' + esc(when) + '</span></div><div class="txt">' + txt + '</div></div></div>';
+    }).join('');
+    var sub = [ r.CHANNEL ? ('Channel: ' + esc(r.CHANNEL)) : '', r.LISTING_ID ? ('Booking: AV ' + esc(r.LISTING_ID)) : '', r.CUSTOMER_PHONE ? ('Customer: ' + esc(r.CUSTOMER_PHONE)) : '' ].filter(Boolean).join('  ·  ');
+    var gen = fmtDateTime(new Date().toISOString().replace('T', ' ')) || '';
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>AnyVan Conversation Transcript</title><style>'
+      + 'body{font-family:Arial,Helvetica,sans-serif;color:#1e293b;margin:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+      + '.wrap{max-width:760px;margin:0 auto;padding:28px 30px;}'
+      + '.hd{border-bottom:3px solid #6366f1;padding-bottom:12px;}'
+      + '.hd h1{font-size:20px;margin:0 0 4px;color:#4338ca;}.hd .sub{font-size:12px;color:#475569;}'
+      + '.notice{background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:11px;border-radius:8px;padding:9px 12px;margin:14px 0 18px;}'
+      + '.msg{display:flex;margin:8px 0;}.msg.right{justify-content:flex-end;}'
+      + '.bub{max-width:76%;border-radius:12px;padding:8px 12px;font-size:13px;line-height:1.45;}'
+      + '.msg.cust .bub{background:#eef2ff;border:1px solid #c7d2fe;}'
+      + '.msg.agent .bub{background:#f1f5f9;border:1px solid #e2e8f0;}'
+      + '.msg.bot .bub{background:#f8fafc;border:1px dashed #cbd5e1;}'
+      + '.who{font-size:10px;font-weight:700;color:#64748b;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;}'
+      + '.ts{font-weight:400;text-transform:none;}.txt{word-wrap:break-word;overflow-wrap:anywhere;}'
+      + '.ft{margin-top:22px;border-top:1px solid #e2e8f0;padding-top:10px;font-size:10px;color:#94a3b8;}'
+      + '</style></head><body><div class="wrap">'
+      + '<div class="hd"><h1>AnyVan — Conversation Transcript</h1><div class="sub">' + sub + '</div></div>'
+      + '<div class="notice"><strong>Prepared for the customer.</strong> AnyVan staff names have been anonymised and internal references removed. Please review the messages below for any third-party personal information before sending.</div>'
+      + bubbles
+      + '<div class="ft">Generated ' + esc(gen) + ' · AnyVan · Redacted conversation export</div>'
+      + '</div></body></html>';
+  }
+  // Which conversation SID to read the transcript from: the resolved TRANSCRIPT_SID
+  // (e.g. human-agent WhatsApp matched via the message-author phone), else the row's
+  // own id — but only when it's a real Twilio conversation (CH…). A task SID (WT…),
+  // e.g. an unresolved web Live Chat, has no transcript, so return null and hide it.
+  function txConvSid(r) {
+    var sid = r.TRANSCRIPT_SID || r.INTERACTION_ID;
+    return (sid && String(sid).indexOf('CH') === 0) ? sid : null;
+  }
+  async function downloadTranscriptPDF(r, btn) {
+    var orig = btn ? btn.textContent : '';
+    try {
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Preparing…'; }
+      var res = await AVDashboard.runQuery('interaction_hub_conversation_transcript', { parameters: { conversation_sid: txConvSid(r) } });
+      var rows = (res && res.rows) || [];
+      if (!rows.length) { alert('No transcript messages were found for this conversation.'); return; }
+      var w = window.open('', '_blank');
+      if (!w) { alert('Please allow pop-ups for this site to download the transcript PDF.'); return; }
+      w.document.open(); w.document.write(buildTranscriptDoc(r, rows)); w.document.close();
+      setTimeout(function() { try { w.focus(); w.print(); } catch (e) {} }, 500);
+    } catch (e) {
+      alert('Could not build the transcript: ' + (e && e.message ? e.message : e));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = orig; }
+    }
+  }
+
+  function roleMeta(role) {
+    if (role === 'CUSTOMER') return { name: 'Customer', cls: 'cust right' };
+    if (role === 'BOT') return { name: 'AnyVan (Sophie AI)', cls: 'bot left' };
+    return { name: 'AnyVan Agent', cls: 'agent left' };
+  }
+  async function renderNativeTranscript(container, r) {
+    try {
+      var res = await AVDashboard.runQuery('interaction_hub_conversation_transcript', { parameters: { conversation_sid: txConvSid(r) } });
+      var rows = (res && res.rows) || [];
+      if (!rows.length) { container.innerHTML = '<div class="tx-loading">No transcript messages were found for this conversation.</div>'; return; }
+      container.innerHTML = '';
+      rows.forEach(function(m) {
+        var role = roleMeta(m.SPEAKER_ROLE);
+        var msg = document.createElement('div'); msg.className = 'tx-msg ' + role.cls;
+        var bub = document.createElement('div'); bub.className = 'tx-bub';
+        var who = document.createElement('div'); who.className = 'tx-who'; who.textContent = role.name + ' · ';
+        var ts = document.createElement('span'); ts.className = 'tx-ts'; ts.textContent = fmtDateTime(m.CREATED_AT) || ''; who.appendChild(ts);
+        var txt = document.createElement('div'); txt.textContent = m.MESSAGE == null ? '' : String(m.MESSAGE);
+        bub.appendChild(who); bub.appendChild(txt); msg.appendChild(bub); container.appendChild(msg);
+      });
+    } catch (e) {
+      container.innerHTML = '<div class="tx-loading">Could not load transcript: ' + escapeHtml(e && e.message ? e.message : String(e)) + '</div>';
+    }
   }
 
   function updateKPIs(tab, data) {
@@ -1319,7 +1474,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     var cols = ['INTERACTION_DATETIME', 'INTERACTION_ID', 'AGENT_NAME', 'AGENT_EMAIL', 'AGENT_TYPE',
                 'CUSTOMER_PHONE', 'LISTING_ID', 'COUNTRY', 'LISTING_CATEGORY_NAME', 'PICKUP_DATE',
                 'LISTING_STATUS', 'SENTIMENT', 'SENTIMENT_SUMMARY', 'INTERACTION_TYPE', 'CHANNEL'];
-    if (tab === 'calls') cols.push('DURATION_SECONDS', 'RECORDING_URL');
+    if (tab === 'calls') cols.push('DURATION_SECONDS', 'RECORDING_URL', 'CONVERSATION_ID', 'TWILIO_CONSOLE_URL', 'TWILIO_FLEX_URL');
     else cols.push('ESCALATED', 'FIELDS_CHANGED', 'TRANSCRIPT_URL');
     var csv = cols.join(',') + '\n';
     data.forEach(function(r) {
@@ -1340,6 +1495,14 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     var s = String(v).slice(0, 10);
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { var p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
     return s;
+  }
+  function fmtDateTime(v) {
+    if (v == null || v === '') return null;
+    var parts = String(v).split(' ');
+    var d = parts[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) { var p = d.split('-'); d = p[2] + '/' + p[1] + '/' + p[0]; }
+    var t = (parts[1] || '').slice(0, 8);
+    return t ? (d + ' ' + t) : d;
   }
 
   async function init() {
