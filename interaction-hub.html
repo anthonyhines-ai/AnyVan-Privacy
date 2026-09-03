@@ -1212,14 +1212,14 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       var cBtn = document.createElement('a'); cBtn.className = 'convo-btn'; cBtn.href = consoleHref; cBtn.target = '_blank'; cBtn.rel = 'noopener'; cBtn.textContent = '🖥️ Twilio Console';
       actions.appendChild(cBtn);
     }
-    if (!isCalls && r.INTERACTION_ID) {
+    if (!isCalls && txConvSid(r)) {
       var dlBtn = document.createElement('button'); dlBtn.className = 'convo-btn convo-btn-primary'; dlBtn.textContent = '⬇️ Download PDF (redacted)';
       dlBtn.addEventListener('click', function() { downloadTranscriptPDF(r, dlBtn); });
       actions.appendChild(dlBtn);
     }
     content.appendChild(actions);
 
-    if (!isCalls && r.INTERACTION_ID) {
+    if (!isCalls && txConvSid(r)) {
       var viewLbl = document.createElement('div'); viewLbl.className = 'convo-meta-label'; viewLbl.style.margin = '16px 0 6px'; viewLbl.textContent = 'Conversation Transcript';
       content.appendChild(viewLbl);
       var txWrap = document.createElement('div'); txWrap.className = 'tx-wrap';
@@ -1269,11 +1269,19 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       + '<div class="ft">Generated ' + esc(gen) + ' · AnyVan · Redacted conversation export</div>'
       + '</div></body></html>';
   }
+  // Which conversation SID to read the transcript from: the resolved TRANSCRIPT_SID
+  // (e.g. human-agent WhatsApp matched via the message-author phone), else the row's
+  // own id — but only when it's a real Twilio conversation (CH…). A task SID (WT…),
+  // e.g. an unresolved web Live Chat, has no transcript, so return null and hide it.
+  function txConvSid(r) {
+    var sid = r.TRANSCRIPT_SID || r.INTERACTION_ID;
+    return (sid && String(sid).indexOf('CH') === 0) ? sid : null;
+  }
   async function downloadTranscriptPDF(r, btn) {
     var orig = btn ? btn.textContent : '';
     try {
       if (btn) { btn.disabled = true; btn.textContent = '⏳ Preparing…'; }
-      var res = await AVDashboard.runQuery('interaction_hub_conversation_transcript', { parameters: { conversation_sid: r.INTERACTION_ID } });
+      var res = await AVDashboard.runQuery('interaction_hub_conversation_transcript', { parameters: { conversation_sid: txConvSid(r) } });
       var rows = (res && res.rows) || [];
       if (!rows.length) { alert('No transcript messages were found for this conversation.'); return; }
       var w = window.open('', '_blank');
@@ -1294,7 +1302,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   }
   async function renderNativeTranscript(container, r) {
     try {
-      var res = await AVDashboard.runQuery('interaction_hub_conversation_transcript', { parameters: { conversation_sid: r.INTERACTION_ID } });
+      var res = await AVDashboard.runQuery('interaction_hub_conversation_transcript', { parameters: { conversation_sid: txConvSid(r) } });
       var rows = (res && res.rows) || [];
       if (!rows.length) { container.innerHTML = '<div class="tx-loading">No transcript messages were found for this conversation.</div>'; return; }
       container.innerHTML = '';
