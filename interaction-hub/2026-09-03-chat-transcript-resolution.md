@@ -59,20 +59,36 @@ cross-customer leak — and we drop them anyway rather than guess.
   **UK-time** fix into `interaction_hub_whatsapp` / `interaction_hub_livechat` (v7), which the
   earlier timezone pass had missed.
 
-## 3. Still open — web Live Chat
+## 3. Web Live Chat — customer-centric retrieval (shipped for phone lookup)
 
-Web Live Chat messages **are** in `TWILIO_CONVERSATION_MESSAGE` (≈1,900 conversations/week), but the
-customer author is an **anonymous `FX…` web-chat id** — no phone, listing or booking on it — so
-there is no safe key from a Live Chat task to its conversation. The phone trick can't help (web-chat
-messages carry no phone). Fixing it needs the Flex **`conversationSid` captured against the task**,
-via either:
+Web Live Chat messages **are** in `TWILIO_CONVERSATION_MESSAGE` (≈1,900 conversations/week). The
+message *author* is an anonymous `FX…` web id, **but the web user record carries the customer's
+identity**: `HARMONISED.PRODUCTION.TWILIO_CONVERSATION_USER.FRIENDLY_NAME` is 100% populated and
+~52% are **emails** (the rest names), captured from the pre-chat form. Of the email ones, **~64%
+resolve to a known `DIM_USER_CUSTOMER`**.
 
-- **Live Twilio API lookup** (no data request): a proxy route `TaskSid → attributes.conversationSid`,
-  same pattern as the recordings proxy; the hub then runs the existing transcript query. *(Preferred.)*
-- **Source capture**: land the `conversationSid` against the task in the Twilio events pipeline.
+That gives a customer-centric link even though the **task** can't be linked (the chat task's
+`FROMNUMBER`/`TONUMBER` are non-phone fragments — only 6 of 1,614 resolve to a customer, so a
+task↔conversation match is a dead end). So we surface web chats **by customer, in the SAR phone
+lookup**, not on the Live Chat tab:
 
-An agent-plus-time heuristic was rejected: agents run concurrent chats, so it could attach the wrong
-customer's transcript to a booking — unacceptable in a privacy tool.
+```
+searched phone (:phone_suffix)
+  → DIM_USER_CUSTOMER (PRIMARY/SECONDARY_PHONE_NUMBER) → EMAIL_ADDRESS
+  → TWILIO_CONVERSATION_USER.FRIENDLY_NAME = that email → FX web user
+  → its web-chat CONVERSATION_ID (CH) → transcript
+```
+
+Implemented as the `web_livechat` branch (`cust` + `web_chat` CTEs) in
+`interaction_hub_phone_lookup` **v11** — LiveChat rows carrying `TRANSCRIPT_SID = CH`, so the drawer
+renders them with no HTML change. Coverage: ~62% of email-bearing web chats are reachable by phone
+(~a third of all web chats). Rows sit under the LiveChat channel in phone-lookup results.
+
+**Still not covered:** the Live Chat **tab** (task rows) — those have no usable key at all, so they
+still need the Flex `conversationSid` captured against the task: a **Twilio API proxy** route
+`TaskSid → attributes.conversationSid` (no data request, recordings-proxy pattern) or source capture.
+An agent-plus-time heuristic was rejected — agents run concurrent chats, so it could attach the wrong
+customer's transcript to a booking.
 
 ## 4. Governance notes
 
