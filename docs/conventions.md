@@ -65,6 +65,45 @@ these, update this file in the same PR.
   `FRESHDESK_TICKET_CREATE` action → use a **custom date field** (`cf_privacy_due_date`) populated by
   the workflow instead. SLA/automation can’t do arbitrary date arithmetic.
 
+## Jiminny Video Lookup (SAR/DSAR)
+
+**Purpose:** Locate and retrieve video consultation recordings (property assessments, flat tours) during SAR data compilation.
+
+### Search methodology (validated)
+- **Primary method:** Jiminny UI search by **customer email address**
+  - Enters Jiminny → Search/Filter section → enter customer email (e.g., `monibag2000@yahoo.com`)
+  - Returns list of all calls/videos for that customer with date, time, agent name, type, duration
+  - Verify date/time matches expected consultation (e.g., 17 June 2026 ~14:30)
+  - Download MP4/MOV file to secure location
+
+- **Alternative searches** (if email search returns no video):
+  - Search by phone number (`07881361498` or `+447881361498`)
+  - Search by booking reference (`9454215`)
+  - Browse by agent name (if known from booking notes)
+
+- **If not found in Jiminny:** Escalate to Interaction Hub team, Google Drive, or third-party assessment platforms (Robinhood, Tradify, etc.)
+
+### MCP connector (optional, for transcripts only)
+- **Tool:** `mcp__AnyVan_MCP__get_conversation_transcript`
+- **Input:** HubSpot dealId (e.g., `60955982356`)
+- **Output:** Full conversation transcript if deal is linked to Jiminny call
+- **Use case:** Retrieve transcript after video file is located (not for locating videos)
+
+### Important notes
+- **Jiminny data is NOT in Snowflake** — direct UI search is the only reliable method
+- **Video ownership:** Recording is AnyVan's; customer entitled to copy per GDPR Article 15
+- **PII in video:** Redact agent name (e.g., "Alex York" → `[AGENT]`); confirm no issue with sharing property footage
+- **Storage:** Jiminny is third-party processor — confirm DPA in place before delivery
+- **Retention:** Keep copy 3 months post-delivery per retention policy
+
+### Video lookup SLA
+- **Locate & download video:** by Day 4–5 of SAR (before PII redaction review)
+- **Verify playback:** confirm file plays, audio clear, duration matches Jiminny metadata
+- **Include in archive:** add to encrypted SAR delivery (WeTransfer Plus, 7-day expiry)
+
+### Detailed guide
+- See `../booking-lookups/METHODOLOGY-jiminny-video-lookup.md` for step-by-step UI navigation, fallback locations, and troubleshooting
+
 ## Workflow-system
 
 - Use the org **`workflow-editor`** skill (CRUD on definitions) and **`workflow-doctor`** skill

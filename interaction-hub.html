@@ -235,6 +235,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   <div class="main-tab active" data-tab="calls">📞 Calls <span class="tab-count" id="countCalls">—</span></div>
   <div class="main-tab" data-tab="livechat">💬 Live Chat <span class="tab-count" id="countLivechat">—</span></div>
   <div class="main-tab" data-tab="whatsapp">📱 WhatsApp <span class="tab-count" id="countWhatsapp">—</span></div>
+  <div class="main-tab" data-tab="jiminny">🎥 Jiminny Lookup <span class="tab-count" id="countJiminny">—</span></div>
 </div>
 
 <div class="main">
@@ -405,16 +406,58 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     </div>
   </div>
 
+  <!-- JIMINNY LOOKUP -->
+  <div class="tab-panel" id="panel-jiminny">
+    <div class="filter-bar">
+      <div class="filter-row">
+        <span class="filter-label">🎥 Jiminny Video Lookup</span>
+        <span style="font-size:11px;color:var(--tx2);margin-left:12px;">Search for customer video consultations / property assessments</span>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Customer Email</span>
+        <input type="email" class="filter-input" id="jiminny-email" placeholder="e.g., customer@example.com" style="min-width:220px;">
+        <button class="btn-phone-search" id="jiminny-searchBtn" style="margin-left:8px;">🔍 Search Jiminny</button>
+        <button class="btn-phone-clear" id="jiminny-clearBtn" style="margin-left:4px;">Clear</button>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Date Range (Optional)</span>
+        <input type="date" class="filter-input" id="jiminny-dateFrom">
+        <span style="font-size:11px;color:var(--tx3);">to</span>
+        <input type="date" class="filter-input" id="jiminny-dateTo">
+        <span style="font-size:11px;color:var(--tx3);margin-left:8px;">Leave blank to search all dates</span>
+      </div>
+    </div>
+    <div class="advisory-banner" id="jiminny-advisory" style="display:none;">
+      ℹ️ <span><strong>Manual Jiminny UI search required.</strong> This tool provides guidance. Access Jiminny directly at <strong>app.jiminny.com</strong> to search and download videos. See: <a href="#" onclick="alert('Jiminny_Lookup_Guide_SAR_Monika_Baginska_REVISED.md'); return false;" style="color:var(--ind);text-decoration:underline;">Jiminny Lookup Guide</a></span>
+    </div>
+    <div class="convo-section">
+      <div id="jiminny-results" style="padding:20px;">
+        <div style="text-align:center;color:var(--tx3);font-size:13px;">Enter a customer email and click <strong>Search Jiminny</strong> to see instructions and next steps.</div>
+      </div>
+    </div>
+    <div style="padding:20px;background:var(--sf);border-top:1px solid var(--bd);border-radius:0 0 12px 12px;margin-top:-1px;font-size:12px;color:var(--tx2);line-height:1.6;">
+      <strong style="color:var(--tx);">How to use:</strong><br/>
+      1. Enter the customer's email address (the one associated with their booking)<br/>
+      2. Click <strong>Search Jiminny</strong> — this shows guidance on accessing Jiminny<br/>
+      3. Access <strong>Jiminny directly</strong> (app.jiminny.com) and search by email/phone<br/>
+      4. Locate the video by date (~17 June ~14:30 for assessments)<br/>
+      5. Download MP4/MOV file and save to secure location<br/>
+      <br/>
+      <strong style="color:var(--ind);">⚠️ Important:</strong> Jiminny data is not available in Snowflake. Direct UI search is the only reliable method. See Jiminny_Lookup_Guide_SAR_Monika_Baginska_REVISED.md for detailed instructions.
+    </div>
+  </div>
+
 </div>
 
 <script>
 (function() {
-  var _data    = { calls: [], livechat: [], whatsapp: [] };
-  var _loaded  = { calls: false, livechat: false, whatsapp: false };
+  var _data    = { calls: [], livechat: [], whatsapp: [], jiminny: [] };
+  var _loaded  = { calls: false, livechat: false, whatsapp: false, jiminny: false };
   var _sort    = {
     calls:    { col: 'INTERACTION_DATETIME', dir: 'desc' },
     livechat: { col: 'INTERACTION_DATETIME', dir: 'desc' },
-    whatsapp: { col: 'INTERACTION_DATETIME', dir: 'desc' }
+    whatsapp: { col: 'INTERACTION_DATETIME', dir: 'desc' },
+    jiminny:  { col: 'CALL_START_TIME', dir: 'desc' }
   };
   var _usearch  = '';
   var _activeTab = 'calls';
@@ -964,6 +1007,61 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       renderPhoneResults();
     });
   });
+
+  // Jiminny search input handlers
+  var jiminnyEmailInput = document.getElementById('jiminny-email');
+  var jiminnySearchBtn  = document.getElementById('jiminny-searchBtn');
+  var jiminnyClearBtn   = document.getElementById('jiminny-clearBtn');
+  var jiminnyResults    = document.getElementById('jiminny-results');
+
+  function doJiminnySearch() {
+    var email = jiminnyEmailInput.value.trim();
+    if (!email || !email.includes('@')) {
+      jiminnyEmailInput.focus();
+      jiminnyEmailInput.style.borderColor = 'var(--red)';
+      setTimeout(function() { jiminnyEmailInput.style.borderColor = ''; }, 1500);
+      return;
+    }
+    var dateFrom = document.getElementById('jiminny-dateFrom').value;
+    var dateTo   = document.getElementById('jiminny-dateTo').value;
+
+    jiminnyResults.innerHTML = `
+      <div style="padding:20px;background:var(--sf2);border-radius:8px;">
+        <div style="font-size:13px;color:var(--tx);line-height:1.8;margin-bottom:16px;">
+          <strong style="color:var(--ind);font-size:14px;">✓ Jiminny Video Lookup</strong><br/>
+          <br/>
+          <strong>Customer Email:</strong> ${email}<br/>
+          ${dateFrom ? '<strong>Date Range:</strong> ' + dateFrom + (dateTo ? ' to ' + dateTo : '') + '<br/>' : ''}
+          <br/>
+          <strong style="color:var(--tx);">Next Steps:</strong><br/>
+          1. Access <strong><a href="https://app.jiminny.com" target="_blank" style="color:var(--ind);text-decoration:underline;">app.jiminny.com</a></strong><br/>
+          2. Go to <strong>Calls/Recordings</strong> section<br/>
+          3. Search by email: <code style="background:var(--sf);padding:2px 6px;border-radius:4px;font-family:monospace;">${email}</code><br/>
+          4. Filter by date (if known): ${dateFrom || 'any date'}<br/>
+          5. Look for <strong>Video</strong> call type<br/>
+          6. Click entry → <strong>Download</strong> (MP4/MOV format)<br/>
+          7. Save to secure location<br/>
+          <br/>
+          <strong style="color:var(--amb);">💡 Tip:</strong> The video entry will show agent name, duration, and timestamp. Verify date/time matches your expected consultation before downloading.<br/>
+          <br/>
+          <strong style="color:var(--ind);">📖 Full Guide:</strong> See <code style="background:var(--sf);padding:2px 6px;border-radius:4px;">Jiminny_Lookup_Guide_SAR_Monika_Baginska_REVISED.md</code> for detailed steps and troubleshooting.
+        </div>
+      </div>
+    `;
+    document.getElementById('jiminny-advisory').style.display = 'flex';
+  }
+
+  function clearJiminnySearch() {
+    jiminnyEmailInput.value = '';
+    document.getElementById('jiminny-dateFrom').value = '';
+    document.getElementById('jiminny-dateTo').value = '';
+    jiminnyResults.innerHTML = '<div style="text-align:center;color:var(--tx3);font-size:13px;">Enter a customer email and click <strong>Search Jiminny</strong> to see instructions and next steps.</div>';
+    document.getElementById('jiminny-advisory').style.display = 'none';
+  }
+
+  jiminnySearchBtn.addEventListener('click', doJiminnySearch);
+  jiminnyEmailInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doJiminnySearch(); });
+  jiminnyClearBtn.addEventListener('click', clearJiminnySearch);
 
   // History window control — expand up to the 12-month retention limit
   document.querySelectorAll('#phoneWindowSeg .seg-btn').forEach(function(btn) {
