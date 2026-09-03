@@ -89,7 +89,28 @@ The Flex link is a `LEFT JOIN` on the conference SID (deduped one row per confer
 - **No secrets.** The Twilio Account SID is never hardcoded — the Flex URL comes from the
   `CONVERSATION` column at run time. Recordings/links stay behind AnyVan SSO.
 
-## 5. Sources
+## 5. Follow-ups (same day)
+
+- **Timezone fix.** `INTERACTION_DATETIME` was displaying in **UTC**, so BST calls showed an
+  hour early (a 08:17 call read as 07:17, before the 08:00 UK open). Both queries now wrap the
+  timestamp in `CONVERT_TIMEZONE('UTC','Europe/London', …)` (NTZ columns) /
+  `CONVERT_TIMEZONE('UTC','Europe/London', …::TIMESTAMP_NTZ)` (the `TIMESTAMP_TZ` admin column),
+  which is DST-aware (GMT in winter, BST in summer). Time columns/labels now read "**(UK)**".
+  Queries: `interaction_hub_calls` v8, `interaction_hub_phone_lookup` v9. The `WHERE` window
+  filters are left on raw UTC (immaterial at a ±1h boundary).
+- **12-month playback ask (Flex).** Twilio Flex/Insights retains ~12 months, but the **warehouse
+  export (`…FLEX_INSIGHTS…`) only holds ~7 weeks**, so the in-Flex link can't be built for older
+  calls from data alone. The **Console link already gives 12-month access** (built from the Call
+  SID, which lives in `FCT_TWILIO_CALL_METRICS` for the full window; requires Twilio Console
+  login). The **direct-audio proxy URL** (`twilio-recordings.anyvan.com/recordings/{RecordingSid}`,
+  behind the API-key Basic Auth) needs the **RecordingSid**, which is **still not in Snowflake for
+  human-agent calls** — re-verified 2026-09-03: **0 of 425,446** admin voice calls (45–90 days old)
+  resolve a `RE…` id via `CALL_TRANSCRIPT_CALLS`, `CALL_ANALYSIS`, or `TWILIO_EVENTS_TASKROUTER_TASKS`
+  (those tables carry recordings for a different, AI/QA call population). Closing that gap is the
+  open handoff from the 26 Aug diagnosis (land RecordingSid↔CallSid, or a proxy `by-call/{CallSid}`
+  route) — neither buildable in the dashboard alone.
+
+## 6. Sources
 
 - Reference build for the link patterns: [`sql/listing_calls_with_twilio_links.sql`](../sql/listing_calls_with_twilio_links.sql)
   and [`docs/twilio-listing-call-lookup.md`](../docs/twilio-listing-call-lookup.md).
