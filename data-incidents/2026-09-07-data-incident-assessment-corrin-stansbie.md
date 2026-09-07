@@ -116,8 +116,9 @@ Evidence from Snowflake (read-only), listing `9593885`:
 - **Customer response:** factual explanation of what happened (anomaly, not a breach/security issue),
   confirmation the number is corrected and the move completed with no unauthorised changes, and thanks
   for continued custom. Drafted for issue via Freshdesk **after DPO sign-off**.
-- **Goodwill:** **account credit** (Operations Director decision — a credit, not a booking discount),
-  amount to be set within authority. Optional per the DPO; applied by way of goodwill for inconvenience.
+- **Goodwill:** **£25.00 account credit** (Operations Director decision — a credit, not a booking
+  discount). Optional per the DPO; applied by way of goodwill for inconvenience, without admission of
+  liability.
 - **Underlying investigation** (identity resolution, full comms trace, number-provenance analysis):
   `communication-lookups/2026-08-24-comms-lookup-jonathanjamesstansbie-and-07736348212.md`.
 
