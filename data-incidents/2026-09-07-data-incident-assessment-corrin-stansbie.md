@@ -14,7 +14,7 @@
 | **Raised by** | Anthony Hines (anthony.hines@anyvan.com) |
 | **Data source** | Prior investigation record (§7) · Snowflake `PRODUCTION` (read-only) · DPO determination (N. Scott, 2026-09-02) |
 | **Subject** | Corrin Stansbie — AnyVan account `3609439` (`edwinastansbie@gmail.com`, current phone `07545703175`) |
-| **Status** | Assessed — **not a personal-data breach** (DPO determination). Awaiting DPO sign-off on the register entry. |
+| **Status** | Assessed — **not a personal-data breach** (DPO determination). Customer response **issued 2026-09-07**; DPO breach-assessment form outstanding for sign-off. |
 
 ---
 
@@ -113,9 +113,9 @@ Evidence from Snowflake (read-only), listing `9593885`:
 
 ## 7. Response & remedy
 
-- **Customer response:** factual explanation of what happened (anomaly, not a breach/security issue),
-  confirmation the number is corrected and the move completed with no unauthorised changes, and thanks
-  for continued custom. Drafted for issue via Freshdesk **after DPO sign-off**.
+- **Customer response:** **issued via Freshdesk on 2026-09-07** — a factual explanation of what
+  happened (anomaly, not a breach/security issue), confirmation the account contact number has since
+  been amended and the move completed with no unauthorised changes, and thanks for continued custom.
 - **Goodwill:** **£25.00 account credit** (Operations Director decision — a credit, not a booking
   discount). Optional per the DPO; applied by way of goodwill for inconvenience, without admission of
   liability.
