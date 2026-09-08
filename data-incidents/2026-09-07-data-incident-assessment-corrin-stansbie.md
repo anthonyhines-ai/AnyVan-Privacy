@@ -14,7 +14,7 @@
 | **Raised by** | Anthony Hines (anthony.hines@anyvan.com) |
 | **Data source** | Prior investigation record (§7) · Snowflake `PRODUCTION` (read-only) · DPO determination (N. Scott, 2026-09-02) |
 | **Subject** | Corrin Stansbie — AnyVan account `3609439` (`edwinastansbie@gmail.com`, current phone `07545703175`) |
-| **Status** | Assessed — **not a personal-data breach** (DPO determination). Customer response **issued 2026-09-07**; DPO breach-assessment form outstanding for sign-off. |
+| **Status** | **Reopened 2026-09-07** — customer rejected the response and **referred the matter to the ICO**. DPO to re-assess the not-a-breach determination against the customer's contentions (see §10) before any further response. |
 
 ---
 
@@ -142,3 +142,25 @@ Evidence from Snowflake (read-only), listing `9593885`:
 - This repo captures the **record and decision**; the personal-data-breach register and retention
   schedule are the authoritative systems and live outside this repo. The DPO breach-assessment form is
   the sign-off artefact — this record supplies its content.
+
+---
+
+## 10. Addendum (2026-09-07) — customer rejection & ICO referral
+
+The customer rejected the response and confirmed she has **referred the matter to the ICO**. The
+assessment is **reopened** for DPO re-review. Her contentions, and how they bear on the not-a-breach
+determination:
+
+| # | Customer contention | Our position / what it changes |
+|---|---|---|
+| 1 | The booking captured her **correct** number (shown on the booking-confirmation **email**, sent without signing in); the actionable WhatsApp link was nonetheless routed to the **legacy** number | **Consistent with our data** — booking artefacts held `07545703175`; outbound comms resolved the recipient from the stale account-profile number. Strengthens her point that an actionable link went to the wrong number while the right one was on the booking |
+| 2 | Disputes the legacy number was ever her account-holder contact; states `…3175` has always been hers as booker/account holder and `…8212` belonged to the person moved in 2018 | **Conflicts with `USER_PHONE_NUMBER`**, which records `…8212` as `IS_CONTACT` from 2018-10-14 and `…3175` added 2026-08-21. To be **reconciled**, not conceded |
+| 3 | Concedes the link did **not** expose her password, but states it **permitted amendments to the booking capable of charging her card**; argues the risk existed even though no unauthorised change occurred | **Load-bearing and unverified.** If the manage-booking link permits chargeable amendments / discloses address + inventory to whoever holds it without re-authentication, this is an **unauthorised-disclosure** argument (Art. 4(12)) that the "no risk / not a breach" line does not fully answer. **Verify the link's actual capabilities.** |
+| 4 | Privacy-by-design / safeguarding: an actionable link containing current address, destination address and inventory, sent to a stale/wrong number, could in a **domestic-abuse** scenario disclose a victim's new address to an abuser | **The strongest point.** A general design risk to rights & freedoms; the "no harm here" answer does not address it. Likely to weigh with the ICO |
+
+**Implications**
+- The **incident-not-breach** determination is now **contestable on confidentiality-disclosure grounds** (her personal data was made accessible to a third party via an actionable link). Defensible, but not safe — the ICO may take a different view.
+- **DPO (Neil Scott) to re-assess** in light of §10 before any further response. Route the next response through the **ICO process**; no further direct rebuttal to the complainant pending DPO / Legal steer.
+
+**Open verification (blocks the risk assessment)**
+- Confirm exactly what the booking-management ("magic") link permits without re-authentication: view scope (address, destination, inventory), ability to make **chargeable** amendments, and cancellation. This determines whether a confidentiality/integrity breach is arguable.
