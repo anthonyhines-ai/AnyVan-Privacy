@@ -268,6 +268,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   <div class="main-tab active" data-tab="calls">📞 Calls <span class="tab-count" id="countCalls">—</span></div>
   <div class="main-tab" data-tab="livechat">💬 Live Chat <span class="tab-count" id="countLivechat">—</span></div>
   <div class="main-tab" data-tab="whatsapp">📱 WhatsApp <span class="tab-count" id="countWhatsapp">—</span></div>
+  <div class="main-tab" data-tab="emails">✉️ Emails <span class="tab-count" id="countEmails">—</span></div>
 </div>
 
 <div class="main">
@@ -438,6 +439,64 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     </div>
   </div>
 
+  <!-- EMAILS -->
+  <div class="tab-panel" id="panel-emails">
+    <div class="advisory-banner show" id="emails-freshdesk" style="background:rgba(90,95,207,.07);border-color:rgba(90,95,207,.25);color:var(--tx2);">
+      ℹ️ <span><strong>Direct communications (Freshdesk)</strong> aren't pulled into the hub — open Freshdesk and search the customer's email or phone to view their support email threads. <a id="emails-freshdeskLink" href="https://anyvan.freshdesk.com/a/tickets" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:none;">Open Freshdesk ↗</a></span>
+    </div>
+    <div class="filter-bar">
+      <div class="filter-row">
+        <span class="filter-label">Category</span>
+        <div class="seg-group" id="emails-catSeg">
+          <button class="seg-btn on" data-cat="">All</button>
+          <button class="seg-btn" data-cat="Marketing">Marketing</button>
+          <button class="seg-btn" data-cat="Transactional">Transactional</button>
+          <button class="seg-btn" data-cat="Direct">Direct (Freshdesk)</button>
+        </div>
+        <div class="filter-spacer"></div>
+        <button class="btn-export" id="emails-exportBtn">⬇ Export CSV</button>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Customer</span>
+        <input type="text" class="filter-input" id="emails-search" placeholder="Email or phone…" style="width:230px;font-size:12px;">
+        <button class="btn-phone-search" id="emails-searchBtn" style="padding:5px 14px;">Search</button>
+        <button class="btn-phone-clear" id="emails-clearBtn" style="display:none;">✕ Clear</button>
+        <div class="filter-sep"></div>
+        <span class="filter-label">History</span>
+        <div class="seg-group" id="emails-windowSeg">
+          <button class="seg-btn on" data-days="90">90 days</button>
+          <button class="seg-btn" data-days="180">6 months</button>
+          <button class="seg-btn" data-days="365">12 months</button>
+        </div>
+        <span class="date-hint" style="margin-left:6px;">Metadata only — no email bodies</span>
+      </div>
+    </div>
+    <div class="kpi-strip" id="emails-kpis">
+      <div class="kpi-tile"><div class="kpi-label">Transactional sent (7d)</div><div class="kpi-value" id="kpi-emails-txn">—</div><div class="kpi-sub" id="kpi-emails-txn-today"></div></div>
+      <div class="kpi-tile"><div class="kpi-label">Marketing sent (7d)</div><div class="kpi-value" id="kpi-emails-mkt">—</div><div class="kpi-sub" id="kpi-emails-mkt-today"></div></div>
+      <div class="kpi-tile"><div class="kpi-label">All emails (7d)</div><div class="kpi-value" id="kpi-emails-all">—</div><div class="kpi-sub">Marketing + Transactional</div></div>
+      <div class="kpi-tile"><div class="kpi-label">Direct (Freshdesk)</div><div class="kpi-value" style="font-size:15px;color:var(--tx2);">Manual</div><div class="kpi-sub">Not tracked here — see banner</div></div>
+    </div>
+    <div class="advisory-banner" id="emails-allcaveat" style="background:rgba(192,122,0,.08);border-color:rgba(192,122,0,.25);color:var(--amb);">
+      ⚠️ <span><strong>All</strong> covers Marketing + Transactional only. Direct communications (Freshdesk) are <strong>not</strong> included — open Freshdesk manually (link above).</span>
+    </div>
+    <div class="convo-section">
+      <div class="convo-loading" id="loading-emails" style="display:none;"><div class="spinner"></div><span>Loading emails…</span></div>
+      <div id="emails-directPanel" style="display:none;padding:34px 24px;text-align:center;color:var(--tx2);">
+        <div style="font-size:34px;margin-bottom:10px;">📨</div>
+        <div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:6px;">Direct communications live in Freshdesk</div>
+        <div style="font-size:12px;max-width:520px;margin:0 auto 14px;line-height:1.6;">These aren't pulled into the hub. Open Freshdesk and search the customer's email or phone number to view their support email threads.</div>
+        <a id="emails-directLink" href="https://anyvan.freshdesk.com/a/tickets" target="_blank" rel="noopener" class="convo-btn convo-btn-primary" style="display:inline-flex;">Open Freshdesk ↗</a>
+      </div>
+      <div id="content-emails" style="display:none;">
+        <div class="convo-table-wrap"><table class="convo-table"><thead id="thead-emails"></thead><tbody id="tbody-emails"></tbody></table></div>
+        <div class="convo-empty" id="empty-emails" style="display:none;">No emails found for this customer in the selected window.</div>
+        <div class="convo-footer"><span id="footer-emails"></span></div>
+      </div>
+      <div class="convo-empty" id="prompt-emails">🔍 Search a customer's <strong>email or phone</strong> above to list the emails we've sent them (Marketing + Transactional).</div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -600,7 +659,9 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     });
     document.querySelectorAll('.tab-panel').forEach(function(p) {
       p.classList.toggle('active', p.id === 'panel-' + name);
+      p.style.display = '';   // clear any inline display left by Customer Lookup mode
     });
+    if (name === 'emails') { showEmailsTab(); return; }
     if (!_loaded[name]) loadTab(name);
     else renderTable(name);
   }
@@ -780,9 +841,10 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     });
     document.getElementById('panel-phone').style.display = 'none';
     document.getElementById('mainTabs').style.display = '';
-    // Restore active tab
+    // Restore active tab (clear the inline display:none set on entering phone mode)
     document.querySelectorAll('.tab-panel').forEach(function(p) {
       p.classList.toggle('active', p.id === 'panel-' + _activeTab);
+      p.style.display = '';
     });
     document.getElementById('phoneSearch').value = '';
     document.getElementById('phoneSearchClear').style.display = 'none';
@@ -1416,6 +1478,204 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       container.innerHTML = '<div class="tx-loading">Could not load transcript: ' + escapeHtml(e && e.message ? e.message : String(e)) + '</div>';
     }
   }
+
+  // ===== EMAILS TAB =====
+  // Customer-scoped list of emails AnyVan sent (Transactional = EVENTS_MESSAGING_MESSAGE,
+  // Marketing = EVENTS_EMAIL), classed by purpose — never by sending platform. "All" = both.
+  // Direct communications (Freshdesk) are not pulled in — a manual link is offered instead.
+  var _emails = { rows: [], loaded: false, cat: '', mode: 'email', term: '', days: 90, kpisLoaded: false };
+  var EMAIL_COLS = [
+    { key: 'EMAIL_CLASS',          label: 'Category',        w: '110px' },
+    { key: 'INTERACTION_DATETIME', label: 'Date / Time (UK)', w: '150px' },
+    { key: 'EMAIL_TYPE',           label: 'Type',            w: '210px' },
+    { key: 'SUBJECT',              label: 'Subject',         w: '260px' },
+    { key: 'RECIPIENT',            label: 'Recipient',       w: '200px' },
+    { key: 'CHANNEL',              label: 'Channel',         w: '80px'  }
+  ];
+  function prettyEmailType(v, cls) {
+    if (v == null || v === '') return cls === 'Transactional' ? '(no template)' : '(campaign)';
+    if (cls === 'Transactional') {
+      var seg = String(v).split('/').pop().replace(/_(en|es|fr|de|it)$/i, '').replace(/_/g, ' ');
+      return seg.charAt(0).toUpperCase() + seg.slice(1);
+    }
+    return String(v);
+  }
+  async function loadEmailKpis() {
+    try {
+      var res = await AVDashboard.runQuery('interaction_hub_email_kpis', { parameters: { days: 7 } });
+      var rows = (res && res.rows) || [];
+      var today = new Date().toISOString().slice(0, 10);
+      var agg = { Transactional: { total: 0, today: 0 }, Marketing: { total: 0, today: 0 } };
+      rows.forEach(function(r) {
+        if (r.GRAIN !== 'daily') return;
+        var c = agg[r.EMAIL_CLASS]; if (!c) return;
+        c.total += Number(r.N_SENT) || 0;
+        if (r.LABEL === today) c.today += Number(r.N_SENT) || 0;
+      });
+      setText('kpi-emails-txn', agg.Transactional.total.toLocaleString());
+      setText('kpi-emails-txn-today', 'today: ' + agg.Transactional.today.toLocaleString());
+      setText('kpi-emails-mkt', agg.Marketing.total.toLocaleString());
+      setText('kpi-emails-mkt-today', 'today: ' + agg.Marketing.today.toLocaleString());
+      setText('kpi-emails-all', (agg.Transactional.total + agg.Marketing.total).toLocaleString());
+      _emails.kpisLoaded = true;
+    } catch (e) { console.warn('[interaction-hub] email kpis error:', e); }
+  }
+  function showEmailsTab() {
+    if (!_emails.kpisLoaded) loadEmailKpis();
+    renderEmails();
+  }
+  function doEmailSearch() {
+    var inp = document.getElementById('emails-search');
+    var term = inp.value.trim();
+    var mode = detectMode(term);
+    var ok = mode === 'phone' ? normPhone(term).length >= 7 : mode === 'email' ? /.+@.+\..+/.test(term) : term.length >= 3;
+    if (!ok) { inp.style.borderColor = 'var(--red)'; setTimeout(function() { inp.style.borderColor = ''; }, 1500); return; }
+    _emails.mode = mode; _emails.term = term;
+    var fdUrl = 'https://anyvan.freshdesk.com/a/search/tickets?term=' + encodeURIComponent(term);
+    var l1 = document.getElementById('emails-freshdeskLink'); if (l1) l1.href = fdUrl;
+    var l2 = document.getElementById('emails-directLink'); if (l2) l2.href = fdUrl;
+    document.getElementById('emails-clearBtn').style.display = 'inline-flex';
+    loadEmails();
+  }
+  async function loadEmails() {
+    var loading = document.getElementById('loading-emails');
+    document.getElementById('prompt-emails').style.display = 'none';
+    document.getElementById('content-emails').style.display = 'none';
+    document.getElementById('emails-directPanel').style.display = 'none';
+    loading.style.display = 'flex';
+    try {
+      var params = lookupParams(_emails.mode, _emails.term, _emails.days);
+      var res = await AVDashboard.runQuery('interaction_hub_emails', { parameters: params });
+      _emails.rows = (res && res.rows) || [];
+      _emails.loaded = true;
+    } catch (e) {
+      alert('Failed to load emails: ' + (e.message || String(e)));
+      _emails.rows = []; _emails.loaded = true;
+    } finally {
+      loading.style.display = 'none';
+      renderEmails();
+    }
+  }
+  function renderEmails() {
+    var directPanel = document.getElementById('emails-directPanel');
+    var content = document.getElementById('content-emails');
+    var prompt = document.getElementById('prompt-emails');
+    var allCaveat = document.getElementById('emails-allcaveat');
+    if (!directPanel) return;
+    // Direct (Freshdesk) category = manual panel, never rows.
+    if (_emails.cat === 'Direct') {
+      directPanel.style.display = 'block'; content.style.display = 'none';
+      prompt.style.display = 'none'; allCaveat.classList.remove('show');
+      return;
+    }
+    directPanel.style.display = 'none';
+    allCaveat.classList.toggle('show', _emails.cat === '');
+    if (!_emails.loaded || !_emails.term) {
+      prompt.style.display = 'block'; content.style.display = 'none'; return;
+    }
+    prompt.style.display = 'none';
+    var rows = _emails.rows.filter(function(r) { return !_emails.cat || r.EMAIL_CLASS === _emails.cat; });
+    rows.sort(function(a, b) { return String(b.INTERACTION_DATETIME || '').localeCompare(String(a.INTERACTION_DATETIME || '')); });
+    var thead = document.getElementById('thead-emails'), tbody = document.getElementById('tbody-emails');
+    var empty = document.getElementById('empty-emails'), footer = document.getElementById('footer-emails');
+    thead.textContent = ''; tbody.textContent = '';
+    var htr = document.createElement('tr');
+    var iconTh = document.createElement('th'); iconTh.style.width = '28px'; htr.appendChild(iconTh);
+    EMAIL_COLS.forEach(function(c) { var th = document.createElement('th'); th.style.width = c.w; th.textContent = c.label; htr.appendChild(th); });
+    thead.appendChild(htr);
+    empty.style.display = rows.length === 0 ? 'block' : 'none';
+    content.style.display = 'block';
+    setText('countEmails', String(rows.length));
+    rows.forEach(function(r) {
+      var row = document.createElement('tr');
+      var iconTd = document.createElement('td'); iconTd.style.width = '28px'; iconTd.style.textAlign = 'center';
+      var ic = document.createElement('span'); ic.className = 'row-expand-icon'; ic.textContent = '▸'; iconTd.appendChild(ic); row.appendChild(iconTd);
+      EMAIL_COLS.forEach(function(c) {
+        var td = document.createElement('td'); var v = r[c.key]; td.title = v != null ? String(v) : '';
+        if (c.key === 'EMAIL_CLASS') {
+          var b = document.createElement('span'); b.className = 'match-badge ' + (v === 'Marketing' ? 'match-name' : 'match-exact');
+          b.textContent = v || '—'; td.appendChild(b);
+        } else if (c.key === 'INTERACTION_DATETIME' && v) {
+          var parts = String(v).split(' '); var dp = parts[0];
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dp)) { var d = dp.split('-'); dp = d[2] + '/' + d[1] + '/' + d[0]; }
+          td.appendChild(document.createTextNode(dp)); td.appendChild(document.createElement('br'));
+          var ts = document.createElement('span'); ts.style.color = 'var(--tx3)'; ts.style.fontSize = '10px'; ts.textContent = (parts[1] || '').slice(0, 8); td.appendChild(ts);
+          td.style.whiteSpace = 'normal'; td.style.lineHeight = '1.3';
+        } else if (c.key === 'EMAIL_TYPE') {
+          td.textContent = prettyEmailType(v, r.EMAIL_CLASS);
+        } else {
+          td.textContent = v != null && v !== '' ? v : '—';
+        }
+        row.appendChild(td);
+      });
+      row.addEventListener('click', function() { openEmailDrawer(r); });
+      tbody.appendChild(row);
+    });
+    footer.textContent = rows.length ? ('Showing ' + rows.length + ' email' + (rows.length !== 1 ? 's' : '') + ' for ' + _emails.term + ' (' + windowLabel(_emails.days) + ')') : '';
+  }
+  function openEmailDrawer(r) {
+    ensureDrawer();
+    document.getElementById('drawerTitle').textContent = (r.EMAIL_CLASS || 'Email') + ' email';
+    document.getElementById('drawerSub').textContent = fmtDateTime(r.INTERACTION_DATETIME) || '';
+    var content = document.getElementById('drawerBody'); content.innerHTML = '';
+    var grid = document.createElement('div'); grid.className = 'convo-meta-grid';
+    [
+      { label: 'Category',         val: r.EMAIL_CLASS },
+      { label: 'Type',             val: prettyEmailType(r.EMAIL_TYPE, r.EMAIL_CLASS), wrap: true },
+      { label: 'Subject',          val: r.SUBJECT, wrap: true },
+      { label: 'Recipient',        val: r.RECIPIENT, wrap: true },
+      { label: 'Channel',          val: r.CHANNEL },
+      { label: 'Direction',        val: r.DIRECTION },
+      { label: 'Date / Time (UK)', val: fmtDateTime(r.INTERACTION_DATETIME) }
+    ].forEach(function(f) {
+      var item = document.createElement('div'); item.className = 'convo-meta-item';
+      var lbl = document.createElement('div'); lbl.className = 'convo-meta-label'; lbl.textContent = f.label;
+      var vd = document.createElement('div'); vd.className = 'convo-meta-value'; if (f.wrap) vd.style.wordBreak = 'break-word';
+      vd.textContent = f.val != null && f.val !== '' ? String(f.val) : '—';
+      item.appendChild(lbl); item.appendChild(vd); grid.appendChild(item);
+    });
+    content.appendChild(grid);
+    var note = document.createElement('div');
+    note.style.cssText = 'margin-top:14px;padding:10px 12px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);font-size:11px;color:var(--tx2);line-height:1.5;';
+    note.textContent = 'Email body is not stored in the warehouse — this is send metadata only. For the full message, use the source system.';
+    content.appendChild(note);
+    document.getElementById('detailDrawer').classList.add('open');
+    document.getElementById('drawerBackdrop').classList.add('open');
+  }
+  function exportEmailsCSV() {
+    var rows = _emails.rows.filter(function(r) { return !_emails.cat || r.EMAIL_CLASS === _emails.cat; });
+    if (!rows.length) { alert('No emails to export.'); return; }
+    var cols = ['EMAIL_CLASS', 'INTERACTION_DATETIME', 'EMAIL_TYPE', 'SUBJECT', 'RECIPIENT', 'CHANNEL', 'DIRECTION'];
+    var csv = cols.join(',') + '\n';
+    rows.forEach(function(r) {
+      csv += cols.map(function(c) { var v = r[c]; if (v == null) return ''; v = String(v).replace(/"/g, '""'); return /[",\n]/.test(v) ? '"' + v + '"' : v; }).join(',') + '\n';
+    });
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'interaction_hub_emails_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+  }
+  (function wireEmailsTab() {
+    document.querySelectorAll('#emails-catSeg .seg-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('#emails-catSeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });
+        btn.classList.add('on'); _emails.cat = btn.getAttribute('data-cat') || ''; renderEmails();
+      });
+    });
+    document.querySelectorAll('#emails-windowSeg .seg-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('#emails-windowSeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });
+        btn.classList.add('on'); _emails.days = parseInt(btn.getAttribute('data-days'), 10) || 90;
+        if (_emails.term) loadEmails();
+      });
+    });
+    var sb = document.getElementById('emails-searchBtn'); if (sb) sb.addEventListener('click', doEmailSearch);
+    var si = document.getElementById('emails-search'); if (si) si.addEventListener('keydown', function(e) { if (e.key === 'Enter') doEmailSearch(); });
+    var cb = document.getElementById('emails-clearBtn'); if (cb) cb.addEventListener('click', function() {
+      _emails.term = ''; _emails.rows = []; _emails.loaded = false;
+      document.getElementById('emails-search').value = ''; cb.style.display = 'none'; renderEmails();
+    });
+    var eb = document.getElementById('emails-exportBtn'); if (eb) eb.addEventListener('click', exportEmailsCSV);
+  })();
 
   function updateKPIs(tab, data) {
     var ai = data.filter(function(r) { return r.AGENT_TYPE === 'AI'; }).length;
