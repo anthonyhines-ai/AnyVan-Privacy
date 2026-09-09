@@ -359,28 +359,40 @@ Export all customer-facing email threads from Freshdesk for bookings #9454215 an
 
 ---
 
-## TASK 8: Customer Delivery (SMS Password)
+## TASK 8: Customer Delivery (Email)
 
 **Status:** ⏳ PENDING (Start: 2026-09-12)  
 **Owner:** DPO / Compliance Officer  
 **Deadline:** 12 September 2026 (9 days)
 
-### SMS Template
+### Email Template
 ```
-AnyVan Privacy: Your SAR is ready. 
+Subject: Your Subject Access Request — Download Link
 
-Download: [WEBTRANSFER_LINK]
-Password: [ARCHIVE_PASSWORD]
+Dear Monika,
 
-Expires in 7 days. Questions? Reply.
+Your Subject Access Request (SAR) data compilation is ready for download.
+
+Access your data here:
+[WEBTRANSFER_LINK]
+
+Archive password (sent separately below):
+[ARCHIVE_PASSWORD]
+
+The download link will expire in 7 days. Once downloaded, please verify all files are present and notify us if you have any questions.
+
+This completes AnyVan's response to your GDPR Article 15 (Right of Access) request received on 14 August 2026.
+
+Best regards,
+AnyVan Privacy & Compliance Team
 ```
 
 ### Execution Checklist
-- [ ] Compose SMS with WeTransfer link + archive password
-- [ ] Send to: **07881361498** (Monika's confirmed phone)
+- [ ] Compose email with WeTransfer link + archive password (send both in same email)
+- [ ] Send to: **monibag2000@yahoo.com** (primary) or **monciab74@gmail.com** (if needed)
 - [ ] Send time: Business hours (09:00–17:00 UTC)
 - [ ] Record: Delivery timestamp
-- [ ] Request: Customer reply confirming receipt (optional follow-up call)
+- [ ] Record: Customer email confirmation of receipt
 - **Sent:** _________________________ **Date/Time:** __________
 
 ---
@@ -412,7 +424,7 @@ Expires in 7 days. Questions? Reply.
 | | | | | |
 | **2026-09-11** | 7. WeTransfer Delivery — SETUP | Ops | ⏳ | Upload archive; generate link; test link in incognito window |
 | | | | | |
-| **2026-09-12** | 8. Customer Delivery — SMS Password | DPO | ⏳ | Send SMS with link + password to 07881361498 |
+| **2026-09-12** | 8. Customer Delivery — Email | DPO | ⏳ | Send email with WeTransfer link + archive password to monibag2000@yahoo.com |
 | | | | | |
 | **2026-09-14** | **GDPR STATUTORY DEADLINE** | — | ⏳ | Confirmation of customer receipt expected by this date |
 
