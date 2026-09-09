@@ -202,6 +202,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   <div class="main-tab" data-tab="comms" onclick="switchTab('comms')">Comms <span class="tab-count" id="cnt-comms">0</span></div>
   <div class="main-tab" data-tab="feedback" onclick="switchTab('feedback')">Feedback <span class="tab-count" id="cnt-feedback">0</span></div>
   <div class="main-tab" data-tab="prelisting" onclick="switchTab('prelisting')">Pre-Listing <span class="tab-count" id="cnt-prelisting">0</span></div>
+  <div class="main-tab" data-tab="delivery" onclick="switchTab('delivery')">📧 Email Delivery</div>
 </div>
 
 <!-- Main content -->
@@ -328,6 +329,60 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     <div class="data-section">
       <div class="data-header"><div class="data-title">Pre-Listing Emails</div><div class="data-actions"><button class="btn-export" onclick="exportTab('prelisting')">Export CSV</button></div></div>
       <div id="prelistingContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Email Delivery tab -->
+  <div class="tab-panel" id="panel-delivery">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">SAR Email Delivery (GDPR Art. 15)</div></div>
+      <div style="padding: 20px;">
+        <div style="margin-bottom: 20px; padding: 14px; background: rgba(26,127,55,.08); border: 1px solid rgba(26,127,55,.2); border-radius: 8px; color: var(--tx);">
+          <div style="font-size: 12px; font-weight: 700; margin-bottom: 6px;">✅ WeTransfer (Free)</div>
+          <div style="font-size: 12px; color: var(--tx2); line-height: 1.5;">3-day link expiry · No login required · AES-256 archive password protected</div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--tx3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px;">WeTransfer Link & Password</div>
+          <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="url" id="weTransferLink" placeholder="https://we.tl/t-..." style="flex: 1; padding: 10px 12px; border: 1px solid var(--bd); border-radius: 6px; background: var(--sf2); font-size: 12px;">
+            <button onclick="copyToClipboard('weTransferLink')" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--ind); background: rgba(99,102,241,.06); color: var(--ind); font-size: 11px; font-weight: 700; cursor: pointer;">Copy Link</button>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="archivePassword" placeholder="Archive password" style="flex: 1; padding: 10px 12px; border: 1px solid var(--bd); border-radius: 6px; background: var(--sf2); font-size: 12px;">
+            <button onclick="copyToClipboard('archivePassword')" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--ind); background: rgba(99,102,241,.06); color: var(--ind); font-size: 11px; font-weight: 700; cursor: pointer;">Copy Password</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--tx3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px;">Email Preview</div>
+          <div id="emailPreview" style="background: var(--sf2); border: 1px solid var(--bd); border-radius: 8px; padding: 16px; font-size: 12px; line-height: 1.6; color: var(--tx2); white-space: pre-wrap; font-family: monospace; max-height: 400px; overflow-y: auto;">
+Subject: Your Subject Access Request — Download Link
+
+Dear [Customer Name],
+
+Your Subject Access Request (SAR) data compilation is ready for download.
+
+Access your data here:
+[WEBTRANSFER_LINK]
+
+Archive password:
+[ARCHIVE_PASSWORD]
+
+The download link will expire in 3 days. Once downloaded, please verify all files are present and notify us if you have any questions.
+
+This completes AnyVan's response to your GDPR Article 15 (Right of Access) request.
+
+Best regards,
+AnyVan Privacy & Compliance Team
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button onclick="updateEmailPreview()" style="padding: 10px 20px; border-radius: 6px; border: 1px solid var(--ind); background: var(--ind); color: #fff; font-size: 12px; font-weight: 700; cursor: pointer;">Update Preview</button>
+          <button onclick="copyEmailToClipboard()" style="padding: 10px 20px; border-radius: 6px; border: 1px solid var(--bd); background: var(--sf2); color: var(--ind); font-size: 12px; font-weight: 700; cursor: pointer;">Copy Email</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -881,6 +936,50 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
 
   document.getElementById('loadingOverlay').classList.add('hidden');
+
+  // Email Delivery functions
+  window.copyToClipboard = function(elementId) {
+    var element = document.getElementById(elementId);
+    if (element.value) {
+      navigator.clipboard.writeText(element.value).then(function() {
+        var btn = event.target;
+        var original = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        setTimeout(function() { btn.textContent = original; }, 2000);
+      });
+    }
+  };
+
+  window.updateEmailPreview = function() {
+    var link = document.getElementById('weTransferLink').value || '[WEBTRANSFER_LINK]';
+    var password = document.getElementById('archivePassword').value || '[ARCHIVE_PASSWORD]';
+    var customerName = _sarMeta.customerName || '[Customer Name]';
+    var dateReceived = _sarMeta.dateReceived || '[DATE_RECEIVED]';
+
+    var preview = 'Subject: Your Subject Access Request — Download Link\n\n' +
+      'Dear ' + customerName + ',\n\n' +
+      'Your Subject Access Request (SAR) data compilation is ready for download.\n\n' +
+      'Access your data here:\n' +
+      link + '\n\n' +
+      'Archive password:\n' +
+      password + '\n\n' +
+      'The download link will expire in 3 days. Once downloaded, please verify all files are present and notify us if you have any questions.\n\n' +
+      'This completes AnyVan\'s response to your GDPR Article 15 (Right of Access) request received on ' + dateReceived + '.\n\n' +
+      'Best regards,\n' +
+      'AnyVan Privacy & Compliance Team';
+
+    document.getElementById('emailPreview').textContent = preview;
+  };
+
+  window.copyEmailToClipboard = function() {
+    var preview = document.getElementById('emailPreview').textContent;
+    navigator.clipboard.writeText(preview).then(function() {
+      var btn = event.target;
+      var original = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      setTimeout(function() { btn.textContent = original; }, 2000);
+    });
+  };
 });
 </script>
 </body>

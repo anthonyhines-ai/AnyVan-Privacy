@@ -29,7 +29,7 @@
 | PII redaction review | **11 Sep** | Compliance Officer | ⏳ PENDING |
 | Archive creation & encryption | **11 Sep** | Operations | ⏳ PENDING |
 | WeTransfer delivery setup | **12 Sep** | Operations | ⏳ PENDING |
-| Customer delivery & SMS password | **12 Sep** | DPO/Ops | ⏳ PENDING |
+| Customer email delivery | **12 Sep** | DPO/Ops | ⏳ PENDING |
 | **GDPR Statutory Deadline** | **14 Sep** | — | ⏳ PENDING |
 
 ---
@@ -555,39 +555,46 @@ AnyVan Privacy & Compliance Team
 
 ---
 
-### 2.8 Customer Delivery via SMS
+### 2.8 Customer Delivery via Email
 **Status:** PENDING  
 **Deadline:** 12 September 2026  
 **Owner:** DPO / Compliance Officer (Anthony Hines)
 
-#### SMS Password Delivery
-- **Recipient:** 07881361498 (Monika's confirmed phone)
-- **Content:** Download link + password, nothing else
-- **Tone:** Professional, no PII in SMS body (password already in SMS)
+#### Email Delivery (WeTransfer Free — 3-day expiry)
+- **Recipient:** monibag2000@yahoo.com (primary) or monciab74@gmail.com (secondary)
+- **Subject:** "Your Subject Access Request — Download Link"
+- **Content:** Download link + password in same email (GDPR/ICO guidance allows same channel)
 - **Send time:** Business hours (09:00–17:00 UTC)
+- **Link expiry:** 3 days (WeTransfer Free)
 
-#### SMS Template
+#### Email Template
 ```
-AnyVan Privacy: Your SAR is ready. 
+Subject: Your Subject Access Request — Download Link
 
-Download: [WEBTRANSFER_LINK]
-Password: [ARCHIVE_PASSWORD]
+Dear Monika,
 
-Expires in 7 days. Questions? Reply to this number.
+Your Subject Access Request (SAR) data compilation is ready for download.
+
+Access your data here:
+[WEBTRANSFER_LINK]
+
+Archive password:
+[ARCHIVE_PASSWORD]
+
+The download link will expire in 3 days. Once downloaded, please verify all files are present and notify us if you have any questions.
+
+This completes AnyVan's response to your GDPR Article 15 (Right of Access) request received on 14 August 2026.
+
+Best regards,
+AnyVan Privacy & Compliance Team
 ```
-
-#### Alternative: Customer Email Delivery
-If SMS fails:
-- Send email to monibag2000@yahoo.com (primary) or monciab74@gmail.com (secondary)
-- Subject: **"Your AnyVan Subject Access Request — Download Ready"**
-- Body: Link + password as above
-- Cc: DPO / Compliance team for audit trail
 
 #### Delivery Confirmation
-- [ ] SMS sent successfully (delivery confirmation)
+- [ ] Email sent successfully to monibag2000@yahoo.com
 - [ ] Timestamp recorded
-- [ ] Password acknowledged by customer (optional follow-up call)
-- [ ] Request for download confirmation email (customer to confirm receipt)
+- [ ] Customer email delivery confirmed (bounce check)
+- [ ] Fallback: If email bounces, retry to monciab74@gmail.com
+- [ ] Keep delivery record for 3 years (UK GDPR compliance)
 
 ---
 
@@ -606,11 +613,11 @@ Before sending to customer, verify ALL of the following:
 - [ ] **1. All files redacted** per PII rules (Section 2.5)
 - [ ] **2. Archive encrypted** with AES-256
 - [ ] **3. Archive password** set and recorded securely
-- [ ] **4. WeTransfer link** generated and tested
-- [ ] **5. Link expiry** set to 7 days
-- [ ] **6. Download limit** set to 5 downloads
-- [ ] **7. SMS password** ready to send (not in link, sent separately)
-- [ ] **8. Video file** successfully downloaded from Jiminny and included
+- [ ] **4. WeTransfer link** generated and tested (Free version)
+- [ ] **5. Link expiry** set to 3 days (WeTransfer Free)
+- [ ] **6. Download limit** sufficient (no limit on Free)
+- [ ] **7. Email template** prepared with link + password
+- [ ] **8. Video file** successfully located and included
 - [ ] **9. All call recordings** included (11 Twilio audio files)
 - [ ] **10. Email threads** complete (Freshdesk export)
 - [ ] **11. Shared notes** included (HubSpot + Freshdesk)

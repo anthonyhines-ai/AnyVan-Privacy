@@ -83,11 +83,12 @@ these, update this file in the same PR.
 
 - **If not found in Jiminny:** Escalate to Interaction Hub team, Google Drive, or third-party assessment platforms (Robinhood, Tradify, etc.)
 
-### MCP connector (optional, for transcripts only)
-- **Tool:** `mcp__AnyVan_MCP__get_conversation_transcript`
-- **Input:** HubSpot dealId (e.g., `60955982356`)
-- **Output:** Full conversation transcript if deal is linked to Jiminny call
-- **Use case:** Retrieve transcript after video file is located (not for locating videos)
+### MCP connector (limitations & status)
+- **Tools:** `mcp__Jiminny__search_calls` / `mcp__Jiminny__get_call` (search/retrieval)
+  - **Limitation:** Searches by email, phone, booking ref, or date range often return "No Jiminny data matched" even when data exists via UI search
+  - **Status:** Manual Jiminny UI search remains the **only reliable method** for locating videos (confirmed via Monika Baginska SAR 2026-09-09)
+  - **Recommendation:** Use UI search as primary; MCP connector for transcript retrieval only after video is located
+- **Legacy tool:** `mcp__AnyVan_MCP__get_conversation_transcript` — deprecated; use Jiminny connector instead
 
 ### Important notes
 - **Jiminny data is NOT in Snowflake** — direct UI search is the only reliable method
@@ -99,10 +100,54 @@ these, update this file in the same PR.
 ### Video lookup SLA
 - **Locate & download video:** by Day 4–5 of SAR (before PII redaction review)
 - **Verify playback:** confirm file plays, audio clear, duration matches Jiminny metadata
-- **Include in archive:** add to encrypted SAR delivery (WeTransfer Plus, 7-day expiry)
+- **Include in archive:** add to encrypted SAR delivery (WeTransfer, 3-day expiry)
 
 ### Detailed guide
 - See `../booking-lookups/METHODOLOGY-jiminny-video-lookup.md` for step-by-step UI navigation, fallback locations, and troubleshooting
+
+## SAR Email Delivery (GDPR Article 15 Secure Delivery)
+
+**Purpose:** Deliver compiled SAR data archive to customer via encrypted file + email notification.
+
+### Email delivery method (validated)
+- **Encryption:** AES-256 password-protected ZIP archive
+- **Transport:** WeTransfer Free (3-day link expiry, no login required)
+- **Communication channel:** Email to customer's registered email (primary or secondary)
+- **Password delivery:** Included in same email (GDPR/ICO guidance allows same channel if both are present)
+- **Fallback:** If email bounces, try secondary email; if both fail, escalate to support for phone verification
+
+### Email template
+```
+Subject: Your Subject Access Request — Download Link
+
+Dear [Customer Name],
+
+Your Subject Access Request (SAR) data compilation is ready for download.
+
+Access your data here:
+[WEBTRANSFER_LINK]
+
+Archive password:
+[ARCHIVE_PASSWORD]
+
+The download link will expire in 3 days. Once downloaded, please verify all files are present and notify us if you have any questions.
+
+This completes AnyVan's response to your GDPR Article 15 (Right of Access) request received on [DATE_RECEIVED].
+
+Best regards,
+AnyVan Privacy & Compliance Team
+```
+
+### Delivery SLA
+- **Email send:** by Day 9 of SAR (before statutory 30-day deadline)
+- **Record:** Timestamp, recipient email, delivery confirmation
+- **Follow-up:** If no reply within 3 days, consider optional reminder email
+
+### Important notes
+- **No SMS delivery:** Email-only per current AnyVan compliance policy
+- **Archive readiness:** Verify all files present, metadata correct, and link tested before sending
+- **Retention:** Keep email delivery record for 3 years per UK GDPR compliance
+- **DPA confirmation:** Verify Jiminny, Twilio, and any third-party data processors have DPA in place before delivery
 
 ## Workflow-system
 
