@@ -34,7 +34,15 @@ const argVal = (name) => (argFlag(name) ? process.argv[process.argv.indexOf(name
 const DRY_RUN = argFlag('--dry-run') || !TOKEN;
 const DELETE_ID = argVal('--delete');
 const UPDATE_FORM_ID = argVal('--form'); // additive update of an existing form
-const FORM_NAME = 'AnyVan — Data Subject Request (DSR)';
+const FORM_NAME = 'AnyVan UK - Privacy Requests';
+
+// ⚠️ DIVERGED FROM THE LIVE FORM. Form 6559077 was hand-edited in the builder and no longer
+// matches the FIELDS/LIVE_IDS below (live: 5 request-type options not 9; no acting-party
+// name/email/phone; no account-holder / source / agent / identity-verification / postal-address /
+// typed-signature fields; extra Email-Correspondence date fields; a hidden "Privacy Due Date").
+// docs/dsr-field-mapping.md is the authoritative live mapping. Do NOT run `--form 6559077` to
+// "re-apply" without reconciling this file first — the additive pass would re-add fields that were
+// deliberately removed. Reconciliation tracked in docs/dsr-go-live-readiness.md.
 
 // ---- known live field ids (form 6559077) ----------------------------------
 // Used by --form (additive) mode to resolve conditional-logic references to fields that
