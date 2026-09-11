@@ -202,6 +202,12 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   <div class="main-tab" data-tab="comms" onclick="switchTab('comms')">Comms <span class="tab-count" id="cnt-comms">0</span></div>
   <div class="main-tab" data-tab="feedback" onclick="switchTab('feedback')">Feedback <span class="tab-count" id="cnt-feedback">0</span></div>
   <div class="main-tab" data-tab="prelisting" onclick="switchTab('prelisting')">Pre-Listing <span class="tab-count" id="cnt-prelisting">0</span></div>
+  <div class="main-tab" data-tab="messaging" onclick="switchTab('messaging')">Messaging <span class="tab-count" id="cnt-messaging">0</span></div>
+  <div class="main-tab" data-tab="commslog" onclick="switchTab('commslog')">Comms Log <span class="tab-count" id="cnt-commslog">0</span></div>
+  <div class="main-tab" data-tab="consent" onclick="switchTab('consent')">Consent <span class="tab-count" id="cnt-consent">0</span></div>
+  <div class="main-tab" data-tab="whatsapp" onclick="switchTab('whatsapp')">WhatsApp/SMS <span class="tab-count" id="cnt-whatsapp">0</span></div>
+  <div class="main-tab" data-tab="chat2way" onclick="switchTab('chat2way')">Chat 2-way <span class="tab-count" id="cnt-chat2way">0</span></div>
+  <div class="main-tab" data-tab="aircall" onclick="switchTab('aircall')">Aircall <span class="tab-count" id="cnt-aircall">0</span></div>
 </div>
 
 <!-- Main content -->
@@ -330,6 +336,42 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       <div id="prelistingContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
     </div>
   </div>
+  <div class="tab-panel" id="panel-messaging">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Messaging — Email / RCS / WhatsApp</div><div class="data-actions"><button class="btn-export" onclick="exportTab('messaging')">Export CSV</button></div></div>
+      <div id="messagingContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+  <div class="tab-panel" id="panel-commslog">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Comms Log — all channels (send log)</div><div class="data-actions"><button class="btn-export" onclick="exportTab('commslog')">Export CSV</button></div></div>
+      <div id="commslogContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+  <div class="tab-panel" id="panel-consent">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Marketing / Consent History</div><div class="data-actions"><button class="btn-export" onclick="exportTab('consent')">Export CSV</button></div></div>
+      <div id="consentContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+  <div class="tab-panel" id="panel-whatsapp">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">WhatsApp / SMS — Twilio</div><div class="data-actions"><button class="btn-export" onclick="exportTab('whatsapp')">Export CSV</button></div></div>
+      <div id="whatsappContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+  <div class="tab-panel" id="panel-chat2way">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Chat 2-way — Twilio Conversations</div><div class="data-actions"><button class="btn-export" onclick="exportTab('chat2way')">Export CSV</button></div></div>
+      <div id="chat2wayContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+  <div class="tab-panel" id="panel-aircall">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Aircall Calls + Recordings</div><div class="data-actions"><button class="btn-export" onclick="exportTab('aircall')">Export CSV</button></div></div>
+      <div id="aircallContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
 </div>
 
 <!-- Footer -->
@@ -395,7 +437,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       </div>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
         <div class="info-accordion-header">Email Events — HubSpot <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">HubSpot email event log — sends, opens, clicks, bounces. Matched by email. Note: Mandrill transactional emails are not yet in Snowflake.</div>
+        <div class="info-accordion-body">HubSpot email event log — sends, opens, clicks, bounces. Matched by email. (Transactional email body/subject is now in the Messaging and Comms Log tabs.)</div>
       </div>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
         <div class="info-accordion-header">Freshdesk Tickets <span class="info-accordion-chevron">▾</span></div>
@@ -413,12 +455,36 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         <div class="info-accordion-header">Pre-Listing Emails <span class="info-accordion-chevron">▾</span></div>
         <div class="info-accordion-body">Emails sent before listing activation — templates, timestamps. Matched by email.</div>
       </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Messaging — Email / RCS / WhatsApp <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Modern messaging-platform sends: email, RCS and WhatsApp with rendered subject, body and marketing/transactional consent. Matched by email. From 2026-05-19 (WhatsApp 2026-06-17).</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Comms Log — all channels (send log) <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Full transactional send-log across email/SMS/WhatsApp, 2022+, incl. older history. Subject/body in TOKENS. Linked via USER_ID.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Marketing / Consent History <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Marketing/consent opt-in-out property-change history from HubSpot. Resolved via email → HubSpot contact.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">WhatsApp / SMS — Twilio <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">One-way automated WhatsApp + SMS bodies from Twilio. Matched by phone suffix. Requires phone input.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Chat 2-way — Twilio Conversations <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Two-way conversational WhatsApp/chat bodies (Twilio Conversations), joined via participant identity. Matched by phone suffix. Requires phone input.</div>
+      </div>
+      <div class="info-accordion" onclick="this.classList.toggle('open')">
+        <div class="info-accordion-header">Aircall Calls + Recordings <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Aircall voice calls incl. the in-warehouse recording URL. Matched by phone suffix. Requires phone input.</div>
+      </div>
     </div>
     <div class="info-section">
       <h3>⚠️ Known Gaps</h3>
       <ul>
-        <li><strong>Mandrill transactional emails</strong> — not currently in Snowflake. Only HubSpot marketing/CRM email events are available.</li>
-        <li><strong>Twilio Conversations (WhatsApp/chat)</strong> — not yet included. TWILIO_CONVERSATION_MESSAGE lacks a direct customer phone join column.</li>
+        <li><strong>Video Survey</strong> — no Snowflake table exists for video-survey content (also a data category on the DSR form; tracked in go-live readiness).</li>
+        <li><strong>Live chat message bodies before ~April 2026</strong> — not in Snowflake; retrieve from LiveChat.com manually.</li>
       </ul>
     </div>
   </div>
@@ -458,7 +524,13 @@ var QUERIES = {
   freshdesk: {name:'sar_freshdesk', needsPhone:false, label:'Freshdesk Tickets'},
   comms: {name:'sar_listing_comms', needsPhone:false, label:'Listing Communications'},
   feedback: {name:'sar_listing_feedback', needsPhone:false, label:'Listing Feedback'},
-  prelisting: {name:'sar_prelisting_emails', needsPhone:false, label:'Pre-Listing Emails'}
+  prelisting: {name:'sar_prelisting_emails', needsPhone:false, label:'Pre-Listing Emails'},
+  messaging: {name:'sar_messaging', needsPhone:false, label:'Messaging (Email/RCS/WhatsApp)'},
+  commslog: {name:'sar_comms_log', needsPhone:false, label:'Comms Log (all channels)'},
+  consent: {name:'sar_consent_history', needsPhone:false, label:'Consent History'},
+  whatsapp: {name:'sar_whatsapp_twilio', needsPhone:true, label:'WhatsApp / SMS (Twilio)'},
+  chat2way: {name:'sar_twilio_conversations', needsPhone:true, label:'Chat 2-way'},
+  aircall: {name:'sar_aircall', needsPhone:true, label:'Aircall Calls'}
 };
 
 function normPhone(raw) {
