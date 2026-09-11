@@ -1637,12 +1637,62 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       item.appendChild(lbl); item.appendChild(vd); grid.appendChild(item);
     });
     content.appendChild(grid);
-    var note = document.createElement('div');
-    note.style.cssText = 'margin-top:14px;padding:10px 12px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);font-size:11px;color:var(--tx2);line-height:1.5;';
-    note.textContent = 'Email body is not stored in the warehouse — this is send metadata only. For the full message, use the source system.';
-    content.appendChild(note);
+
+    // Message preview: the actual email as sent. Transactional bodies are stored
+    // per-MESSAGE_ID in EVENTS_MESSAGING_MESSAGE; marketing creative and some edge
+    // sends are not warehoused and show an honest fallback note instead.
+    var preview = document.createElement('div');
+    preview.style.cssText = 'margin-top:14px;';
+    content.appendChild(preview);
+    renderEmailPreview(preview, r);
+
     document.getElementById('detailDrawer').classList.add('open');
     document.getElementById('drawerBackdrop').classList.add('open');
+  }
+
+  function emailPreviewNote(text) {
+    var n = document.createElement('div');
+    n.style.cssText = 'padding:10px 12px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);font-size:11px;color:var(--tx2);line-height:1.5;';
+    n.textContent = text;
+    return n;
+  }
+
+  // Loads and renders the authoritative sent email in a SANDBOXED iframe (no scripts).
+  // Transactional only — the row's INTERACTION_ID is the EVENTS_MESSAGING_MESSAGE MESSAGE_ID.
+  async function renderEmailPreview(container, r) {
+    container.innerHTML = '';
+    if (r.EMAIL_CLASS === 'Marketing') {
+      container.appendChild(emailPreviewNote('Marketing email — the campaign creative is not stored in the warehouse. The subject and send metadata above are the record; open the campaign in the marketing platform for the full creative.'));
+      return;
+    }
+    var msgId = r.INTERACTION_ID;
+    if (!msgId) { container.appendChild(emailPreviewNote('No message id on this row, so the sent email cannot be loaded. The send metadata above is the record.')); return; }
+    var head = document.createElement('div');
+    head.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:6px;';
+    head.textContent = '✉️ Email preview — as sent';
+    container.appendChild(head);
+    var status = emailPreviewNote('Loading the sent email…');
+    container.appendChild(status);
+    try {
+      var res = await AVDashboard.runQuery('interaction_hub_email_body', { parameters: { message_id: String(msgId) } });
+      var rows = (res && res.rows) || [];
+      if (!rows.length || !rows[0].RENDERED_HTML) {
+        status.textContent = 'The rendered body for this email is not stored in the warehouse. The subject and send metadata above are the authoritative record; open the booking in Admin for the full message.';
+        return;
+      }
+      container.removeChild(status);
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:#fff;';
+      var frame = document.createElement('iframe');
+      frame.setAttribute('sandbox', '');
+      frame.setAttribute('title', 'Email preview');
+      frame.style.cssText = 'width:100%;height:520px;border:0;background:#fff;display:block;';
+      frame.srcdoc = rows[0].RENDERED_HTML;
+      wrap.appendChild(frame);
+      container.appendChild(wrap);
+    } catch (e) {
+      status.textContent = 'Could not load the email body (' + ((e && (e.message || e.error)) || 'error') + '). The send metadata above is unaffected.';
+    }
   }
   function exportEmailsCSV() {
     var rows = _emails.rows.filter(function(r) { return !_emails.cat || r.EMAIL_CLASS === _emails.cat; });
