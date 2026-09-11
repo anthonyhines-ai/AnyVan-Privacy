@@ -1,3 +1,5 @@
+Dashboard HTML for "operations/interaction-hub":
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,6 +66,16 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 .channel-badge-livechat{background:rgba(90,95,207,.1);color:var(--ind);}
 .channel-badge-whatsapp{background:rgba(18,140,126,.12);color:#0a7a6e;}
 [data-theme="dark"] .channel-badge-whatsapp{background:rgba(37,211,102,.1);color:#25d366;}
+/* Match-confidence badge + identity card */
+.match-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;}
+.match-exact{background:rgba(26,127,55,.12);color:var(--grn);}
+.match-name{background:rgba(192,122,0,.14);color:var(--amb);}
+.ident-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-start;}
+.ident-card.ident-warn{background:rgba(192,122,0,.08);border-color:rgba(192,122,0,.3);}
+.ident-card-field{display:flex;flex-direction:column;gap:2px;min-width:0;max-width:100%;}
+.ident-card-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700;}
+.ident-card-value{font-size:13px;color:var(--tx);font-weight:700;overflow-wrap:anywhere;}
+.ident-card-value.mono{font-weight:400;font-size:12px;color:var(--tx2);}
 .btn-load-history{padding:4px 14px;border-radius:6px;border:1px solid var(--ind);background:rgba(99,102,241,.06);color:var(--ind);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .phone-channel-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .ch-count{opacity:.65;font-weight:400;margin-left:3px;}
@@ -125,7 +137,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 .convo-meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:14px;}
 .convo-meta-item{font-size:12px;}
 .convo-meta-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:700;margin-bottom:2px;}
-.convo-meta-value{color:var(--tx);}
+.convo-meta-value{color:var(--tx);overflow-wrap:anywhere;}
 .convo-viewer{width:100%;height:520px;border:1px solid var(--bd);border-radius:8px;background:var(--sf2);}
 .convo-audio{width:100%;margin:6px 0 10px;}
 .convo-actions{display:flex;gap:8px;margin-top:12px;}
@@ -133,6 +145,28 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 .convo-btn:hover{border-color:var(--ind);color:var(--ind);}
 .convo-btn-primary{border-color:var(--ind);color:var(--ind);background:rgba(99,102,241,.06);}
 .row-expand-icon{font-size:10px;color:var(--tx3);display:inline-block;transition:transform .15s;}
+.drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.28);opacity:0;visibility:hidden;transition:opacity .2s;z-index:60;}
+.drawer-backdrop.open{opacity:1;visibility:visible;}
+.detail-drawer{position:fixed;top:0;right:0;height:100vh;width:min(560px,94vw);background:var(--sf);border-left:1px solid var(--bd);box-shadow:-14px 0 44px rgba(0,0,0,.20);transform:translateX(100%);transition:transform .24s ease;z-index:61;display:flex;flex-direction:column;}
+.detail-drawer.open{transform:translateX(0);}
+.drawer-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bd);background:var(--sf2);}
+.drawer-title{font-size:14px;font-weight:800;color:var(--tx);}
+.drawer-sub{font-size:11px;color:var(--tx3);margin-top:2px;}
+.drawer-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);cursor:pointer;font-size:15px;line-height:1;flex-shrink:0;}
+.drawer-close:hover{color:var(--ind);border-color:var(--ind);}
+.drawer-body{padding:16px 18px 30px;overflow-y:auto;flex:1;}
+.detail-drawer .convo-viewer{height:58vh;}
+.tx-wrap{margin-top:4px;}
+.tx-msg{display:flex;margin:7px 0;}
+.tx-msg.right{justify-content:flex-end;}
+.tx-bub{max-width:82%;border-radius:12px;padding:7px 11px;font-size:12.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word;}
+.tx-msg.cust .tx-bub{background:var(--ind);color:#fff;}
+.tx-msg.agent .tx-bub{background:var(--sf2);border:1px solid var(--bd);color:var(--tx);}
+.tx-msg.bot .tx-bub{background:var(--sf2);border:1px dashed var(--bd);color:var(--tx3);}
+.tx-who{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;opacity:.8;margin-bottom:2px;}
+.tx-ts{font-weight:400;opacity:.75;}
+.tx-loading{color:var(--tx3);font-size:12px;padding:10px 2px;}
+@media(max-width:768px){.detail-drawer{width:100vw;}}
 .convo-empty{text-align:center;padding:50px;color:var(--tx3);font-size:13px;}
 .convo-footer{padding:8px 16px;border-top:1px solid var(--bd);font-size:11px;color:var(--tx3);display:flex;align-items:center;gap:10px;}
 .sentiment-chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
@@ -184,9 +218,9 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 
 <div class="usearch-bar">
   <div class="phone-search-wrap">
-    <span class="phone-search-label">📞 Phone Lookup</span>
-    <input type="tel" class="phone-search-input" id="phoneSearch" placeholder="+44... or 07...">
-    <button class="btn-phone-search" id="phoneSearchBtn">Search All History</button>
+    <span class="phone-search-label">🔍 Customer Lookup</span>
+    <input type="text" class="phone-search-input" id="phoneSearch" placeholder="Phone, email or name…" style="width:260px;">
+    <button class="btn-phone-search" id="phoneSearchBtn">Search</button>
     <button class="btn-phone-clear" id="phoneSearchClear">✕ Clear</button>
   </div>
   <div class="usearch-wrap">
@@ -218,6 +252,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       </div>
       <span class="date-hint" style="margin-left:6px;">Retention limit: 12 months</span>
     </div>
+    <div class="ident-card" id="identCard" style="display:none;"></div>
     <div class="convo-section">
       <div class="convo-loading" id="loading-phone" style="display:none;"><div class="spinner"></div><span>Searching...</span></div>
       <div id="content-phone" style="display:none;">
@@ -235,7 +270,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   <div class="main-tab active" data-tab="calls">📞 Calls <span class="tab-count" id="countCalls">—</span></div>
   <div class="main-tab" data-tab="livechat">💬 Live Chat <span class="tab-count" id="countLivechat">—</span></div>
   <div class="main-tab" data-tab="whatsapp">📱 WhatsApp <span class="tab-count" id="countWhatsapp">—</span></div>
-  <div class="main-tab" data-tab="jiminny">🎥 Jiminny Lookup <span class="tab-count" id="countJiminny">—</span></div>
+  <div class="main-tab" data-tab="emails">✉️ Emails <span class="tab-count" id="countEmails">—</span></div>
 </div>
 
 <div class="main">
@@ -406,44 +441,61 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     </div>
   </div>
 
-  <!-- JIMINNY LOOKUP -->
-  <div class="tab-panel" id="panel-jiminny">
+  <!-- EMAILS -->
+  <div class="tab-panel" id="panel-emails">
+    <div class="advisory-banner show" id="emails-freshdesk" style="background:rgba(90,95,207,.07);border-color:rgba(90,95,207,.25);color:var(--tx2);">
+      ℹ️ <span><strong>Direct communications (Freshdesk)</strong> aren't pulled into the hub — open Freshdesk and search the customer's email or phone to view their support email threads. <a id="emails-freshdeskLink" href="https://anyvan.freshdesk.com/a/tickets" target="_blank" rel="noopener" style="color:var(--ind);font-weight:700;text-decoration:none;">Open Freshdesk ↗</a></span>
+    </div>
     <div class="filter-bar">
       <div class="filter-row">
-        <span class="filter-label">🎥 Jiminny Video Lookup</span>
-        <span style="font-size:11px;color:var(--tx2);margin-left:12px;">Search for customer video consultations / property assessments</span>
+        <span class="filter-label">Category</span>
+        <div class="seg-group" id="emails-catSeg">
+          <button class="seg-btn on" data-cat="">All</button>
+          <button class="seg-btn" data-cat="Marketing">Marketing</button>
+          <button class="seg-btn" data-cat="Transactional">Transactional</button>
+          <button class="seg-btn" data-cat="Direct">Direct (Freshdesk)</button>
+        </div>
+        <div class="filter-spacer"></div>
+        <button class="btn-export" id="emails-exportBtn">⬇ Export CSV</button>
       </div>
       <div class="filter-row">
-        <span class="filter-label">Customer Email</span>
-        <input type="email" class="filter-input" id="jiminny-email" placeholder="e.g., customer@example.com" style="min-width:220px;">
-        <button class="btn-phone-search" id="jiminny-searchBtn" style="margin-left:8px;">🔍 Search Jiminny</button>
-        <button class="btn-phone-clear" id="jiminny-clearBtn" style="margin-left:4px;">Clear</button>
-      </div>
-      <div class="filter-row">
-        <span class="filter-label">Date Range (Optional)</span>
-        <input type="date" class="filter-input" id="jiminny-dateFrom">
-        <span style="font-size:11px;color:var(--tx3);">to</span>
-        <input type="date" class="filter-input" id="jiminny-dateTo">
-        <span style="font-size:11px;color:var(--tx3);margin-left:8px;">Leave blank to search all dates</span>
+        <span class="filter-label">Customer</span>
+        <input type="text" class="filter-input" id="emails-search" placeholder="Email or phone…" style="width:230px;font-size:12px;">
+        <button class="btn-phone-search" id="emails-searchBtn" style="padding:5px 14px;">Search</button>
+        <button class="btn-phone-clear" id="emails-clearBtn" style="display:none;">✕ Clear</button>
+        <div class="filter-sep"></div>
+        <span class="filter-label">History</span>
+        <div class="seg-group" id="emails-windowSeg">
+          <button class="seg-btn on" data-days="90">90 days</button>
+          <button class="seg-btn" data-days="180">6 months</button>
+          <button class="seg-btn" data-days="365">12 months</button>
+        </div>
+        <span class="date-hint" style="margin-left:6px;">Metadata only — no email bodies</span>
       </div>
     </div>
-    <div class="advisory-banner" id="jiminny-advisory" style="display:none;">
-      ℹ️ <span><strong>Manual Jiminny UI search required.</strong> This tool provides guidance. Access Jiminny directly at <strong>app.jiminny.com</strong> to search and download videos. See: <a href="#" onclick="alert('Jiminny_Lookup_Guide_SAR_Monika_Baginska_REVISED.md'); return false;" style="color:var(--ind);text-decoration:underline;">Jiminny Lookup Guide</a></span>
+    <div class="kpi-strip" id="emails-kpis">
+      <div class="kpi-tile"><div class="kpi-label">Transactional sent (7d)</div><div class="kpi-value" id="kpi-emails-txn">—</div><div class="kpi-sub" id="kpi-emails-txn-today"></div></div>
+      <div class="kpi-tile"><div class="kpi-label">Marketing sent (7d)</div><div class="kpi-value" id="kpi-emails-mkt">—</div><div class="kpi-sub" id="kpi-emails-mkt-today"></div></div>
+      <div class="kpi-tile"><div class="kpi-label">All emails (7d)</div><div class="kpi-value" id="kpi-emails-all">—</div><div class="kpi-sub">Marketing + Transactional</div></div>
+      <div class="kpi-tile"><div class="kpi-label">Direct (Freshdesk)</div><div class="kpi-value" style="font-size:15px;color:var(--tx2);">Manual</div><div class="kpi-sub">Not tracked here — see banner</div></div>
+    </div>
+    <div class="advisory-banner" id="emails-allcaveat" style="background:rgba(192,122,0,.08);border-color:rgba(192,122,0,.25);color:var(--amb);">
+      ⚠️ <span><strong>All</strong> covers Marketing + Transactional only. Direct communications (Freshdesk) are <strong>not</strong> included — open Freshdesk manually (link above).</span>
     </div>
     <div class="convo-section">
-      <div id="jiminny-results" style="padding:20px;">
-        <div style="text-align:center;color:var(--tx3);font-size:13px;">Enter a customer email and click <strong>Search Jiminny</strong> to see instructions and next steps.</div>
+      <div class="convo-loading" id="loading-emails" style="display:none;"><div class="spinner"></div><span>Loading emails…</span></div>
+      <div id="emails-directPanel" style="display:none;padding:34px 24px;text-align:center;color:var(--tx2);">
+        <div style="font-size:34px;margin-bottom:10px;">📨</div>
+        <div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:6px;">Direct communications live in Freshdesk</div>
+        <div style="font-size:12px;max-width:520px;margin:0 auto 14px;line-height:1.6;">These aren't pulled into the hub. Open Freshdesk and search the customer's email or phone number to view their support email threads.</div>
+        <a id="emails-directLink" href="https://anyvan.freshdesk.com/a/tickets" target="_blank" rel="noopener" class="convo-btn convo-btn-primary" style="display:inline-flex;">Open Freshdesk ↗</a>
       </div>
-    </div>
-    <div style="padding:20px;background:var(--sf);border-top:1px solid var(--bd);border-radius:0 0 12px 12px;margin-top:-1px;font-size:12px;color:var(--tx2);line-height:1.6;">
-      <strong style="color:var(--tx);">How to use:</strong><br/>
-      1. Enter the customer's email address (the one associated with their booking)<br/>
-      2. Click <strong>Search Jiminny</strong> — this shows guidance on accessing Jiminny<br/>
-      3. Access <strong>Jiminny directly</strong> (app.jiminny.com) and search by email/phone<br/>
-      4. Locate the video by date (~17 June ~14:30 for assessments)<br/>
-      5. Download MP4/MOV file and save to secure location<br/>
-      <br/>
-      <strong style="color:var(--ind);">⚠️ Important:</strong> Jiminny data is not available in Snowflake. Direct UI search is the only reliable method. See Jiminny_Lookup_Guide_SAR_Monika_Baginska_REVISED.md for detailed instructions.
+      <div id="content-emails" style="display:none;">
+        <div class="convo-table-wrap"><table class="convo-table"><thead id="thead-emails"></thead><tbody id="tbody-emails"></tbody></table></div>
+        <div class="convo-empty" id="empty-emails" style="display:none;">No emails found for this customer in the selected window.</div>
+        <div class="convo-footer"><span id="footer-emails"></span></div>
+      </div>
+      <div class="convo-empty" id="prompt-emails">🔍 Search a customer's <strong>email or phone</strong> above to list the emails we've sent them (Marketing + Transactional).</div>
     </div>
   </div>
 
@@ -451,18 +503,18 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 
 <script>
 (function() {
-  var _data    = { calls: [], livechat: [], whatsapp: [], jiminny: [] };
-  var _loaded  = { calls: false, livechat: false, whatsapp: false, jiminny: false };
+  var _data    = { calls: [], livechat: [], whatsapp: [] };
+  var _loaded  = { calls: false, livechat: false, whatsapp: false };
   var _sort    = {
     calls:    { col: 'INTERACTION_DATETIME', dir: 'desc' },
     livechat: { col: 'INTERACTION_DATETIME', dir: 'desc' },
-    whatsapp: { col: 'INTERACTION_DATETIME', dir: 'desc' },
-    jiminny:  { col: 'CALL_START_TIME', dir: 'desc' }
+    whatsapp: { col: 'INTERACTION_DATETIME', dir: 'desc' }
   };
   var _usearch  = '';
   var _activeTab = 'calls';
 
-  // Phone search state
+  // Customer lookup state
+  var _lookupMode = 'phone';   // phone | email | name — detected from the search term
   var _phoneFilter = '';
   var _phoneLookupData = [];
   var _phoneLookupDays = 0;          // window (in days) the loaded server data represents; 0 = none yet
@@ -495,21 +547,38 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     return n >= 9 && s.slice(-n) === f.slice(-n);
   }
 
+  // Detect what the operator typed: an email (has @), a phone (mostly digits,
+  // 7+ of them) or otherwise a name. Determines which resolution mode the
+  // server query runs and how the result is confidence-flagged.
+  function detectMode(term) {
+    term = (term || '').trim();
+    if (term.indexOf('@') > -1) return 'email';
+    var digits = term.replace(/\D/g, '');
+    var stripped = term.replace(/[\s()+\-.]/g, '');
+    if (digits.length >= 7 && digits.length === stripped.length) return 'phone';
+    return 'name';
+  }
+  // Build the bind-parameter set for the identity queries from the raw term.
+  function lookupParams(mode, term, days) {
+    var p = { mode: mode, term_phone10: '', term_email: '', term_name: '', days: days };
+    if (mode === 'phone')      p.term_phone10 = normPhone(term).slice(-10);
+    else if (mode === 'email') p.term_email   = term.trim().toLowerCase();
+    else                       p.term_name    = term.trim().toUpperCase();
+    return p;
+  }
+
   var COLS = {
     calls: [
-      { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
-      { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
-      { key: 'CUSTOMER_PHONE',        label: 'Phone',    w: '120px' },
-      { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
-      { key: 'AGENT_TYPE',            label: 'Type',     w: '75px'  },
-      { key: 'COUNTRY',               label: 'Country',  w: '80px'  },
-      { key: 'LISTING_CATEGORY_NAME', label: 'Category', w: '110px' },
-      { key: 'DURATION_SECONDS',      label: 'Duration', w: '75px'  },
-      { key: 'SENTIMENT',             label: 'Sentiment',w: '90px'  },
-      { key: 'PICKUP_DATE',           label: 'Pickup',   w: '90px'  }
+      { key: 'CHANNEL',               label: 'Communication Channel', w: '150px' },
+      { key: 'INTERACTION_DATETIME',  label: 'Date / Time (UK)',           w: '150px' },
+      { key: 'AGENT_NAME',            label: 'AnyVan Admin',          w: '150px' },
+      { key: 'AGENT_TYPE',            label: 'Admin Type',            w: '95px'  },
+      { key: 'COUNTRY',               label: 'Country',               w: '110px' },
+      { key: 'LISTING_ID',            label: 'Listing ID',            w: '100px' },
+      { key: 'PICKUP_DATE',           label: 'Pickup Date',           w: '100px' }
     ],
     livechat: [
-      { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
+      { key: 'INTERACTION_DATETIME',  label: 'Time (UK)',     w: '115px' },
       { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
       { key: 'CUSTOMER_PHONE',        label: 'Phone',    w: '120px' },
       { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
@@ -522,7 +591,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       { key: 'PICKUP_DATE',           label: 'Pickup',   w: '90px'  }
     ],
     whatsapp: [
-      { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
+      { key: 'INTERACTION_DATETIME',  label: 'Time (UK)',     w: '115px' },
       { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
       { key: 'CUSTOMER_PHONE',        label: 'Phone',    w: '120px' },
       { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
@@ -538,7 +607,8 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 
   var PHONE_COLS = [
     { key: 'CHANNEL',               label: 'Channel',  w: '100px' },
-    { key: 'INTERACTION_DATETIME',  label: 'Time',     w: '115px' },
+    { key: 'MATCH_CONFIDENCE',      label: 'Match',    w: '108px' },
+    { key: 'INTERACTION_DATETIME',  label: 'Time (UK)',     w: '115px' },
     { key: 'LISTING_ID',            label: 'Listing',  w: '90px'  },
     { key: 'AGENT_NAME',            label: 'Agent',    w: '130px' },
     { key: 'AGENT_TYPE',            label: 'Type',     w: '75px'  },
@@ -591,7 +661,9 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     });
     document.querySelectorAll('.tab-panel').forEach(function(p) {
       p.classList.toggle('active', p.id === 'panel-' + name);
+      p.style.display = '';   // clear any inline display left by Customer Lookup mode
     });
+    if (name === 'emails') { showEmailsTab(); return; }
     if (!_loaded[name]) loadTab(name);
     else renderTable(name);
   }
@@ -759,19 +831,22 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 
   function exitPhoneMode() {
     _phoneFilter = '';
+    _lookupMode = 'phone';
     _phoneLookupData = [];
     _phoneLookupDays = 0;
     _phoneWindowDays = _phoneDefaultWindow;
     _phoneChannelFilter = '';
+    var _ic = document.getElementById('identCard'); if (_ic) { _ic.style.display = 'none'; _ic.innerHTML = ''; }
     document.querySelectorAll('#phoneChannelSeg .seg-btn').forEach(function(b, i) { b.classList.toggle('on', i === 0); });
     document.querySelectorAll('#phoneWindowSeg .seg-btn').forEach(function(b) {
       b.classList.toggle('on', b.getAttribute('data-days') === String(_phoneDefaultWindow));
     });
     document.getElementById('panel-phone').style.display = 'none';
     document.getElementById('mainTabs').style.display = '';
-    // Restore active tab
+    // Restore active tab (clear the inline display:none set on entering phone mode)
     document.querySelectorAll('.tab-panel').forEach(function(p) {
       p.classList.toggle('active', p.id === 'panel-' + _activeTab);
+      p.style.display = '';
     });
     document.getElementById('phoneSearch').value = '';
     document.getElementById('phoneSearchClear').style.display = 'none';
@@ -780,7 +855,8 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   }
 
   function getPhoneMatchesFromTab(tab, normFilter) {
-    if (!_loaded[tab]) return [];
+    // The instant client-side pre-match is phone-based; only meaningful in phone mode.
+    if (_lookupMode !== 'phone' || !_loaded[tab]) return [];
     return _data[tab].filter(function(r) {
       return phoneMatch(r.CUSTOMER_PHONE, _phoneFilter);
     });
@@ -789,7 +865,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   function renderPhoneResults() {
     if (!_phoneFilter) return;
     var norm = normPhone(_phoneFilter);
-    if (norm.length < 7) return;
+    if (_lookupMode === 'phone' && norm.length < 7) return;
 
     var loading = document.getElementById('loading-phone');
     var content = document.getElementById('content-phone');
@@ -841,7 +917,8 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     // Apply channel filter to displayed rows
     var displayRows = _phoneChannelFilter ? allRows.filter(function(r) { return r.CHANNEL === _phoneChannelFilter; }) : allRows;
 
-    var bannerText = '📞 Phone lookup: <strong>' + _phoneFilter + '</strong>';
+    var modeLabel = _lookupMode === 'email' ? '✉️ Email' : _lookupMode === 'name' ? '👤 Name' : '📞 Phone';
+    var bannerText = modeLabel + ' lookup: <strong>' + escapeHtml(_phoneFilter) + '</strong>';
     if (_phoneLookupLoading) {
       bannerText += ' — <em style="color:var(--amb)">Loading ' + windowLabel(_phoneWindowDays) + ' history…</em>';
     } else if (loadingTabs > 0) {
@@ -883,18 +960,26 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
           badge.className = 'channel-badge channel-badge-' + cls;
           badge.textContent = (v === 'Call' ? '📞 ' : v === 'LiveChat' ? '💬 ' : '📱 ') + (v || '—');
           td.appendChild(badge);
+        } else if (c.key === 'MATCH_CONFIDENCE') {
+          var mb = document.createElement('span');
+          var isName = String(v || '').toLowerCase().indexOf('name') > -1;
+          mb.className = 'match-badge ' + (isName ? 'match-name' : 'match-exact');
+          mb.textContent = (isName ? '⚠ ' : '✓ ') + (v || '—');
+          td.appendChild(mb);
         } else if (c.key === 'INTERACTION_DATETIME' && v) {
           var parts = String(v).split(' ');
-          td.appendChild(document.createTextNode(parts[0]));
+          var dpart = parts[0];
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dpart)) { var dp = dpart.split('-'); dpart = dp[2] + '/' + dp[1] + '/' + dp[0]; }
+          td.appendChild(document.createTextNode(dpart));
           td.appendChild(document.createElement('br'));
           var ts = document.createElement('span');
           ts.style.color = 'var(--tx3)'; ts.style.fontSize = '10px';
-          ts.textContent = (parts[1] || '').slice(0, 5);
+          ts.textContent = (parts[1] || '').slice(0, 8);
           td.appendChild(ts);
           td.style.whiteSpace = 'normal'; td.style.lineHeight = '1.3';
         } else if (c.key === 'LISTING_ID' && v) {
           var a = document.createElement('a');
-          a.href = 'https://www.anyvan.com/administer/listing/' + v;
+          a.href = 'https://www.anyvan.com/administer/instant-listings/' + v + '/manage';
           a.target = '_blank';
           a.style.color = 'var(--ind)'; a.style.fontWeight = '700'; a.style.textDecoration = 'none';
           a.textContent = v;
@@ -920,7 +1005,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         row.appendChild(td);
       });
 
-      row.addEventListener('click', function() { toggleExpand('phone', row, r, PHONE_COLS.length + 1); });
+      row.addEventListener('click', function() { openDrawer('phone', row, r); });
       tbody.appendChild(row);
     });
 
@@ -950,11 +1035,11 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       loading.querySelector('span').textContent = 'Loading ' + windowLabel(days) + ' history…';
     }
     try {
-      var digits = normPhone(_phoneFilter);
-      var suffix = digits.slice(-10);
-      var result = await runPhoneQueryWithRetry(suffix, days);
+      var params = lookupParams(_lookupMode, _phoneFilter, days);
+      var result = await runPhoneQueryWithRetry(params);
       _phoneLookupData = result.rows || [];
       _phoneLookupDays = days;
+      loadIdentityProfile(params);
     } catch (e) {
       console.error('[interaction-hub] phone lookup error:', e);
       alert('Failed to load ' + windowLabel(days) + ' history: ' + (e.message || String(e)) + '\n\nPlease try again in a moment — the data warehouse may be warming up.');
@@ -965,19 +1050,68 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     }
   }
 
-  async function runPhoneQueryWithRetry(suffix, days, attempt) {
+  async function runPhoneQueryWithRetry(params, attempt) {
     attempt = attempt || 0;
     try {
-      return await AVDashboard.runQuery('interaction_hub_phone_lookup', { parameters: { phone_suffix: suffix, days: days } });
+      return await AVDashboard.runQuery('interaction_hub_identity_lookup', { parameters: params });
     } catch (e) {
       var msg = (e && (e.message || e.error)) ? (e.message || e.error) : String(e);
       if (attempt < 2 && /execution failed|timeout|timed out|\b50\d\b|throttl|too many/i.test(msg)) {
-        console.warn('[interaction-hub] phone lookup transient failure, retrying:', msg);
+        console.warn('[interaction-hub] identity lookup transient failure, retrying:', msg);
         await new Promise(function(r) { setTimeout(r, 2000 * (attempt + 1)); });
-        return runPhoneQueryWithRetry(suffix, days, attempt + 1);
+        return runPhoneQueryWithRetry(params, attempt + 1);
       }
       throw e;
     }
+  }
+
+  // Identity card: resolve + display the customer's fanned-out identifiers (all
+  // emails / phones / user ids behind the search term) so the operator can
+  // cross-check and confirm identity — the profile that ties the channels together.
+  async function loadIdentityProfile(params) {
+    var card = document.getElementById('identCard');
+    if (!card) return;
+    try {
+      var res = await AVDashboard.runQuery('interaction_hub_identity_profile', { parameters: params });
+      renderIdentCard((res && res.rows && res.rows[0]) || null);
+    } catch (e) {
+      card.style.display = 'none';
+      console.warn('[interaction-hub] identity profile error:', e);
+    }
+  }
+  function identField(label, value, mono) {
+    var f = document.createElement('div'); f.className = 'ident-card-field';
+    var l = document.createElement('div'); l.className = 'ident-card-label'; l.textContent = label;
+    var v = document.createElement('div'); v.className = 'ident-card-value' + (mono ? ' mono' : '');
+    v.textContent = (value == null || value === '') ? '—' : String(value);
+    f.appendChild(l); f.appendChild(v); return f;
+  }
+  function renderIdentCard(row) {
+    var card = document.getElementById('identCard');
+    if (!card) return;
+    card.innerHTML = '';
+    if (!row || !Number(row.SEED_CUSTOMERS)) {
+      // No account resolved — direct-match interactions may still show (e.g. a
+      // caller with no customer record). Note it rather than a full card.
+      card.className = 'ident-card ident-warn';
+      card.appendChild(identField('Customer profile', 'No account matched — showing interactions matched directly on the ' + _lookupMode));
+      card.style.display = 'flex';
+      return;
+    }
+    if (row.RESOLUTION === 'ambiguous') {
+      // Don't merge several people's identifiers into one card — warn and stop.
+      card.className = 'ident-card ident-warn';
+      card.appendChild(identField('⚠ Multiple customers', Number(row.SEED_CUSTOMERS) + ' accounts match this ' + _lookupMode + ' — refine with a phone or email to confirm a single identity'));
+      card.style.display = 'flex';
+      return;
+    }
+    card.className = 'ident-card';
+    card.appendChild(identField('Customer', row.NAMES));
+    card.appendChild(identField('Email(s)', row.EMAILS, true));
+    var phones = [row.PRIMARY_PHONES, row.SECONDARY_PHONES].filter(function(x) { return x && String(x).trim(); }).join(', ');
+    card.appendChild(identField('Phone(s)', phones, true));
+    card.appendChild(identField('User ID(s)', row.USER_IDS, true));
+    card.style.display = 'flex';
   }
 
   // Phone search input handlers
@@ -986,14 +1120,19 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   var phoneSearchClear = document.getElementById('phoneSearchClear');
 
   function doPhoneSearch() {
-    var phone = phoneSearchInput.value.trim();
-    if (normPhone(phone).length < 7) {
+    var term = phoneSearchInput.value.trim();
+    var mode = detectMode(term);
+    var ok = mode === 'phone' ? normPhone(term).length >= 7
+           : mode === 'email' ? /.+@.+\..+/.test(term)
+           : term.length >= 3;
+    if (!ok) {
       phoneSearchInput.focus();
       phoneSearchInput.style.borderColor = 'var(--red)';
       setTimeout(function() { phoneSearchInput.style.borderColor = ''; }, 1500);
       return;
     }
-    enterPhoneMode(phone);
+    _lookupMode = mode;
+    enterPhoneMode(term);
   }
   phoneSearchBtn.addEventListener('click', doPhoneSearch);
   phoneSearchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doPhoneSearch(); });
@@ -1007,61 +1146,6 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       renderPhoneResults();
     });
   });
-
-  // Jiminny search input handlers
-  var jiminnyEmailInput = document.getElementById('jiminny-email');
-  var jiminnySearchBtn  = document.getElementById('jiminny-searchBtn');
-  var jiminnyClearBtn   = document.getElementById('jiminny-clearBtn');
-  var jiminnyResults    = document.getElementById('jiminny-results');
-
-  function doJiminnySearch() {
-    var email = jiminnyEmailInput.value.trim();
-    if (!email || !email.includes('@')) {
-      jiminnyEmailInput.focus();
-      jiminnyEmailInput.style.borderColor = 'var(--red)';
-      setTimeout(function() { jiminnyEmailInput.style.borderColor = ''; }, 1500);
-      return;
-    }
-    var dateFrom = document.getElementById('jiminny-dateFrom').value;
-    var dateTo   = document.getElementById('jiminny-dateTo').value;
-
-    jiminnyResults.innerHTML = `
-      <div style="padding:20px;background:var(--sf2);border-radius:8px;">
-        <div style="font-size:13px;color:var(--tx);line-height:1.8;margin-bottom:16px;">
-          <strong style="color:var(--ind);font-size:14px;">✓ Jiminny Video Lookup</strong><br/>
-          <br/>
-          <strong>Customer Email:</strong> ${email}<br/>
-          ${dateFrom ? '<strong>Date Range:</strong> ' + dateFrom + (dateTo ? ' to ' + dateTo : '') + '<br/>' : ''}
-          <br/>
-          <strong style="color:var(--tx);">Next Steps:</strong><br/>
-          1. Access <strong><a href="https://app.jiminny.com" target="_blank" style="color:var(--ind);text-decoration:underline;">app.jiminny.com</a></strong><br/>
-          2. Go to <strong>Calls/Recordings</strong> section<br/>
-          3. Search by email: <code style="background:var(--sf);padding:2px 6px;border-radius:4px;font-family:monospace;">${email}</code><br/>
-          4. Filter by date (if known): ${dateFrom || 'any date'}<br/>
-          5. Look for <strong>Video</strong> call type<br/>
-          6. Click entry → <strong>Download</strong> (MP4/MOV format)<br/>
-          7. Save to secure location<br/>
-          <br/>
-          <strong style="color:var(--amb);">💡 Tip:</strong> The video entry will show agent name, duration, and timestamp. Verify date/time matches your expected consultation before downloading.<br/>
-          <br/>
-          <strong style="color:var(--ind);">📖 Full Guide:</strong> See <code style="background:var(--sf);padding:2px 6px;border-radius:4px;">Jiminny_Lookup_Guide_SAR_Monika_Baginska_REVISED.md</code> for detailed steps and troubleshooting.
-        </div>
-      </div>
-    `;
-    document.getElementById('jiminny-advisory').style.display = 'flex';
-  }
-
-  function clearJiminnySearch() {
-    jiminnyEmailInput.value = '';
-    document.getElementById('jiminny-dateFrom').value = '';
-    document.getElementById('jiminny-dateTo').value = '';
-    jiminnyResults.innerHTML = '<div style="text-align:center;color:var(--tx3);font-size:13px;">Enter a customer email and click <strong>Search Jiminny</strong> to see instructions and next steps.</div>';
-    document.getElementById('jiminny-advisory').style.display = 'none';
-  }
-
-  jiminnySearchBtn.addEventListener('click', doJiminnySearch);
-  jiminnyEmailInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doJiminnySearch(); });
-  jiminnyClearBtn.addEventListener('click', clearJiminnySearch);
 
   // History window control — expand up to the 12-month retention limit
   document.querySelectorAll('#phoneWindowSeg .seg-btn').forEach(function(btn) {
@@ -1130,16 +1214,18 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 
         if (c.key === 'INTERACTION_DATETIME' && v) {
           var parts = String(v).split(' ');
-          td.appendChild(document.createTextNode(parts[0]));
+          var dpart = parts[0];
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dpart)) { var dp = dpart.split('-'); dpart = dp[2] + '/' + dp[1] + '/' + dp[0]; }
+          td.appendChild(document.createTextNode(dpart));
           td.appendChild(document.createElement('br'));
           var ts = document.createElement('span');
           ts.style.color = 'var(--tx3)'; ts.style.fontSize = '10px';
-          ts.textContent = (parts[1] || '').slice(0, 5);
+          ts.textContent = (parts[1] || '').slice(0, 8);
           td.appendChild(ts);
           td.style.whiteSpace = 'normal'; td.style.lineHeight = '1.3';
         } else if (c.key === 'LISTING_ID' && v) {
           var a = document.createElement('a');
-          a.href = 'https://www.anyvan.com/administer/listing/' + v;
+          a.href = 'https://www.anyvan.com/administer/instant-listings/' + v + '/manage';
           a.target = '_blank';
           a.style.color = 'var(--ind)'; a.style.fontWeight = '700'; a.style.textDecoration = 'none';
           a.textContent = v;
@@ -1169,7 +1255,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         row.appendChild(td);
       });
 
-      row.addEventListener('click', function() { toggleExpand(tab, row, r, cols.length + 1); });
+      row.addEventListener('click', function() { openDrawer(tab, row, r); });
       tbody.appendChild(row);
     });
 
@@ -1178,90 +1264,470 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     updateSearchCounts();
   }
 
-  function toggleExpand(tab, row, r, colspan) {
-    var next = row.nextElementSibling;
-    if (next && next.classList.contains('convo-expand-row')) {
-      next.remove(); row.classList.remove('convo-expanded');
-      row.querySelector('.row-expand-icon').style.transform = ''; return;
+  var _selectedRow = null, _drawerBuilt = false;
+  function ensureDrawer() {
+    if (_drawerBuilt) return;
+    var bd = document.createElement('div'); bd.className = 'drawer-backdrop'; bd.id = 'drawerBackdrop';
+    var dr = document.createElement('aside'); dr.className = 'detail-drawer'; dr.id = 'detailDrawer';
+    dr.innerHTML = '<div class="drawer-header"><div><div class="drawer-title" id="drawerTitle">Interaction</div><div class="drawer-sub" id="drawerSub"></div></div><button class="drawer-close" id="drawerClose" title="Close (Esc)">✕</button></div><div class="drawer-body" id="drawerBody"></div>';
+    document.body.appendChild(bd); document.body.appendChild(dr);
+    bd.addEventListener('click', closeDrawer);
+    document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
+    _drawerBuilt = true;
+  }
+  function closeDrawer() {
+    var dr = document.getElementById('detailDrawer'), bd = document.getElementById('drawerBackdrop');
+    if (dr) dr.classList.remove('open');
+    if (bd) bd.classList.remove('open');
+    if (_selectedRow) {
+      _selectedRow.classList.remove('convo-expanded');
+      var ic = _selectedRow.querySelector('.row-expand-icon'); if (ic) ic.style.transform = '';
+      _selectedRow = null;
     }
-    var prev = document.querySelector('#tbody-' + tab + ' .convo-expand-row');
-    if (prev) {
-      prev.previousElementSibling.classList.remove('convo-expanded');
-      prev.previousElementSibling.querySelector('.row-expand-icon').style.transform = '';
-      prev.remove();
+  }
+
+  // Detail opens in a right-side drawer (does not push/hide the table).
+  function openDrawer(tab, row, r) {
+    ensureDrawer();
+    if (_selectedRow && _selectedRow !== row) {
+      _selectedRow.classList.remove('convo-expanded');
+      var pic = _selectedRow.querySelector('.row-expand-icon'); if (pic) pic.style.transform = '';
     }
+    _selectedRow = row;
     row.classList.add('convo-expanded');
-    row.querySelector('.row-expand-icon').style.transform = 'rotate(90deg)';
+    var ric = row.querySelector('.row-expand-icon'); if (ric) ric.style.transform = 'rotate(90deg)';
 
-    var expandRow = document.createElement('tr'); expandRow.className = 'convo-expand-row';
-    var eTd = document.createElement('td'); eTd.setAttribute('colspan', colspan); eTd.style.padding = '0';
-    var content = document.createElement('div'); content.className = 'convo-expand-content';
-
-    // For phone panel, determine channel from row data; for tab views use tab name
     var isCalls = (tab === 'calls') || (tab === 'phone' && r.CHANNEL === 'Call');
+    document.getElementById('drawerTitle').textContent = (r.CHANNEL || 'Interaction') + (r.LISTING_ID ? (' · AV ' + r.LISTING_ID) : '');
+    document.getElementById('drawerSub').textContent = fmtDateTime(r.INTERACTION_DATETIME) || '';
+    var content = document.getElementById('drawerBody'); content.innerHTML = '';
 
     var grid = document.createElement('div'); grid.className = 'convo-meta-grid';
+    var listingHref = r.LISTING_ID ? ('https://www.anyvan.com/administer/instant-listings/' + r.LISTING_ID + '/manage') : null;
+    // Twilio deep-links for voice calls. Flex Insights = the conversation drill-down (playback);
+    // Console = the call log. Console URL prefers the query-built value (customer leg) and falls
+    // back to the Interaction ID (worker leg) so the link still resolves if the query hasn't been
+    // redeployed yet. Flex URL comes wholesale from the warehouse (never hardcode the Account SID).
+    var flexHref = (isCalls && r.TWILIO_FLEX_URL) ? r.TWILIO_FLEX_URL : null;
+    var consoleHref = (isCalls && r.TWILIO_CONSOLE_URL) ? r.TWILIO_CONSOLE_URL
+      : ((isCalls && r.INTERACTION_ID && String(r.INTERACTION_ID).indexOf('CA') === 0)
+          ? ('https://console.twilio.com/us1/monitor/logs/calls/' + r.INTERACTION_ID) : null);
     var metaFields = [
-      { label: 'Interaction ID',   val: r.INTERACTION_ID },
-      { label: 'Date/Time',        val: r.INTERACTION_DATETIME },
-      { label: 'Channel',          val: r.CHANNEL },
-      { label: 'Agent',            val: r.AGENT_NAME },
-      { label: 'Agent Email',      val: r.AGENT_EMAIL },
-      { label: 'Agent Type',       val: r.AGENT_TYPE },
-      { label: 'Customer Phone',   val: r.CUSTOMER_PHONE },
-      { label: 'Listing',          val: r.LISTING_ID },
-      { label: 'Country',          val: r.COUNTRY },
-      { label: 'Category',         val: r.LISTING_CATEGORY_NAME },
-      { label: 'Pickup Date',      val: r.PICKUP_DATE ? fmtDate(r.PICKUP_DATE) : null },
-      { label: 'Listing Status',   val: r.LISTING_STATUS },
-      { label: 'Sentiment',        val: r.SENTIMENT },
-      { label: 'Sentiment Notes',  val: r.SENTIMENT_SUMMARY },
-      { label: 'Interaction Type', val: r.INTERACTION_TYPE }
+      { label: 'Interaction ID',        val: r.INTERACTION_ID, wrap: true },
+      { label: 'Date / Time (UK)',           val: fmtDateTime(r.INTERACTION_DATETIME) },
+      { label: 'Communication Channel', val: r.CHANNEL },
+      { label: 'AnyVan Admin',          val: r.AGENT_NAME },
+      { label: 'Agent Email',           val: r.AGENT_EMAIL },
+      { label: 'Admin Type',            val: r.AGENT_TYPE },
+      { label: 'Customer Phone',        val: r.CUSTOMER_PHONE },
+      { label: 'Listing ID',            val: r.LISTING_ID, href: listingHref },
+      { label: 'Country',               val: r.COUNTRY },
+      { label: 'Category',              val: r.LISTING_CATEGORY_NAME },
+      { label: 'Pickup Date',           val: r.PICKUP_DATE ? fmtDate(r.PICKUP_DATE) : null },
+      { label: 'Listing Status',        val: r.LISTING_STATUS },
+      { label: 'Sentiment',             val: r.SENTIMENT },
+      { label: 'Sentiment Notes',       val: r.SENTIMENT_SUMMARY },
+      { label: 'Interaction Type',      val: r.INTERACTION_TYPE }
     ];
     if (isCalls && r.DURATION_SECONDS != null) {
       var dm = Math.floor(r.DURATION_SECONDS / 60), ds = Math.round(r.DURATION_SECONDS % 60);
       metaFields.splice(7, 0, { label: 'Duration', val: dm + 'm ' + ds + 's' });
     }
+    // Conversation ID = the Twilio conference SID (CF…) — the key behind the Flex Insights link.
+    if (isCalls && r.CONVERSATION_ID) {
+      metaFields.splice(1, 0, { label: 'Conversation ID', val: r.CONVERSATION_ID, wrap: true });
+    }
     if (!isCalls) {
       metaFields.push({ label: 'Escalated',      val: r.ESCALATED ? 'Yes' : 'No' });
       metaFields.push({ label: 'Fields Changed', val: r.FIELDS_CHANGED });
     }
-
     metaFields.forEach(function(f) {
       var item = document.createElement('div'); item.className = 'convo-meta-item';
       var lbl  = document.createElement('div'); lbl.className = 'convo-meta-label'; lbl.textContent = f.label;
       var vDiv = document.createElement('div'); vDiv.className = 'convo-meta-value';
-      vDiv.textContent = f.val != null ? String(f.val) : '—';
+      if (f.wrap) vDiv.style.wordBreak = 'break-all';
+      if (f.href && f.val != null) {
+        var mLink = document.createElement('a');
+        mLink.href = f.href; mLink.target = '_blank'; mLink.rel = 'noopener';
+        mLink.style.color = 'var(--ind)'; mLink.style.fontWeight = '700'; mLink.style.textDecoration = 'none';
+        mLink.textContent = String(f.val);
+        vDiv.appendChild(mLink);
+      } else {
+        vDiv.textContent = f.val != null ? String(f.val) : '—';
+      }
       item.appendChild(lbl); item.appendChild(vDiv); grid.appendChild(item);
     });
     content.appendChild(grid);
 
-    if (!isCalls && r.TRANSCRIPT_URL) {
-      var viewSect = document.createElement('div');
-      var viewLbl = document.createElement('div'); viewLbl.className = 'convo-meta-label'; viewLbl.style.marginBottom = '6px'; viewLbl.textContent = 'Conversation Transcript';
-      viewSect.appendChild(viewLbl);
-      var iframe = document.createElement('iframe'); iframe.className = 'convo-viewer'; iframe.src = r.TRANSCRIPT_URL;
-      iframe.setAttribute('loading', 'lazy'); iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-      viewSect.appendChild(iframe); content.appendChild(viewSect);
-    }
-
-    var actions = document.createElement('div'); actions.className = 'convo-actions';
+    var actions = document.createElement('div'); actions.className = 'convo-actions'; actions.style.marginTop = '14px';
     if (isCalls && r.RECORDING_URL) {
       var aBtn = document.createElement('a'); aBtn.className = 'convo-btn convo-btn-primary'; aBtn.href = r.RECORDING_URL; aBtn.target = '_blank'; aBtn.rel = 'noopener'; aBtn.textContent = '🎧 Listen to Recording';
-      aBtn.addEventListener('click', function(e) { e.stopPropagation(); }); actions.appendChild(aBtn);
+      actions.appendChild(aBtn);
     }
-    if (!isCalls && r.TRANSCRIPT_URL) {
-      var tBtn = document.createElement('a'); tBtn.className = 'convo-btn convo-btn-primary'; tBtn.href = r.TRANSCRIPT_URL; tBtn.target = '_blank'; tBtn.textContent = '💬 Open Transcript';
-      tBtn.addEventListener('click', function(e) { e.stopPropagation(); }); actions.appendChild(tBtn);
+    if (isCalls && flexHref) {
+      var fBtn = document.createElement('a'); fBtn.className = 'convo-btn convo-btn-primary'; fBtn.href = flexHref; fBtn.target = '_blank'; fBtn.rel = 'noopener'; fBtn.textContent = '▶️ Twilio Flex';
+      actions.appendChild(fBtn);
     }
-    if (r.LISTING_ID) {
-      var lBtn = document.createElement('a'); lBtn.className = 'convo-btn'; lBtn.href = 'https://www.anyvan.com/administer/listing/' + r.LISTING_ID; lBtn.target = '_blank'; lBtn.textContent = '🔗 Admin Panel';
-      lBtn.addEventListener('click', function(e) { e.stopPropagation(); }); actions.appendChild(lBtn);
+    if (isCalls && consoleHref) {
+      var cBtn = document.createElement('a'); cBtn.className = 'convo-btn'; cBtn.href = consoleHref; cBtn.target = '_blank'; cBtn.rel = 'noopener'; cBtn.textContent = '🖥️ Twilio Console';
+      actions.appendChild(cBtn);
+    }
+    if (!isCalls && txConvSid(r)) {
+      var dlBtn = document.createElement('button'); dlBtn.className = 'convo-btn convo-btn-primary'; dlBtn.textContent = '⬇️ Download PDF (redacted)';
+      dlBtn.addEventListener('click', function() { downloadTranscriptPDF(r, dlBtn); });
+      actions.appendChild(dlBtn);
     }
     content.appendChild(actions);
-    eTd.appendChild(content); expandRow.appendChild(eTd);
-    row.parentNode.insertBefore(expandRow, row.nextSibling);
+
+    if (!isCalls && txConvSid(r)) {
+      var viewLbl = document.createElement('div'); viewLbl.className = 'convo-meta-label'; viewLbl.style.margin = '16px 0 6px'; viewLbl.textContent = 'Conversation Transcript';
+      content.appendChild(viewLbl);
+      var txWrap = document.createElement('div'); txWrap.className = 'tx-wrap';
+      txWrap.innerHTML = '<div class="tx-loading">Loading transcript…</div>';
+      content.appendChild(txWrap);
+      renderNativeTranscript(txWrap, r);
+    }
+
+    document.getElementById('detailDrawer').classList.add('open');
+    document.getElementById('drawerBackdrop').classList.add('open');
   }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function buildTranscriptDoc(r, rows) {
+    var esc = escapeHtml;
+    var roleMap = { CUSTOMER: { name: 'Customer', cls: 'cust right' }, AGENT: { name: 'AnyVan Agent', cls: 'agent left' }, BOT: { name: 'AnyVan (Sophie AI)', cls: 'bot left' } };
+    var bubbles = rows.map(function(m) {
+      var role = roleMap[m.SPEAKER_ROLE] || roleMap.AGENT;
+      var when = fmtDateTime(m.CREATED_AT) || '';
+      var txt = esc(m.MESSAGE).replace(/\n/g, '<br>');
+      return '<div class="msg ' + role.cls + '"><div class="bub"><div class="who">' + esc(role.name) + ' · <span class="ts">' + esc(when) + '</span></div><div class="txt">' + txt + '</div></div></div>';
+    }).join('');
+    var sub = [ r.CHANNEL ? ('Channel: ' + esc(r.CHANNEL)) : '', r.LISTING_ID ? ('Booking: AV ' + esc(r.LISTING_ID)) : '', r.CUSTOMER_PHONE ? ('Customer: ' + esc(r.CUSTOMER_PHONE)) : '' ].filter(Boolean).join('  ·  ');
+    var gen = fmtDateTime(new Date().toISOString().replace('T', ' ')) || '';
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>AnyVan Conversation Transcript</title><style>'
+      + 'body{font-family:Arial,Helvetica,sans-serif;color:#1e293b;margin:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+      + '.wrap{max-width:760px;margin:0 auto;padding:28px 30px;}'
+      + '.hd{border-bottom:3px solid #6366f1;padding-bottom:12px;}'
+      + '.hd h1{font-size:20px;margin:0 0 4px;color:#4338ca;}.hd .sub{font-size:12px;color:#475569;}'
+      + '.notice{background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:11px;border-radius:8px;padding:9px 12px;margin:14px 0 18px;}'
+      + '.msg{display:flex;margin:8px 0;}.msg.right{justify-content:flex-end;}'
+      + '.bub{max-width:76%;border-radius:12px;padding:8px 12px;font-size:13px;line-height:1.45;}'
+      + '.msg.cust .bub{background:#eef2ff;border:1px solid #c7d2fe;}'
+      + '.msg.agent .bub{background:#f1f5f9;border:1px solid #e2e8f0;}'
+      + '.msg.bot .bub{background:#f8fafc;border:1px dashed #cbd5e1;}'
+      + '.who{font-size:10px;font-weight:700;color:#64748b;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;}'
+      + '.ts{font-weight:400;text-transform:none;}.txt{word-wrap:break-word;overflow-wrap:anywhere;}'
+      + '.ft{margin-top:22px;border-top:1px solid #e2e8f0;padding-top:10px;font-size:10px;color:#94a3b8;}'
+      + '</style></head><body><div class="wrap">'
+      + '<div class="hd"><h1>AnyVan — Conversation Transcript</h1><div class="sub">' + sub + '</div></div>'
+      + '<div class="notice"><strong>Prepared for the customer.</strong> AnyVan staff names have been anonymised and internal references removed. Please review the messages below for any third-party personal information before sending.</div>'
+      + bubbles
+      + '<div class="ft">Generated ' + esc(gen) + ' · AnyVan · Redacted conversation export</div>'
+      + '</div></body></html>';
+  }
+  // Which conversation SID to read the transcript from: the resolved TRANSCRIPT_SID
+  // (e.g. human-agent WhatsApp matched via the message-author phone), else the row's
+  // own id — but only when it's a real Twilio conversation (CH…). A task SID (WT…),
+  // e.g. an unresolved web Live Chat, has no transcript, so return null and hide it.
+  function txConvSid(r) {
+    var sid = r.TRANSCRIPT_SID || r.INTERACTION_ID;
+    return (sid && String(sid).indexOf('CH') === 0) ? sid : null;
+  }
+  async function downloadTranscriptPDF(r, btn) {
+    var orig = btn ? btn.textContent : '';
+    try {
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Preparing…'; }
+      var res = await AVDashboard.runQuery('interaction_hub_conversation_transcript', { parameters: { conversation_sid: txConvSid(r) } });
+      var rows = (res && res.rows) || [];
+      if (!rows.length) { alert('No transcript messages were found for this conversation.'); return; }
+      var w = window.open('', '_blank');
+      if (!w) { alert('Please allow pop-ups for this site to download the transcript PDF.'); return; }
+      w.document.open(); w.document.write(buildTranscriptDoc(r, rows)); w.document.close();
+      setTimeout(function() { try { w.focus(); w.print(); } catch (e) {} }, 500);
+    } catch (e) {
+      alert('Could not build the transcript: ' + (e && e.message ? e.message : e));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = orig; }
+    }
+  }
+
+  function roleMeta(role) {
+    if (role === 'CUSTOMER') return { name: 'Customer', cls: 'cust right' };
+    if (role === 'BOT') return { name: 'AnyVan (Sophie AI)', cls: 'bot left' };
+    return { name: 'AnyVan Agent', cls: 'agent left' };
+  }
+  async function renderNativeTranscript(container, r) {
+    try {
+      var res = await AVDashboard.runQuery('interaction_hub_conversation_transcript', { parameters: { conversation_sid: txConvSid(r) } });
+      var rows = (res && res.rows) || [];
+      if (!rows.length) { container.innerHTML = '<div class="tx-loading">No transcript messages were found for this conversation.</div>'; return; }
+      container.innerHTML = '';
+      rows.forEach(function(m) {
+        var role = roleMeta(m.SPEAKER_ROLE);
+        var msg = document.createElement('div'); msg.className = 'tx-msg ' + role.cls;
+        var bub = document.createElement('div'); bub.className = 'tx-bub';
+        var who = document.createElement('div'); who.className = 'tx-who'; who.textContent = role.name + ' · ';
+        var ts = document.createElement('span'); ts.className = 'tx-ts'; ts.textContent = fmtDateTime(m.CREATED_AT) || ''; who.appendChild(ts);
+        var txt = document.createElement('div'); txt.textContent = m.MESSAGE == null ? '' : String(m.MESSAGE);
+        bub.appendChild(who); bub.appendChild(txt); msg.appendChild(bub); container.appendChild(msg);
+      });
+    } catch (e) {
+      container.innerHTML = '<div class="tx-loading">Could not load transcript: ' + escapeHtml(e && e.message ? e.message : String(e)) + '</div>';
+    }
+  }
+
+  // ===== EMAILS TAB =====
+  // Customer-scoped list of emails AnyVan sent (Transactional = EVENTS_MESSAGING_MESSAGE,
+  // Marketing = EVENTS_EMAIL), classed by purpose — never by sending platform. "All" = both.
+  // Direct communications (Freshdesk) are not pulled in — a manual link is offered instead.
+  var _emails = { rows: [], loaded: false, cat: '', mode: 'email', term: '', days: 90, kpisLoaded: false };
+  var EMAIL_COLS = [
+    { key: 'EMAIL_CLASS',          label: 'Category',        w: '110px' },
+    { key: 'INTERACTION_DATETIME', label: 'Date / Time (UK)', w: '150px' },
+    { key: 'EMAIL_TYPE',           label: 'Type',            w: '210px' },
+    { key: 'SUBJECT',              label: 'Subject',         w: '260px' },
+    { key: 'RECIPIENT',            label: 'Recipient',       w: '200px' },
+    { key: 'CHANNEL',              label: 'Channel',         w: '80px'  }
+  ];
+  function prettyEmailType(v, cls) {
+    if (v == null || v === '') return cls === 'Transactional' ? '(no template)' : '(campaign)';
+    if (cls === 'Transactional') {
+      var seg = String(v).split('/').pop().replace(/_(en|es|fr|de|it)$/i, '').replace(/_/g, ' ');
+      return seg.charAt(0).toUpperCase() + seg.slice(1);
+    }
+    return String(v);
+  }
+  async function loadEmailKpis() {
+    try {
+      var res = await AVDashboard.runQuery('interaction_hub_email_kpis', { parameters: { days: 7 } });
+      var rows = (res && res.rows) || [];
+      var today = new Date().toISOString().slice(0, 10);
+      var agg = { Transactional: { total: 0, today: 0 }, Marketing: { total: 0, today: 0 } };
+      rows.forEach(function(r) {
+        if (r.GRAIN !== 'daily') return;
+        var c = agg[r.EMAIL_CLASS]; if (!c) return;
+        c.total += Number(r.N_SENT) || 0;
+        if (r.LABEL === today) c.today += Number(r.N_SENT) || 0;
+      });
+      setText('kpi-emails-txn', agg.Transactional.total.toLocaleString());
+      setText('kpi-emails-txn-today', 'today: ' + agg.Transactional.today.toLocaleString());
+      setText('kpi-emails-mkt', agg.Marketing.total.toLocaleString());
+      setText('kpi-emails-mkt-today', 'today: ' + agg.Marketing.today.toLocaleString());
+      setText('kpi-emails-all', (agg.Transactional.total + agg.Marketing.total).toLocaleString());
+      _emails.kpisLoaded = true;
+    } catch (e) { console.warn('[interaction-hub] email kpis error:', e); }
+  }
+  function showEmailsTab() {
+    if (!_emails.kpisLoaded) loadEmailKpis();
+    renderEmails();
+  }
+  function doEmailSearch() {
+    var inp = document.getElementById('emails-search');
+    var term = inp.value.trim();
+    var mode = detectMode(term);
+    var ok = mode === 'phone' ? normPhone(term).length >= 7 : mode === 'email' ? /.+@.+\..+/.test(term) : term.length >= 3;
+    if (!ok) { inp.style.borderColor = 'var(--red)'; setTimeout(function() { inp.style.borderColor = ''; }, 1500); return; }
+    _emails.mode = mode; _emails.term = term;
+    var fdUrl = 'https://anyvan.freshdesk.com/a/search/tickets?term=' + encodeURIComponent(term);
+    var l1 = document.getElementById('emails-freshdeskLink'); if (l1) l1.href = fdUrl;
+    var l2 = document.getElementById('emails-directLink'); if (l2) l2.href = fdUrl;
+    document.getElementById('emails-clearBtn').style.display = 'inline-flex';
+    loadEmails();
+  }
+  async function loadEmails() {
+    var loading = document.getElementById('loading-emails');
+    document.getElementById('prompt-emails').style.display = 'none';
+    document.getElementById('content-emails').style.display = 'none';
+    document.getElementById('emails-directPanel').style.display = 'none';
+    loading.style.display = 'flex';
+    try {
+      var params = lookupParams(_emails.mode, _emails.term, _emails.days);
+      var res = await AVDashboard.runQuery('interaction_hub_emails', { parameters: params });
+      _emails.rows = (res && res.rows) || [];
+      _emails.loaded = true;
+    } catch (e) {
+      alert('Failed to load emails: ' + (e.message || String(e)));
+      _emails.rows = []; _emails.loaded = true;
+    } finally {
+      loading.style.display = 'none';
+      renderEmails();
+    }
+  }
+  function renderEmails() {
+    var directPanel = document.getElementById('emails-directPanel');
+    var content = document.getElementById('content-emails');
+    var prompt = document.getElementById('prompt-emails');
+    var allCaveat = document.getElementById('emails-allcaveat');
+    if (!directPanel) return;
+    // Direct (Freshdesk) category = manual panel, never rows.
+    if (_emails.cat === 'Direct') {
+      directPanel.style.display = 'block'; content.style.display = 'none';
+      prompt.style.display = 'none'; allCaveat.classList.remove('show');
+      return;
+    }
+    directPanel.style.display = 'none';
+    allCaveat.classList.toggle('show', _emails.cat === '');
+    if (!_emails.loaded || !_emails.term) {
+      prompt.style.display = 'block'; content.style.display = 'none'; return;
+    }
+    prompt.style.display = 'none';
+    var rows = _emails.rows.filter(function(r) { return !_emails.cat || r.EMAIL_CLASS === _emails.cat; });
+    rows.sort(function(a, b) { return String(b.INTERACTION_DATETIME || '').localeCompare(String(a.INTERACTION_DATETIME || '')); });
+    var thead = document.getElementById('thead-emails'), tbody = document.getElementById('tbody-emails');
+    var empty = document.getElementById('empty-emails'), footer = document.getElementById('footer-emails');
+    thead.textContent = ''; tbody.textContent = '';
+    var htr = document.createElement('tr');
+    var iconTh = document.createElement('th'); iconTh.style.width = '28px'; htr.appendChild(iconTh);
+    EMAIL_COLS.forEach(function(c) { var th = document.createElement('th'); th.style.width = c.w; th.textContent = c.label; htr.appendChild(th); });
+    thead.appendChild(htr);
+    empty.style.display = rows.length === 0 ? 'block' : 'none';
+    content.style.display = 'block';
+    setText('countEmails', String(rows.length));
+    rows.forEach(function(r) {
+      var row = document.createElement('tr');
+      var iconTd = document.createElement('td'); iconTd.style.width = '28px'; iconTd.style.textAlign = 'center';
+      var ic = document.createElement('span'); ic.className = 'row-expand-icon'; ic.textContent = '▸'; iconTd.appendChild(ic); row.appendChild(iconTd);
+      EMAIL_COLS.forEach(function(c) {
+        var td = document.createElement('td'); var v = r[c.key]; td.title = v != null ? String(v) : '';
+        if (c.key === 'EMAIL_CLASS') {
+          var b = document.createElement('span'); b.className = 'match-badge ' + (v === 'Marketing' ? 'match-name' : 'match-exact');
+          b.textContent = v || '—'; td.appendChild(b);
+        } else if (c.key === 'INTERACTION_DATETIME' && v) {
+          var parts = String(v).split(' '); var dp = parts[0];
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dp)) { var d = dp.split('-'); dp = d[2] + '/' + d[1] + '/' + d[0]; }
+          td.appendChild(document.createTextNode(dp)); td.appendChild(document.createElement('br'));
+          var ts = document.createElement('span'); ts.style.color = 'var(--tx3)'; ts.style.fontSize = '10px'; ts.textContent = (parts[1] || '').slice(0, 8); td.appendChild(ts);
+          td.style.whiteSpace = 'normal'; td.style.lineHeight = '1.3';
+        } else if (c.key === 'EMAIL_TYPE') {
+          td.textContent = prettyEmailType(v, r.EMAIL_CLASS);
+        } else {
+          td.textContent = v != null && v !== '' ? v : '—';
+        }
+        row.appendChild(td);
+      });
+      row.addEventListener('click', function() { openEmailDrawer(r); });
+      tbody.appendChild(row);
+    });
+    footer.textContent = rows.length ? ('Showing ' + rows.length + ' email' + (rows.length !== 1 ? 's' : '') + ' for ' + _emails.term + ' (' + windowLabel(_emails.days) + ')') : '';
+  }
+  function openEmailDrawer(r) {
+    ensureDrawer();
+    document.getElementById('drawerTitle').textContent = (r.EMAIL_CLASS || 'Email') + ' email';
+    document.getElementById('drawerSub').textContent = fmtDateTime(r.INTERACTION_DATETIME) || '';
+    var content = document.getElementById('drawerBody'); content.innerHTML = '';
+    var grid = document.createElement('div'); grid.className = 'convo-meta-grid';
+    [
+      { label: 'Category',         val: r.EMAIL_CLASS },
+      { label: 'Type',             val: prettyEmailType(r.EMAIL_TYPE, r.EMAIL_CLASS), wrap: true },
+      { label: 'Subject',          val: r.SUBJECT, wrap: true },
+      { label: 'Recipient',        val: r.RECIPIENT, wrap: true },
+      { label: 'Channel',          val: r.CHANNEL },
+      { label: 'Direction',        val: r.DIRECTION },
+      { label: 'Date / Time (UK)', val: fmtDateTime(r.INTERACTION_DATETIME) }
+    ].forEach(function(f) {
+      var item = document.createElement('div'); item.className = 'convo-meta-item';
+      var lbl = document.createElement('div'); lbl.className = 'convo-meta-label'; lbl.textContent = f.label;
+      var vd = document.createElement('div'); vd.className = 'convo-meta-value'; if (f.wrap) vd.style.wordBreak = 'break-word';
+      vd.textContent = f.val != null && f.val !== '' ? String(f.val) : '—';
+      item.appendChild(lbl); item.appendChild(vd); grid.appendChild(item);
+    });
+    content.appendChild(grid);
+
+    // Message preview: the actual email as sent. Transactional bodies are stored
+    // per-MESSAGE_ID in EVENTS_MESSAGING_MESSAGE; marketing creative and some edge
+    // sends are not warehoused and show an honest fallback note instead.
+    var preview = document.createElement('div');
+    preview.style.cssText = 'margin-top:14px;';
+    content.appendChild(preview);
+    renderEmailPreview(preview, r);
+
+    document.getElementById('detailDrawer').classList.add('open');
+    document.getElementById('drawerBackdrop').classList.add('open');
+  }
+
+  function emailPreviewNote(text) {
+    var n = document.createElement('div');
+    n.style.cssText = 'padding:10px 12px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);font-size:11px;color:var(--tx2);line-height:1.5;';
+    n.textContent = text;
+    return n;
+  }
+
+  // Loads and renders the authoritative sent email in a SANDBOXED iframe (no scripts).
+  // Transactional only — the row's INTERACTION_ID is the EVENTS_MESSAGING_MESSAGE MESSAGE_ID.
+  async function renderEmailPreview(container, r) {
+    container.innerHTML = '';
+    if (r.EMAIL_CLASS === 'Marketing') {
+      container.appendChild(emailPreviewNote('Marketing email — the campaign creative is not stored in the warehouse. The subject and send metadata above are the record; open the campaign in the marketing platform for the full creative.'));
+      return;
+    }
+    var msgId = r.INTERACTION_ID;
+    if (!msgId) { container.appendChild(emailPreviewNote('No message id on this row, so the sent email cannot be loaded. The send metadata above is the record.')); return; }
+    var head = document.createElement('div');
+    head.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:6px;';
+    head.textContent = '✉️ Email preview — as sent';
+    container.appendChild(head);
+    var status = emailPreviewNote('Loading the sent email…');
+    container.appendChild(status);
+    try {
+      var res = await AVDashboard.runQuery('interaction_hub_email_body', { parameters: { message_id: String(msgId) } });
+      var rows = (res && res.rows) || [];
+      if (!rows.length || !rows[0].RENDERED_HTML) {
+        status.textContent = 'The rendered body for this email is not stored in the warehouse. The subject and send metadata above are the authoritative record; open the booking in Admin for the full message.';
+        return;
+      }
+      container.removeChild(status);
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:#fff;';
+      var frame = document.createElement('iframe');
+      frame.setAttribute('sandbox', '');
+      frame.setAttribute('title', 'Email preview');
+      frame.style.cssText = 'width:100%;height:520px;border:0;background:#fff;display:block;';
+      frame.srcdoc = rows[0].RENDERED_HTML;
+      wrap.appendChild(frame);
+      container.appendChild(wrap);
+    } catch (e) {
+      status.textContent = 'Could not load the email body (' + ((e && (e.message || e.error)) || 'error') + '). The send metadata above is unaffected.';
+    }
+  }
+  function exportEmailsCSV() {
+    var rows = _emails.rows.filter(function(r) { return !_emails.cat || r.EMAIL_CLASS === _emails.cat; });
+    if (!rows.length) { alert('No emails to export.'); return; }
+    var cols = ['EMAIL_CLASS', 'INTERACTION_DATETIME', 'EMAIL_TYPE', 'SUBJECT', 'RECIPIENT', 'CHANNEL', 'DIRECTION'];
+    var csv = cols.join(',') + '\n';
+    rows.forEach(function(r) {
+      csv += cols.map(function(c) { var v = r[c]; if (v == null) return ''; v = String(v).replace(/"/g, '""'); return /[",\n]/.test(v) ? '"' + v + '"' : v; }).join(',') + '\n';
+    });
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'interaction_hub_emails_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+  }
+  (function wireEmailsTab() {
+    document.querySelectorAll('#emails-catSeg .seg-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('#emails-catSeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });
+        btn.classList.add('on'); _emails.cat = btn.getAttribute('data-cat') || ''; renderEmails();
+      });
+    });
+    document.querySelectorAll('#emails-windowSeg .seg-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('#emails-windowSeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });
+        btn.classList.add('on'); _emails.days = parseInt(btn.getAttribute('data-days'), 10) || 90;
+        if (_emails.term) loadEmails();
+      });
+    });
+    var sb = document.getElementById('emails-searchBtn'); if (sb) sb.addEventListener('click', doEmailSearch);
+    var si = document.getElementById('emails-search'); if (si) si.addEventListener('keydown', function(e) { if (e.key === 'Enter') doEmailSearch(); });
+    var cb = document.getElementById('emails-clearBtn'); if (cb) cb.addEventListener('click', function() {
+      _emails.term = ''; _emails.rows = []; _emails.loaded = false;
+      document.getElementById('emails-search').value = ''; cb.style.display = 'none'; renderEmails();
+    });
+    var eb = document.getElementById('emails-exportBtn'); if (eb) eb.addEventListener('click', exportEmailsCSV);
+  })();
 
   function updateKPIs(tab, data) {
     var ai = data.filter(function(r) { return r.AGENT_TYPE === 'AI'; }).length;
@@ -1319,7 +1785,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     var cols = ['INTERACTION_DATETIME', 'INTERACTION_ID', 'AGENT_NAME', 'AGENT_EMAIL', 'AGENT_TYPE',
                 'CUSTOMER_PHONE', 'LISTING_ID', 'COUNTRY', 'LISTING_CATEGORY_NAME', 'PICKUP_DATE',
                 'LISTING_STATUS', 'SENTIMENT', 'SENTIMENT_SUMMARY', 'INTERACTION_TYPE', 'CHANNEL'];
-    if (tab === 'calls') cols.push('DURATION_SECONDS', 'RECORDING_URL');
+    if (tab === 'calls') cols.push('DURATION_SECONDS', 'RECORDING_URL', 'CONVERSATION_ID', 'TWILIO_CONSOLE_URL', 'TWILIO_FLEX_URL');
     else cols.push('ESCALATED', 'FIELDS_CHANGED', 'TRANSCRIPT_URL');
     var csv = cols.join(',') + '\n';
     data.forEach(function(r) {
@@ -1340,6 +1806,14 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     var s = String(v).slice(0, 10);
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { var p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
     return s;
+  }
+  function fmtDateTime(v) {
+    if (v == null || v === '') return null;
+    var parts = String(v).split(' ');
+    var d = parts[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) { var p = d.split('-'); d = p[2] + '/' + p[1] + '/' + p[0]; }
+    var t = (parts[1] || '').slice(0, 8);
+    return t ? (d + ' ' + t) : d;
   }
 
   async function init() {
