@@ -50,7 +50,7 @@ All six queries are **Snowflake-validated** (compile + column check; the `:email
 | sar_twilio_conversations | ✅ |
 | sar_aircall | ✅ |
 
-## Deploy — BLOCKED on the AV Dashboards connector re-auth
+## Deploy — ✅ DONE 2026-09-11 (was blocked on connector re-auth; now live)
 The AV Dashboards MCP currently requires re-authentication (claude.ai → Settings →
 Connectors). Until it's reconnected, `create_query` / `get_upload_token` / PUT cannot run.
 The wired HTML (`sar-data-extract.html`) is already committed but the **live dashboard is
@@ -63,3 +63,20 @@ unchanged** until the PUT in step 2. Once the connector is back, deploy is mecha
 3. Hard-refresh; verify each new tab returns rows for a known customer email/phone.
 4. Mirror into `interaction-hub.html` (phone-keyed: the messaging channels via
    `EVENTS_MESSAGING_MESSAGE.RESOLVED_USER_PHONE`) and PUT.
+
+## Deployed — 2026-09-11 ✅
+All six queries created (visibility `public`, matching the existing `sar_*` queries so the
+whole privacy team can run the dashboard) and the wired HTML pushed to the live dashboard:
+**https://dashboards.anyvan.com/operations/sar-data-extract**
+
+Query IDs: sar_messaging, sar_comms_log, sar_consent_history, sar_whatsapp_twilio,
+sar_twilio_conversations, sar_aircall. `sar_messaging` and `sar_aircall` verified on-platform
+(0 rows for a non-existent email / phone — binds work). Dashboard auto-versioned; rollback via
+`rollback_dashboard` if needed.
+
+**Governance note:** the queries are `public` (any @anyvan.com user who can open the dashboard can
+run them; they surface customer PII). This matches the existing SAR queries. Tighten to `shared`
+(privacy-team emails) via `update_query` if stricter control is wanted.
+
+**Still to do:** mirror the messaging channels into `interaction-hub.html` (phone-keyed via
+`EVENTS_MESSAGING_MESSAGE.RESOLVED_USER_PHONE`).
