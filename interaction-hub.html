@@ -271,6 +271,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   <div class="main-tab" data-tab="livechat">💬 Live Chat <span class="tab-count" id="countLivechat">—</span></div>
   <div class="main-tab" data-tab="whatsapp">📱 WhatsApp <span class="tab-count" id="countWhatsapp">—</span></div>
   <div class="main-tab" data-tab="emails">✉️ Emails <span class="tab-count" id="countEmails">—</span></div>
+  <div class="main-tab" data-tab="sms">📩 SMS <span class="tab-count" id="countSms">—</span></div>
 </div>
 
 <div class="main">
@@ -470,7 +471,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
           <button class="seg-btn" data-days="180">6 months</button>
           <button class="seg-btn" data-days="365">12 months</button>
         </div>
-        <span class="date-hint" style="margin-left:6px;">Metadata only — no email bodies</span>
+        <span class="date-hint" style="margin-left:6px;">Click a row to preview the email as sent</span>
       </div>
     </div>
     <div class="kpi-strip" id="emails-kpis">
@@ -496,6 +497,38 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         <div class="convo-footer"><span id="footer-emails"></span></div>
       </div>
       <div class="convo-empty" id="prompt-emails">🔍 Search a customer's <strong>email or phone</strong> above to list the emails we've sent them (Marketing + Transactional).</div>
+    </div>
+  </div>
+
+  <!-- SMS -->
+  <div class="tab-panel" id="panel-sms">
+    <div class="filter-bar">
+      <div class="filter-row">
+        <span class="filter-label">Customer</span>
+        <input type="text" class="filter-input" id="sms-search" placeholder="Email or phone…" style="width:230px;font-size:12px;">
+        <button class="btn-phone-search" id="sms-searchBtn" style="padding:5px 14px;">Search</button>
+        <button class="btn-phone-clear" id="sms-clearBtn" style="display:none;">✕ Clear</button>
+        <div class="filter-spacer"></div>
+        <button class="btn-export" id="sms-exportBtn">⬇ Export CSV</button>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">History</span>
+        <div class="seg-group" id="sms-windowSeg">
+          <button class="seg-btn on" data-days="90">90 days</button>
+          <button class="seg-btn" data-days="180">6 months</button>
+          <button class="seg-btn" data-days="365">12 months</button>
+        </div>
+        <span class="date-hint" style="margin-left:6px;">Text messages AnyVan sent — full message shown</span>
+      </div>
+    </div>
+    <div class="convo-section">
+      <div class="convo-loading" id="loading-sms" style="display:none;"><div class="spinner"></div><span>Loading SMS…</span></div>
+      <div id="content-sms" style="display:none;">
+        <div class="convo-table-wrap"><table class="convo-table"><thead id="thead-sms"></thead><tbody id="tbody-sms"></tbody></table></div>
+        <div class="convo-empty" id="empty-sms" style="display:none;">No SMS found for this customer in the selected window.</div>
+        <div class="convo-footer"><span id="footer-sms"></span></div>
+      </div>
+      <div class="convo-empty" id="prompt-sms">🔍 Search a customer's <strong>email or phone</strong> above to list the SMS we've sent them.</div>
     </div>
   </div>
 
@@ -664,6 +697,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       p.style.display = '';   // clear any inline display left by Customer Lookup mode
     });
     if (name === 'emails') { showEmailsTab(); return; }
+    if (name === 'sms') { showSmsTab(); return; }
     if (!_loaded[name]) loadTab(name);
     else renderTable(name);
   }
@@ -1727,6 +1761,165 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       document.getElementById('emails-search').value = ''; cb.style.display = 'none'; renderEmails();
     });
     var eb = document.getElementById('emails-exportBtn'); if (eb) eb.addEventListener('click', exportEmailsCSV);
+  })();
+
+  // ===== SMS TAB =====
+  // Customer-scoped list of SMS AnyVan sent, from the LISTING_COMMUNICATION spine (authoritative
+  // send log AND authoritative SMS body). Same email/phone/name lookup + fan-out as the Emails tab.
+  var _sms = { rows: [], loaded: false, mode: 'email', term: '', days: 90 };
+  var SMS_COLS = [
+    { key: 'INTERACTION_DATETIME', label: 'Date / Time (UK)', w: '150px' },
+    { key: 'SMS_TYPE',             label: 'Type',            w: '190px' },
+    { key: 'BODY',                 label: 'Message',         w: '400px' },
+    { key: 'DISPATCH_STATUS',      label: 'Status',          w: '90px'  },
+    { key: 'LISTING_ID',           label: 'Listing',         w: '90px'  }
+  ];
+  function prettySmsType(v) {
+    if (v == null || v === '') return '(no template)';
+    var seg = String(v).replace(/-/g, ' ');
+    return seg.charAt(0).toUpperCase() + seg.slice(1);
+  }
+  function showSmsTab() { renderSms(); }
+  function doSmsSearch() {
+    var inp = document.getElementById('sms-search');
+    var term = inp.value.trim();
+    var mode = detectMode(term);
+    var ok = mode === 'phone' ? normPhone(term).length >= 7 : mode === 'email' ? /.+@.+\..+/.test(term) : term.length >= 3;
+    if (!ok) { inp.style.borderColor = 'var(--red)'; setTimeout(function() { inp.style.borderColor = ''; }, 1500); return; }
+    _sms.mode = mode; _sms.term = term;
+    document.getElementById('sms-clearBtn').style.display = 'inline-flex';
+    loadSms();
+  }
+  async function loadSms() {
+    var loading = document.getElementById('loading-sms');
+    document.getElementById('prompt-sms').style.display = 'none';
+    document.getElementById('content-sms').style.display = 'none';
+    loading.style.display = 'flex';
+    try {
+      var params = lookupParams(_sms.mode, _sms.term, _sms.days);
+      var res = await AVDashboard.runQuery('interaction_hub_sms', { parameters: params });
+      _sms.rows = (res && res.rows) || [];
+      _sms.loaded = true;
+    } catch (e) {
+      alert('Failed to load SMS: ' + (e.message || String(e)));
+      _sms.rows = []; _sms.loaded = true;
+    } finally {
+      loading.style.display = 'none';
+      renderSms();
+    }
+  }
+  function renderSms() {
+    var content = document.getElementById('content-sms');
+    var prompt = document.getElementById('prompt-sms');
+    if (!content) return;
+    if (!_sms.loaded || !_sms.term) { prompt.style.display = 'block'; content.style.display = 'none'; return; }
+    prompt.style.display = 'none';
+    var rows = _sms.rows.slice();
+    rows.sort(function(a, b) { return String(b.INTERACTION_DATETIME || '').localeCompare(String(a.INTERACTION_DATETIME || '')); });
+    var thead = document.getElementById('thead-sms'), tbody = document.getElementById('tbody-sms');
+    var empty = document.getElementById('empty-sms'), footer = document.getElementById('footer-sms');
+    thead.textContent = ''; tbody.textContent = '';
+    var htr = document.createElement('tr');
+    var iconTh = document.createElement('th'); iconTh.style.width = '28px'; htr.appendChild(iconTh);
+    SMS_COLS.forEach(function(c) { var th = document.createElement('th'); th.style.width = c.w; th.textContent = c.label; htr.appendChild(th); });
+    thead.appendChild(htr);
+    empty.style.display = rows.length === 0 ? 'block' : 'none';
+    content.style.display = 'block';
+    setText('countSms', String(rows.length));
+    rows.forEach(function(r) {
+      var row = document.createElement('tr');
+      var iconTd = document.createElement('td'); iconTd.style.width = '28px'; iconTd.style.textAlign = 'center';
+      var ic = document.createElement('span'); ic.className = 'row-expand-icon'; ic.textContent = '▸'; iconTd.appendChild(ic); row.appendChild(iconTd);
+      SMS_COLS.forEach(function(c) {
+        var td = document.createElement('td'); var v = r[c.key]; td.title = v != null ? String(v) : '';
+        if (c.key === 'INTERACTION_DATETIME' && v) {
+          var parts = String(v).split(' '); var dp = parts[0];
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dp)) { var d = dp.split('-'); dp = d[2] + '/' + d[1] + '/' + d[0]; }
+          td.appendChild(document.createTextNode(dp)); td.appendChild(document.createElement('br'));
+          var ts = document.createElement('span'); ts.style.color = 'var(--tx3)'; ts.style.fontSize = '10px'; ts.textContent = (parts[1] || '').slice(0, 8); td.appendChild(ts);
+          td.style.whiteSpace = 'normal'; td.style.lineHeight = '1.3';
+        } else if (c.key === 'SMS_TYPE') {
+          td.textContent = prettySmsType(v);
+        } else if (c.key === 'BODY') {
+          var t = (v != null && v !== '') ? String(v) : '—';
+          td.textContent = t.length > 96 ? t.slice(0, 96) + '…' : t;
+          td.style.whiteSpace = 'normal'; td.style.lineHeight = '1.3'; td.style.color = 'var(--tx2)';
+        } else {
+          td.textContent = v != null && v !== '' ? v : '—';
+        }
+        row.appendChild(td);
+      });
+      row.addEventListener('click', function() { openSmsDrawer(r); });
+      tbody.appendChild(row);
+    });
+    footer.textContent = rows.length ? ('Showing ' + rows.length + ' SMS for ' + _sms.term + ' (' + windowLabel(_sms.days) + ')') : '';
+  }
+  function openSmsDrawer(r) {
+    ensureDrawer();
+    document.getElementById('drawerTitle').textContent = 'SMS message';
+    document.getElementById('drawerSub').textContent = fmtDateTime(r.INTERACTION_DATETIME) || '';
+    var content = document.getElementById('drawerBody'); content.innerHTML = '';
+    var grid = document.createElement('div'); grid.className = 'convo-meta-grid';
+    [
+      { label: 'Type',             val: prettySmsType(r.SMS_TYPE), wrap: true },
+      { label: 'Recipient',        val: r.RECIPIENT },
+      { label: 'Listing',          val: r.LISTING_ID },
+      { label: 'Status',           val: r.DISPATCH_STATUS },
+      { label: 'Direction',        val: r.DIRECTION },
+      { label: 'Date / Time (UK)', val: fmtDateTime(r.INTERACTION_DATETIME) }
+    ].forEach(function(f) {
+      var item = document.createElement('div'); item.className = 'convo-meta-item';
+      var lbl = document.createElement('div'); lbl.className = 'convo-meta-label'; lbl.textContent = f.label;
+      var vd = document.createElement('div'); vd.className = 'convo-meta-value'; if (f.wrap) vd.style.wordBreak = 'break-word';
+      vd.textContent = f.val != null && f.val !== '' ? String(f.val) : '—';
+      item.appendChild(lbl); item.appendChild(vd); grid.appendChild(item);
+    });
+    content.appendChild(grid);
+    var head = document.createElement('div');
+    head.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx2);margin:14px 0 6px;';
+    head.textContent = '📩 Message — as sent';
+    content.appendChild(head);
+    var bubble = document.createElement('div');
+    bubble.style.cssText = 'max-width:82%;padding:10px 14px;border-radius:14px 14px 14px 4px;background:#e7f6e7;border:1px solid #bfe3bf;color:#183a18;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;';
+    bubble.textContent = (r.BODY != null && r.BODY !== '') ? String(r.BODY) : '(no message text stored)';
+    content.appendChild(bubble);
+    if (r.ADMIN_VIEW_URL) {
+      var link = document.createElement('a');
+      link.href = r.ADMIN_VIEW_URL; link.target = '_blank'; link.rel = 'noopener';
+      link.textContent = 'Open in Admin ↗';
+      link.style.cssText = 'display:inline-block;margin-top:12px;font-size:11px;color:var(--ind);font-weight:700;text-decoration:none;';
+      content.appendChild(link);
+    }
+    document.getElementById('detailDrawer').classList.add('open');
+    document.getElementById('drawerBackdrop').classList.add('open');
+  }
+  function exportSmsCSV() {
+    var rows = _sms.rows.slice();
+    if (!rows.length) { alert('No SMS to export.'); return; }
+    var cols = ['INTERACTION_DATETIME', 'SMS_TYPE', 'BODY', 'RECIPIENT', 'DISPATCH_STATUS', 'LISTING_ID', 'DIRECTION'];
+    var csv = cols.join(',') + '\n';
+    rows.forEach(function(r) {
+      csv += cols.map(function(c) { var v = r[c]; if (v == null) return ''; v = String(v).replace(/"/g, '""'); return /[",\n]/.test(v) ? '"' + v + '"' : v; }).join(',') + '\n';
+    });
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'interaction_hub_sms_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+  }
+  (function wireSmsTab() {
+    document.querySelectorAll('#sms-windowSeg .seg-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('#sms-windowSeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });
+        btn.classList.add('on'); _sms.days = parseInt(btn.getAttribute('data-days'), 10) || 90;
+        if (_sms.term) loadSms();
+      });
+    });
+    var sb = document.getElementById('sms-searchBtn'); if (sb) sb.addEventListener('click', doSmsSearch);
+    var si = document.getElementById('sms-search'); if (si) si.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSmsSearch(); });
+    var cb = document.getElementById('sms-clearBtn'); if (cb) cb.addEventListener('click', function() {
+      _sms.term = ''; _sms.rows = []; _sms.loaded = false;
+      document.getElementById('sms-search').value = ''; cb.style.display = 'none'; renderSms();
+    });
+    var eb = document.getElementById('sms-exportBtn'); if (eb) eb.addEventListener('click', exportSmsCSV);
   })();
 
   function updateKPIs(tab, data) {
