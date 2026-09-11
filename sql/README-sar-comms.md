@@ -35,3 +35,31 @@ For each query above:
 3. Wire into `sar-data-extract.html`: add a `QUERIES` entry (`needsPhone` = true for the `:phone_suffix` ones), a tab, and a panel (the generic `runOneQuery`/`buildTable` renders it).
 4. Deploy the HTML: `get_upload_token` → HTTP **PUT** to the upload API (never `update_dashboard`). Increment query names on any SQL change (cache key = name).
 5. Repeat the wiring for `interaction-hub.html` using `:phone_suffix` on `RESOLVED_USER_PHONE` for the messaging channels.
+
+## Validation status — 2026-09-11
+All six queries are **Snowflake-validated** (compile + column check; the `:email` /
+`:phone_suffix` binds substituted with test literals so no customer rows were pulled).
+`sar_messaging` was also shape-checked against live data.
+
+| Query | Validated |
+|---|---|
+| sar_messaging | ✅ |
+| sar_comms_log | ✅ |
+| sar_consent_history | ✅ |
+| sar_whatsapp_twilio | ✅ |
+| sar_twilio_conversations | ✅ |
+| sar_aircall | ✅ |
+
+## Deploy — BLOCKED on the AV Dashboards connector re-auth
+The AV Dashboards MCP currently requires re-authentication (claude.ai → Settings →
+Connectors). Until it's reconnected, `create_query` / `get_upload_token` / PUT cannot run.
+The wired HTML (`sar-data-extract.html`) is already committed but the **live dashboard is
+unchanged** until the PUT in step 2. Once the connector is back, deploy is mechanical:
+
+1. `create_query` for each of the six (query_name = file stem, sql_text = file body,
+   visibility public, cache 600s).
+2. `get_upload_token` → HTTP **PUT** `sar-data-extract.html` to the upload API
+   (never `update_dashboard`, which truncates).
+3. Hard-refresh; verify each new tab returns rows for a known customer email/phone.
+4. Mirror into `interaction-hub.html` (phone-keyed: the messaging channels via
+   `EVENTS_MESSAGING_MESSAGE.RESOLVED_USER_PHONE`) and PUT.
