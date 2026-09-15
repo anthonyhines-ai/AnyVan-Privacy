@@ -153,6 +153,30 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 @media(max-width:1100px){.kpi-strip{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:768px){.kpi-strip{grid-template-columns:1fr 1fr;}.convo-meta-grid{grid-template-columns:1fr 1fr;}.usearch-bar{flex-wrap:wrap;}.usearch-wrap{margin-left:0;}}
 @media(max-width:500px){.convo-meta-grid{grid-template-columns:1fr;}}
+/* Call transcript pane */
+.tx-section{margin-top:14px;border-top:1px dashed var(--bd);padding-top:12px;}
+.tx-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.tx-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.tx-status-on{background:rgba(26,127,55,.1);color:var(--grn);}
+.tx-status-off{background:rgba(110,110,115,.12);color:var(--tx3);}
+.tx-note{font-size:12px;color:var(--tx2);line-height:1.5;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-top:8px;}
+.tx-err{color:var(--red);border-color:rgba(217,48,37,.3);}
+.tx-body{margin-top:8px;}
+.tx-bar{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap;}
+.tx-search{flex:1;min-width:220px;padding:7px 12px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:13px;font-family:'Lato',sans-serif;}
+.tx-search:focus{border-color:var(--ind);outline:none;box-shadow:0 0 0 3px rgba(99,102,241,.12);}
+.tx-count{font-size:11px;color:var(--tx2);white-space:nowrap;}
+.tx-ctx{font-size:11px;color:var(--tx3);margin-bottom:8px;}
+.tx-list{max-height:420px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px;padding:8px;background:var(--sf2);}
+.tx-line{padding:6px 8px;border-radius:8px;margin-bottom:6px;border-left:3px solid var(--bd);}
+.tx-agent{border-left-color:var(--ind);background:rgba(99,102,241,.06);}
+.tx-customer{border-left-color:var(--grn);background:rgba(26,127,55,.05);}
+.tx-who{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tx3);margin-bottom:2px;}
+.tx-agent .tx-who{color:var(--ind);}
+.tx-customer .tx-who{color:var(--grn);}
+.tx-time{font-weight:400;text-transform:none;letter-spacing:0;color:var(--tx3);}
+.tx-text{font-size:13px;color:var(--tx);line-height:1.45;}
+.tx-text mark{background:rgba(234,179,8,.45);color:inherit;border-radius:3px;padding:0 2px;}
 </style>
 </head>
 <body av-track-source="dashboard-interaction-hub">
@@ -1245,6 +1269,8 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       viewSect.appendChild(iframe); content.appendChild(viewSect);
     }
 
+    if (isCalls) { content.appendChild(buildCallTranscriptSection(r)); }
+
     var actions = document.createElement('div'); actions.className = 'convo-actions';
     if (isCalls && r.RECORDING_URL) {
       var aBtn = document.createElement('a'); aBtn.className = 'convo-btn convo-btn-primary'; aBtn.href = r.RECORDING_URL; aBtn.target = '_blank'; aBtn.rel = 'noopener'; aBtn.textContent = '🎧 Listen to Recording';
@@ -1261,6 +1287,159 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     content.appendChild(actions);
     eTd.appendChild(content); expandRow.appendChild(eTd);
     row.parentNode.insertBefore(expandRow, row.nextSibling);
+  }
+
+  // ===== CALL TRANSCRIPT (diarised) =====
+  function fmtClock(sec) {
+    sec = Math.max(0, Math.round(Number(sec) || 0));
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+  function transcriptAvailable(r) {
+    return r.TRANSCRIPT_AVAILABLE === true || r.TRANSCRIPT_AVAILABLE === 'true'
+        || r.TRANSCRIPT_AVAILABLE === 1 || !!r.RECORDING_ID;
+  }
+
+  function buildCallTranscriptSection(r) {
+    var sect = document.createElement('div'); sect.className = 'tx-section';
+    var head = document.createElement('div'); head.className = 'tx-head';
+    var lbl = document.createElement('span'); lbl.className = 'convo-meta-label'; lbl.textContent = 'Call Transcript';
+    head.appendChild(lbl);
+    var avail = transcriptAvailable(r);
+    var chip = document.createElement('span');
+    chip.className = 'tx-status ' + (avail ? 'tx-status-on' : 'tx-status-off');
+    chip.textContent = avail ? '📝 Transcription available' : '🔒 Transcription unavailable';
+    head.appendChild(chip);
+    sect.appendChild(head);
+
+    if (!avail) {
+      var note = document.createElement('div'); note.className = 'tx-note';
+      note.textContent = "No transcript for this call yet. Some call flows (e.g. Sales / Lead-Gen / inbound & outbound sales lines) aren't transcribed, and short or unanswered calls produce none.";
+      sect.appendChild(note);
+      return sect;
+    }
+
+    var body = document.createElement('div'); body.className = 'tx-body';
+    var btn = document.createElement('button'); btn.className = 'convo-btn convo-btn-primary'; btn.type = 'button';
+    btn.textContent = '📄 View Transcription';
+    body.appendChild(btn);
+    sect.appendChild(body);
+
+    var loaded = false;
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (loaded) {
+        var ex = body.querySelector('.tx-panel');
+        if (ex) { ex.hidden = !ex.hidden; btn.textContent = ex.hidden ? '📄 View Transcription' : '▲ Hide Transcription'; }
+        return;
+      }
+      btn.disabled = true; btn.textContent = 'Loading transcript…';
+      loadCallTranscript(r).then(function(rows) {
+        loaded = true; btn.disabled = false; btn.textContent = '▲ Hide Transcription';
+        body.appendChild(renderTranscriptPanel(rows, r));
+      }).catch(function(err) {
+        btn.disabled = false; btn.textContent = '📄 View Transcription';
+        var e2 = document.createElement('div'); e2.className = 'tx-note tx-err';
+        e2.textContent = 'Could not load transcript: ' + (err && err.message ? err.message : String(err));
+        body.appendChild(e2);
+      });
+    });
+    return sect;
+  }
+
+  async function loadCallTranscript(r) {
+    var res = await AVDashboard.runQuery('interaction_hub_call_transcript', {
+      parameters: { call_sid: r.INTERACTION_ID || '', recording_id: r.RECORDING_ID || '' }
+    });
+    return res.rows || [];
+  }
+
+  function renderTranscriptPanel(rows, r) {
+    var panel = document.createElement('div'); panel.className = 'tx-panel';
+    if (!rows.length) {
+      var n = document.createElement('div'); n.className = 'tx-note';
+      n.textContent = 'Transcript flagged available but no utterances were returned.';
+      panel.appendChild(n); return panel;
+    }
+    var dir = String(rows[0].CALL_DIRECTION || '').toLowerCase();
+    var dirTxt = dir === 'inbound'  ? 'Inbound — customer called AnyVan'
+               : dir === 'outbound' ? 'Outbound — AnyVan called the customer'
+               : 'Direction unknown';
+
+    var bar = document.createElement('div'); bar.className = 'tx-bar';
+    var search = document.createElement('input'); search.type = 'text'; search.className = 'tx-search';
+    search.placeholder = '🔍 Search within call (e.g. floor, stairs, lift, parking)…';
+    var count = document.createElement('span'); count.className = 'tx-count';
+    var dl  = document.createElement('button'); dl.type = 'button'; dl.className = 'convo-btn'; dl.textContent = '⬇ Download (internal)';
+    var dlS = document.createElement('button'); dlS.type = 'button'; dlS.className = 'convo-btn'; dlS.textContent = '⬇ Customer copy (agent redacted)';
+    bar.appendChild(search); bar.appendChild(count); bar.appendChild(dl); bar.appendChild(dlS);
+    panel.appendChild(bar);
+
+    var ctx = document.createElement('div'); ctx.className = 'tx-ctx';
+    ctx.textContent = dirTxt + ' · ' + rows.length + ' utterances';
+    panel.appendChild(ctx);
+
+    var list = document.createElement('div'); list.className = 'tx-list';
+    panel.appendChild(list);
+
+    function draw(term) {
+      list.textContent = ''; term = (term || '').trim().toLowerCase();
+      var matches = 0;
+      rows.forEach(function(u) {
+        var role = String(u.SPEAKER || '').toUpperCase() === 'AGENT' ? 'agent' : 'customer';
+        var text = u.SEGMENT_TEXT || '';
+        var hit = term && text.toLowerCase().indexOf(term) !== -1;
+        if (term && !hit) return;
+        if (hit) matches++;
+        var line = document.createElement('div'); line.className = 'tx-line tx-' + role;
+        var who = document.createElement('div'); who.className = 'tx-who';
+        who.appendChild(document.createTextNode(role === 'agent' ? (r.AGENT_NAME || u.AGENT_NAME || 'Agent') : 'Customer'));
+        var meta = document.createElement('span'); meta.className = 'tx-time'; meta.textContent = ' · ' + fmtClock(u.SEG_START);
+        who.appendChild(meta);
+        var txt = document.createElement('div'); txt.className = 'tx-text';
+        if (hit) {
+          var i = text.toLowerCase().indexOf(term);
+          txt.appendChild(document.createTextNode(text.slice(0, i)));
+          var mk = document.createElement('mark'); mk.textContent = text.slice(i, i + term.length);
+          txt.appendChild(mk);
+          txt.appendChild(document.createTextNode(text.slice(i + term.length)));
+        } else {
+          txt.textContent = text;
+        }
+        line.appendChild(who); line.appendChild(txt); list.appendChild(line);
+      });
+      count.textContent = term ? (matches + ' match' + (matches !== 1 ? 'es' : '')) : (rows.length + ' lines');
+      if (term && matches === 0) {
+        var no = document.createElement('div'); no.className = 'tx-note';
+        no.textContent = '"' + term + '" not found in this call. Note: not found ≠ not discussed if the call is only partially transcribed.';
+        list.appendChild(no);
+      }
+    }
+    var deb;
+    search.addEventListener('input', function() { clearTimeout(deb); deb = setTimeout(function() { draw(search.value); }, 150); });
+    search.addEventListener('click', function(e) { e.stopPropagation(); });
+    dl.addEventListener('click',  function(e) { e.stopPropagation(); downloadTranscript(rows, r, false); });
+    dlS.addEventListener('click', function(e) { e.stopPropagation(); downloadTranscript(rows, r, true); });
+    draw('');
+    return panel;
+  }
+
+  function downloadTranscript(rows, r, redactAgent) {
+    var lines = [];
+    lines.push('Call transcript — ' + (r.INTERACTION_DATETIME || '') + (r.LISTING_ID ? ' — listing ' + r.LISTING_ID : ''));
+    lines.push(redactAgent ? '(Customer copy — AnyVan staff identifiers redacted; review for third-party PII before release)' : '(Internal copy)');
+    lines.push('');
+    rows.forEach(function(u) {
+      var isAgent = String(u.SPEAKER || '').toUpperCase() === 'AGENT';
+      var who = !isAgent ? 'CUSTOMER'
+              : (redactAgent ? 'ANYVAN AGENT' : ('AGENT (' + (r.AGENT_NAME || u.AGENT_NAME || 'Agent') + ')'));
+      var text = u.SEGMENT_TEXT || '';
+      if (redactAgent) { text = text.replace(/\b(?:\d[ -]?){13,16}\b/g, '[redacted-number]'); }
+      lines.push(who + ' [' + fmtClock(u.SEG_START) + ']: ' + text);
+    });
+    var name = 'transcript_' + (r.LISTING_ID || r.INTERACTION_ID || 'call') + (redactAgent ? '_customer-copy' : '_internal') + '.txt';
+    var blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
   }
 
   function updateKPIs(tab, data) {
