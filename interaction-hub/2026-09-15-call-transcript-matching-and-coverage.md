@@ -18,7 +18,7 @@
 
 ## 0. TL;DR
 - **Transcripts with speaker labels already exist** in the warehouse (`CONFORMED.PRODUCTION.CALL_TRANSCRIPT_*`, live since 2026-07-20, ~2.3–2.6k calls/day, whisper-large-v3, dual-channel). `SPEAKER` is pre-resolved to **AGENT / CUSTOMER** — no diarisation guesswork needed.
-- **"All our calls are transcribed" is not yet true.** On *answered* calls (last 7d) only ~23% carry a transcript. It is a **queue-coverage gap, not a broken join**: service/ops teams are broadly on (CS 78%, OTD 71%), **Sales / Lead-Gen / inbound & outbound sales lines are effectively off (~0–4%)** — the very calls a booking dispute turns on.
+- **Two transcript systems, not one (corrected 2026-09-15).** The Twilio pipeline (`CALL_TRANSCRIPT_*`) covers **CS / On The Day / Ops / Transport / Storage** (~2.3–2.6k calls/day). **Sales / Lead-Gen / inbound & outbound sales are transcribed in Jiminny** (`JIMINNY_CALL_METADATA` + `JIMINNY_CALL_TRANSCRIPT`, ~2.7–3.2k calls/day, speaker-separated, 768k calls to date). The hub currently reads only the Twilio pipeline, so sales calls *appear* untranscribed there (~0–4% match) but are in fact fully transcribed in Jiminny. Bringing sales into the hub means **integrating Jiminny** (§5), not switching on Twilio transcription.
 - **The join is solved:** `FCT_TWILIO_CALL_METRICS.WORKERCALLSID = CALL_TRANSCRIPT_*.CALL_SID` (agent leg) carries 100% of what's matchable; the customer-leg key adds nothing.
 - **Bonus:** the same pipeline lands the Twilio `RE...` recording sid, so the long-standing admin **"Listen to Recording"** gap (see `2026-08-26-call-recording-playback-diagnosis.md`) is now fixable for transcribed calls with a query edit — no new pipeline.
 - **Two tracks, agreed in parallel:** (A) ship the in-hub viewer; (B) hand off queue-enablement so coverage → ~100%.
@@ -34,6 +34,11 @@
 ---
 
 ## 2. Coverage diagnosis (read-only, 7-day window)
+
+> **Correction (2026-09-15):** the table below is the **Twilio pipeline only**. Sales / lead-gen
+> calls read ~0% here because they are transcribed in **Jiminny** — a separate store (§5), verified
+> current (~2.7–3.2k sales calls/day, teams: Inbound Sales, Lead Generation, Outbound Sales, ES/FR/DE/IT
+> V2/V4 Sales). The two pipelines together cover both sides of the business.
 
 Answered Twilio voice calls (`TALKTIME > 0`) matched to a transcript, by team:
 
@@ -73,16 +78,31 @@ Implemented in `sql/interaction_hub_calls.sql` (revised) + `sql/interaction_hub_
 
 ---
 
-## 5. Enablement handoff — close the coverage gap (Track B)
-**Goal:** every answered customer call transcribed, so "not found" in search reliably means "not discussed."
+## 5. Track B — integrate Jiminny as the sales transcript source
+Sales calls are **already transcribed in Jiminny** (verified 2026-09-15). Track B is therefore a
+**hub-integration** job, not a transcription-enablement one.
 
-**Owner to confirm:** Sales Ops / Data Eng — `CALL_TRANSCRIPT_*` is "Sales Ops (Call Transcript Analysis)"; voice data owner **Dylan Stemmet**, contact-centre business owner **Gareth Farquharson** (per table comments). The transcription is driven by the `AGENT_CALL_TRANSCRIBED` tracking-api event (`HARMONISED.PRODUCTION.EVENTS_CALL_TRANSCRIPTIONS`).
+**Source tables (`HARMONISED.PRODUCTION`):**
+- `JIMINNY_CALL_METADATA` — one row per sales call: `EVENT_ID`, `ANYVAN_USER_EMAIL/_TEAMNAME` (agent),
+  `PARTICIPANTS` (JSON array; the **non-organizer participant carries the customer `phone`**),
+  `EXTERNAL_PROVIDER_ID` (dialler CDR id — *not* a Twilio call sid), talk-time stats, `ACTUAL_START_TIME`.
+- `JIMINNY_CALL_TRANSCRIPT` — one row per utterance: `EVENT_ID`, `PARTICIPANTNAME`, `ISORGANIZER`
+  (**TRUE = AnyVan agent, FALSE = customer** — deterministic speaker split), `TRANSCRIPT`, `STARTSAT`, `ENDSAT`.
 
-**Asks:**
-1. Enable call transcription on the **Sales, Lead-Gen and inbound/outbound sales** Twilio queues (highest-value, currently ~0–4%).
-2. Investigate the ~25% miss inside "on" teams (recording-not-started vs STT failure vs sub-threshold duration).
-3. Confirm whether the ~14% of transcripts outside `FCT_TWILIO_CALL_METRICS` are Aircall — if so, add an Aircall spine so those calls are reachable from the hub.
-4. Publish an expected coverage %/SLA so the hub can show a truthful availability rate.
+**Integration plan:**
+1. New query `interaction_hub_jiminny_transcript` — utterances by `EVENT_ID`, ordered by `STARTSAT`,
+   speaker from `ISORGANIZER`.
+2. Add a **"Sales (Jiminny)"** call source to the hub: parse the non-organizer `phone` from `PARTICIPANTS`,
+   normalise to last-10, and slot it into the existing phone-lookup / listing model (same suffix match the
+   hub already uses across channels). Map phone → listing/customer via `DIM_USER_CUSTOMER`.
+3. The AnyVan MCP `get_conversation_transcript` already resolves a Jiminny transcript **by dealId** — usable
+   as a per-deal fallback where the participant phone is missing.
+4. Reconcile teams: Jiminny team names (e.g. `Inbound Sales`, `Lead Generation`, `Outbound Sales`,
+   `ES/FR/DE/IT V2/V4 Sales`) are the sales estate absent from the Twilio pipeline.
+
+**Residual Twilio-side items (separate, lower priority):**
+- ~25% miss inside "on" CS/ops teams (recording-not-started vs STT failure vs sub-threshold duration).
+- ~14% of Twilio transcripts fall outside `FCT_TWILIO_CALL_METRICS` (possible Aircall) — confirm and add a spine if needed.
 
 ---
 
