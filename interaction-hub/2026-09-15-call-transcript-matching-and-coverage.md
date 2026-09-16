@@ -12,7 +12,7 @@
 | **Raised by** | Anthony Hines (anthony.hines@anyvan.com) |
 | **Data source** | Snowflake PRODUCTION (read-only); AV Dashboards queries |
 | **Subject** | Interaction Hub — phone-call transcript view, speaker split, in-call search |
-| **Status** | Design agreed; hub UI + SQL staged in this PR; queue-enablement handoff open |
+| **Status** | **Deployed to the live hub 2026-09-16** (Twilio CS/ops + Jiminny sales transcripts, admin recording playback). Follow-ups: Jiminny in the 7-day Calls tab; Jiminny full-sales-coverage check. |
 
 ---
 
@@ -137,16 +137,19 @@ Two audiences, one source:
 
 ---
 
-## 8. Deployment plan (gated on sign-off)
-1. Create new queries (all additive; safe): `interaction_hub_call_transcript`,
-   `interaction_hub_jiminny_transcript`, `interaction_hub_jiminny_calls`.
-2. Replace `interaction_hub_calls` with the revised SQL (additive columns; back-fills admin recording URL).
-3. Apply the `interaction_hub_phone_lookup` patch for parity.
-4. Deploy `interaction-hub.html` via `get_upload_token` → HTTP `PUT` (not `update_dashboard`, which can truncate).
-5. Verify:
-   - a CS call shows the agent/customer split + search highlight; admin Listen opens `302 → 206 audio/x-wav`;
-   - a **sales** phone lookup surfaces a Jiminny call whose transcript opens with the agent/customer split;
-   - a genuinely untranscribed call shows "unavailable".
+## 8. Deployment — DONE (2026-09-16)
+1. ✅ Created queries `interaction_hub_call_transcript`, `interaction_hub_jiminny_transcript`,
+   `interaction_hub_jiminny_calls` (all additive).
+2. ✅ `interaction_hub_calls` updated → dashboard pinned **v9** (RECORDING_ID / TRANSCRIPT_AVAILABLE /
+   CALL_DIRECTION; admin RECORDING_URL back-filled).
+3. ✅ `interaction_hub_phone_lookup` updated → dashboard pinned **v12** (same additive columns; full
+   revised SQL in `sql/interaction_hub_phone_lookup.sql`, which supersedes the earlier PATCH note).
+4. ✅ `interaction-hub.html` published via `get_upload_token` → HTTP `PUT` (HTTP 200).
+5. ✅ Verified through the platform: revised phone-lookup returns the new columns; the deployed
+   `interaction_hub_jiminny_calls` returns a live sales call (`07720 178163` → Inbound Sales,
+   `TRANSCRIPT_AVAILABLE=true`, `TRANSCRIPT_SOURCE='jiminny'`). Spot-check in the UI: a sales phone
+   lookup shows the Jiminny call and its agent/customer transcript; a CS call shows the split + search;
+   admin Listen opens the recording.
 
 ---
 
