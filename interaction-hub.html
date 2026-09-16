@@ -977,7 +977,18 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       var digits = normPhone(_phoneFilter);
       var suffix = digits.slice(-10);
       var result = await runPhoneQueryWithRetry(suffix, days);
-      _phoneLookupData = result.rows || [];
+      var rows = result.rows || [];
+      // Merge in SALES calls from Jiminny (separate transcript store, phone-keyed).
+      // Resilient: if the query isn't deployed or errors, keep the phone results.
+      try {
+        var jim = await AVDashboard.runQuery('interaction_hub_jiminny_calls', {
+          parameters: { phone_suffix: suffix, days: days }
+        });
+        if (jim && jim.rows && jim.rows.length) rows = rows.concat(jim.rows);
+      } catch (je) {
+        console.warn('[interaction-hub] Jiminny sales lookup unavailable:', (je && je.message) ? je.message : je);
+      }
+      _phoneLookupData = rows;
       _phoneLookupDays = days;
     } catch (e) {
       console.error('[interaction-hub] phone lookup error:', e);
@@ -1348,9 +1359,17 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   }
 
   async function loadCallTranscript(r) {
-    var res = await AVDashboard.runQuery('interaction_hub_call_transcript', {
-      parameters: { call_sid: r.INTERACTION_ID || '', recording_id: r.RECORDING_ID || '' }
-    });
+    var res;
+    if (String(r.TRANSCRIPT_SOURCE || '').toLowerCase() === 'jiminny') {
+      // Sales call — transcript lives in Jiminny, keyed by EVENT_ID (= INTERACTION_ID).
+      res = await AVDashboard.runQuery('interaction_hub_jiminny_transcript', {
+        parameters: { event_id: r.INTERACTION_ID || '' }
+      });
+    } else {
+      res = await AVDashboard.runQuery('interaction_hub_call_transcript', {
+        parameters: { call_sid: r.INTERACTION_ID || '', recording_id: r.RECORDING_ID || '' }
+      });
+    }
     return res.rows || [];
   }
 

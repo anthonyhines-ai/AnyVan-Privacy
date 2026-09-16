@@ -89,16 +89,24 @@ Sales calls are **already transcribed in Jiminny** (verified 2026-09-15). Track 
 - `JIMINNY_CALL_TRANSCRIPT` — one row per utterance: `EVENT_ID`, `PARTICIPANTNAME`, `ISORGANIZER`
   (**TRUE = AnyVan agent, FALSE = customer** — deterministic speaker split), `TRANSCRIPT`, `STARTSAT`, `ENDSAT`.
 
-**Integration plan:**
-1. New query `interaction_hub_jiminny_transcript` — utterances by `EVENT_ID`, ordered by `STARTSAT`,
-   speaker from `ISORGANIZER`.
-2. Add a **"Sales (Jiminny)"** call source to the hub: parse the non-organizer `phone` from `PARTICIPANTS`,
-   normalise to last-10, and slot it into the existing phone-lookup / listing model (same suffix match the
-   hub already uses across channels). Map phone → listing/customer via `DIM_USER_CUSTOMER`.
-3. The AnyVan MCP `get_conversation_transcript` already resolves a Jiminny transcript **by dealId** — usable
-   as a per-deal fallback where the participant phone is missing.
-4. Reconcile teams: Jiminny team names (e.g. `Inbound Sales`, `Lead Generation`, `Outbound Sales`,
-   `ES/FR/DE/IT V2/V4 Sales`) are the sales estate absent from the Twilio pipeline.
+**Built in this PR:**
+1. `sql/interaction_hub_jiminny_transcript.sql` — utterances by `EVENT_ID`, ordered by `STARTSAT`,
+   speaker from `ISORGANIZER` (validated against PROD). Same output shape as the Twilio transcript
+   query, so the hub's transcript pane renders it unchanged.
+2. `sql/interaction_hub_jiminny_calls.sql` — sales calls for a customer phone: regex the quoted
+   `phone` values out of `PARTICIPANTS`, normalise to last-10, match `:phone_suffix` (validated end
+   to end — e.g. `07720 178163` → a live Inbound Sales call). Emits `TRANSCRIPT_SOURCE='jiminny'`.
+3. `interaction-hub.html` — phone-lookup mode now merges Jiminny sales calls alongside the Twilio
+   results (resilient: a missing/failed Jiminny query leaves phone results intact); the transcript
+   loader dispatches on `TRANSCRIPT_SOURCE` (jiminny → by `EVENT_ID`, else Twilio → by call sid).
+
+**Follow-ups:**
+- Include Jiminny sales calls in the 7-day **Calls tab** list too (currently they surface via phone
+  lookup — the dispute investigator's path). Needs a phone→listing map for the country/category columns.
+- The AnyVan MCP `get_conversation_transcript` resolves a Jiminny transcript **by dealId** — a per-deal
+  fallback where a participant phone is missing.
+- Confirm Jiminny covers *all* sales calls (it captures Jiminny-dialled/recorded calls) vs a residual
+  that bypasses it.
 
 **Residual Twilio-side items (separate, lower priority):**
 - ~25% miss inside "on" CS/ops teams (recording-not-started vs STT failure vs sub-threshold duration).
@@ -130,11 +138,15 @@ Two audiences, one source:
 ---
 
 ## 8. Deployment plan (gated on sign-off)
-1. Create new query `interaction_hub_call_transcript` (additive; safe).
+1. Create new queries (all additive; safe): `interaction_hub_call_transcript`,
+   `interaction_hub_jiminny_transcript`, `interaction_hub_jiminny_calls`.
 2. Replace `interaction_hub_calls` with the revised SQL (additive columns; back-fills admin recording URL).
 3. Apply the `interaction_hub_phone_lookup` patch for parity.
 4. Deploy `interaction-hub.html` via `get_upload_token` → HTTP `PUT` (not `update_dashboard`, which can truncate).
-5. Verify: a known CS call shows agent/customer split; search highlights; an untranscribed sales call shows "unavailable"; admin Listen opens `302 → 206 audio/x-wav`.
+5. Verify:
+   - a CS call shows the agent/customer split + search highlight; admin Listen opens `302 → 206 audio/x-wav`;
+   - a **sales** phone lookup surfaces a Jiminny call whose transcript opens with the agent/customer split;
+   - a genuinely untranscribed call shows "unavailable".
 
 ---
 
