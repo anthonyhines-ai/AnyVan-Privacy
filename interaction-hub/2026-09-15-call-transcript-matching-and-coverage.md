@@ -12,7 +12,7 @@
 | **Raised by** | Anthony Hines (anthony.hines@anyvan.com) |
 | **Data source** | Snowflake PRODUCTION (read-only); AV Dashboards queries |
 | **Subject** | Interaction Hub — phone-call transcript view, speaker split, in-call search |
-| **Status** | **Deployed to the live hub 2026-09-16** (Twilio CS/ops + Jiminny sales transcripts, admin recording playback). Follow-ups: Jiminny in the 7-day Calls tab; Jiminny full-sales-coverage check. |
+| **Status** | **Live (2026-09-18)** — call transcripts re-applied onto the full v52 dashboard after an incident (below). Emails/SMS/identity/chat transcripts + Twilio & Jiminny call transcripts all present. |
 
 ---
 
@@ -152,6 +152,20 @@ Two audiences, one source:
    admin Listen opens the recording.
 
 ---
+
+## 8a. Incident & recovery (2026-09-18)
+**What happened.** The 2026-09-16 publish pushed the dashboard HTML **from the repo**, which was ~3 weeks behind the live dashboard (repo ≈ v25 / 20 Aug; live at v52 / 15 Sep). The live hub had ~15 uncommitted HTML iterations (v26→v52) made directly on the platform — the **Emails** and **SMS** tabs, phone/email/name **identity search**, and the **chat-transcript viewer**. Publishing the repo file (as v55) reverted all of it for ~2 days.
+
+**Root cause.** The repo was treated as the source of truth but was never kept in sync with the live dashboard; the publish step did not diff against live first.
+
+**Recovery.**
+1. `rollback_dashboard` → v52 (restored Emails/SMS/identity/chat transcripts instantly; live as v56).
+2. Pulled the live v52 HTML, **re-synced the repo `interaction-hub.html` to it** (this is the fix that stops recurrence), then re-applied the call-transcript feature *onto the v52 base* — reusing v52's own transcript bubble styling and its redacted-PDF builder (agent already anonymised), adding an in-call search box; sales calls merged into the phone lookup via `interaction_hub_jiminny_calls`.
+3. Re-published (HTTP 200) and validated.
+
+**No data was lost** — the SQL changes (calls, phone_lookup) were supersets of the live queries; the three transcript queries are additive. `interaction_hub_phone_lookup` is now superseded on the phone panel by v52's `interaction_hub_identity_lookup` (kept, harmless).
+
+**Prevention.** Always `get_dashboard_html` and diff against live before publishing this dashboard; treat the **live platform as source of truth** and commit its HTML back to the repo after any live edit.
 
 ## 9. Governance notes
 - Snowflake accessed **read-only** (`SELECT` against PRODUCTION); no writes.
