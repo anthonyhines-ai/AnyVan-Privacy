@@ -80,3 +80,44 @@ run them; they surface customer PII). This matches the existing SAR queries. Tig
 
 **Still to do:** mirror the messaging channels into `interaction-hub.html` (phone-keyed via
 `EVENTS_MESSAGING_MESSAGE.RESOLVED_USER_PHONE`).
+
+## Consolidation rebuild — agreed spec (2026-09-18)
+Ant's feedback: 19 tabs is overkill. Agreed target = **10 tabs**, consolidating by medium
+with the sub-type shown as a column. Consent folded into Profile.
+
+**Target tabs:** Overview · Profile (+ consent/opt-out history) · Bookings (Listings + Pre-Listings)
+· Payments · Stripe · Emails · Calls · Messages · Freshdesk · Feedback
+
+**New unified queries (replace the per-channel ones):**
+- `sar_emails_all` (:email) — TYPE column. UNION:
+  - Marketing → `HARMONISED.PRODUCTION.EVENTS_EMAIL` (from live `sar_hubspot_emails`: EVENT_TIMESTAMP, EMAIL_EVENT_TYPE, EMAIL_SUBJECT, EMAIL_ADDRESS)
+  - Transactional → `EVENTS_MESSAGING_MESSAGE` WHERE CHANNEL='EMAIL' (RENDERED_SUBJECT, MESSAGE)
+  - System log → `LISTING_COMMUNICATION` WHERE CHANNEL='email' (TOKENS:subject)
+  - Pre-Listing → source from live `sar_prelisting_emails` [FETCH its SQL — not yet captured]
+- `sar_calls_all` (:phone_suffix) — TYPE column. UNION:
+  - Twilio → `HARMONISED.PRODUCTION.TWILIO_CALL` (from live `sar_calls`: DIRECTION, STATUS, "FROM","TO", START_TIME, DURATION)
+  - Aircall → `AIRCALL_CALL` (+ RECORDING url) — from sql/sar_aircall.sql
+  - Transcript → source from live `sar_call_transcripts` [FETCH its SQL]
+- `sar_messages_all` (:phone_suffix) — TYPE column. UNION:
+  - WhatsApp/SMS → `TWILIO_MESSAGE` ('whatsapp:' prefix ⇒ WhatsApp else SMS) — from sql/sar_whatsapp_twilio.sql
+  - 2-way chat → `TWILIO_CONVERSATION_MESSAGE` + `_PARTICIPANT` — from sql/sar_twilio_conversations.sql
+  - Removal SMS → `LISTING_COMMUNICATION` WHERE CHANNEL='sms'
+  - Live Chat → source from live `sar_sms`/live-chat query [FETCH — confirm table]
+- `sar_bookings` (:email) — TYPE column (Listing / Pre-Listing). Combine live `sar_listings` [FETCH]
+  + pre-listing records.
+
+**Profile:** fold consent in — `HUBSPOT_CONTACT_PROPERTY_HISTORY` (from sql/sar_consent_history.sql)
++ `HUBSPOT_CONTACT_LIST_MEMBER` (marketing lists) + `DIM_USER_CUSTOMER` SMS-consent flags.
+
+**Retire (delete_query) once the unions are live:** sar_hubspot_emails, sar_prelisting_emails,
+sar_listing_comms, sar_calls, sar_sms, sar_call_transcripts, and my six (sar_messaging,
+sar_comms_log, sar_consent_history, sar_whatsapp_twilio, sar_twilio_conversations, sar_aircall).
+
+**Still to fetch before authoring the unions** (needs AV Dashboards MCP up): the live SQL of
+`sar_prelisting_emails`, `sar_call_transcripts`, `sar_sms`, `sar_listings`.
+
+**Deploy:** create the 4 unions → validate each in Snowflake → restructure HTML to the 10 tabs
+(generic runOneQuery/buildTable handles rendering; each merged tab shows its TYPE column) →
+get_upload_token → PUT → retire the old queries. Auto-versioned; rollback if needed.
+
+**Data gap (unchanged):** Video Survey has no Snowflake table.
