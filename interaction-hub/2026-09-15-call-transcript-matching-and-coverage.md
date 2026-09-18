@@ -167,6 +167,26 @@ Two audiences, one source:
 
 **Prevention.** Always `get_dashboard_html` and diff against live before publishing this dashboard; treat the **live platform as source of truth** and commit its HTML back to the repo after any live edit.
 
+## 8b. Emails tab — transactional source fix (2026-09-18)
+**Reported:** for a booked customer (two accounts — `…@icloud.com` + `…@outlook.com`, one phone) the Emails tab showed one "Marketing" email and **no transactional**, despite a live booking.
+
+**Root cause (evidenced):**
+- Classification was by **source table**, not purpose: everything in `EVENTS_MESSAGING_MESSAGE` labelled Transactional, everything in `EVENTS_EMAIL` labelled Marketing.
+- Platform reality: **Marketing = HubSpot** (`EVENTS_EMAIL`, 100% `source='hubspot'`); **Transactional = Mandrill**, which has **no governed warehouse table** (only ad-hoc `MART_SALES_OPS.DEVELOPMENT.TMP_TAHA_MANDRILL_*` scratch). The tab's "Transactional" source (`EVENTS_MESSAGING_MESSAGE`, the messaging gateway) only holds data from **2026-05-19** and was empty for this customer — so booking confirmations never appeared.
+- The real per-booking send log **is** in the warehouse: `HARMONISED.PRODUCTION.LISTING_COMMUNICATION` (typed `booking-confirmation`, `checklist`, `invoice-payment-success`, …), keyed by `LISTING_ID`.
+- Duplicate accounts: identity resolved only the searched email, so the other account's comms were invisible.
+
+**Fix (deployed):**
+- `interaction_hub_emails` → **Transactional from `LISTING_COMMUNICATION`** (`CHANNEL='email'`, `TARGET='customer'`, typed by `TYPE`); Marketing stays HubSpot `EVENTS_EMAIL` (`source='hubspot'`). Identity **fans out across duplicate accounts sharing a phone** → their user_ids → listings → comms. (`sql/interaction_hub_emails.sql`, dashboard pinned SQL v2.)
+- `interaction_hub_email_kpis` repointed to the same sources (`sql/interaction_hub_email_kpis.sql`, v3) so the tiles match the list.
+- Validated on the reported customer: 13 emails across both accounts, incl. the 13 Sep **Booking Confirmation** as Transactional. System-wide sanity: transactional ~5–6k/day (booking-confirmation top), marketing ~20–25k/day.
+
+**Notes / limits:**
+- `LISTING_COMMUNICATION` stores type/channel/recipient/timestamp but **not subject or body** → emails are labelled by type ("Booking confirmation"), metadata-only (consistent with the tab's design). `MESSAGE_ID` (Mandrill id) is usually blank.
+- HubSpot also sends some operational emails (e.g. day-of-move) — these still read **Marketing** because they are HubSpot sends (platform truth). Acceptable; revisit only if a purpose overlay is wanted.
+- Phone-linking merges accounts sharing a number — right for SAR/dispute completeness, small over-merge risk if a phone is genuinely shared; the identity card shows how many accounts matched.
+- Proper follow-up for Data Eng: **ingest Mandrill** into a governed table if a true send-event (with subject/status) transactional source is wanted beyond the app's `LISTING_COMMUNICATION` log.
+
 ## 9. Governance notes
 - Snowflake accessed **read-only** (`SELECT` against PRODUCTION); no writes.
 - No customer PII committed in this record or the dashboard HTML; transcript content stays in Snowflake and is read live behind dashboard auth. Customer-facing exports are redacted + human-signed-off before release (§7).
