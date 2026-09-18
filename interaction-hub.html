@@ -448,7 +448,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         <span class="filter-label">Data subject</span>
         <div class="seg-group" id="emails-partySeg">
           <button class="seg-btn on" data-party="customer">Customer</button>
-          <button class="seg-btn" data-party="tp">Transport partner</button>
+          <button class="seg-btn" data-party="tp">Transport Partner</button>
         </div>
         <div class="filter-sep"></div>
         <span class="filter-label">Category</span>
@@ -462,7 +462,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         <button class="btn-export" id="emails-exportBtn">⬇ Export CSV</button>
       </div>
       <div class="filter-row">
-        <span class="filter-label">Customer</span>
+        <span class="filter-label" id="emails-searchLabel">Customer</span>
         <input type="text" class="filter-input" id="emails-search" placeholder="Email or phone…" style="width:230px;font-size:12px;">
         <button class="btn-phone-search" id="emails-searchBtn" style="padding:5px 14px;">Search</button>
         <button class="btn-phone-clear" id="emails-clearBtn" style="display:none;">✕ Clear</button>
@@ -1657,7 +1657,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   // Customer-scoped list of emails AnyVan sent (Transactional = EVENTS_MESSAGING_MESSAGE,
   // Marketing = EVENTS_EMAIL), classed by purpose — never by sending platform. "All" = both.
   // Direct communications (Freshdesk) are not pulled in — a manual link is offered instead.
-  var _emails = { rows: [], loaded: false, cat: '', party: 'customer', mode: 'email', term: '', days: 90, kpisLoaded: false, fdRows: [], fdLoaded: false, fdLoading: false };
+  var _emails = { rows: [], loaded: false, cat: '', party: 'customer', mode: 'email', term: '', days: 90, kpisLoaded: false, fdRows: [], fdLoaded: false, fdLoading: false, tpRows: [], tpLoaded: false, tpTerm: '', tpMode: 'tpid' };
   var EMAIL_COLS = [
     { key: 'EMAIL_CLASS',          label: 'Category',        w: '110px' },
     { key: 'INTERACTION_DATETIME', label: 'Date / Time (UK)', w: '150px' },
@@ -1711,6 +1711,15 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   function doEmailSearch() {
     var inp = document.getElementById('emails-search');
     var term = inp.value.trim();
+    if (_emails.party === 'tp') {
+      var tmode = detectTpMode(term);
+      var tok = tmode === 'phone' ? normPhone(term).length >= 7 : tmode === 'email' ? /.+@.+\..+/.test(term) : term.length >= 2;
+      if (!tok) { inp.style.borderColor = 'var(--red)'; setTimeout(function() { inp.style.borderColor = ''; }, 1500); return; }
+      _emails.tpMode = tmode; _emails.tpTerm = term;
+      document.getElementById('emails-clearBtn').style.display = 'inline-flex';
+      loadTpEmails();
+      return;
+    }
     var mode = detectMode(term);
     var ok = mode === 'phone' ? normPhone(term).length >= 7 : mode === 'email' ? /.+@.+\..+/.test(term) : term.length >= 3;
     if (!ok) { inp.style.borderColor = 'var(--red)'; setTimeout(function() { inp.style.borderColor = ''; }, 1500); return; }
@@ -1721,6 +1730,43 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     var l2 = document.getElementById('emails-directLink'); if (l2) l2.href = fdUrl;
     document.getElementById('emails-clearBtn').style.display = 'inline-flex';
     loadEmails();
+  }
+  // TP data-subject mode: term is a transport-partner id / name / phone / email.
+  function detectTpMode(term) {
+    if (/@/.test(term)) return 'email';
+    var digits = term.replace(/[^0-9]/g, '');
+    var phoneish = /^[0-9+()\-\s]+$/.test(term);
+    if (phoneish && digits.length >= 9) return 'phone';
+    if (/^[0-9]+$/.test(term)) return 'tpid';
+    if (/^[0-9a-f]{16,}$/i.test(term)) return 'tpid';
+    return 'name';
+  }
+  function tpLookupParams(mode, term, days) {
+    var p = { mode: mode, term_tpid: '', term_name: '', term_phone10: '', term_email: '', days: days };
+    if (mode === 'tpid') p.term_tpid = term;
+    else if (mode === 'email') p.term_email = term.toLowerCase();
+    else if (mode === 'phone') p.term_phone10 = normPhone(term).slice(-10);
+    else p.term_name = term.toUpperCase();
+    return p;
+  }
+  async function loadTpEmails() {
+    var loading = document.getElementById('loading-emails');
+    document.getElementById('prompt-emails').style.display = 'none';
+    document.getElementById('content-emails').style.display = 'none';
+    document.getElementById('emails-directPanel').style.display = 'none';
+    loading.style.display = 'flex';
+    try {
+      var params = tpLookupParams(_emails.tpMode, _emails.tpTerm, _emails.days);
+      var res = await AVDashboard.runQuery('interaction_hub_tp_emails', { parameters: params });
+      _emails.tpRows = (res && res.rows) || [];
+      _emails.tpLoaded = true;
+    } catch (e) {
+      alert('Failed to load transport-partner emails: ' + (e.message || String(e)));
+      _emails.tpRows = []; _emails.tpLoaded = true;
+    } finally {
+      loading.style.display = 'none';
+      renderEmails();
+    }
   }
   async function loadEmails() {
     var loading = document.getElementById('loading-emails');
@@ -1756,11 +1802,18 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     }
     directPanel.style.display = 'none';
     allCaveat.classList.toggle('show', _emails.cat === '' && _emails.party === 'customer');
-    if (!_emails.loaded || !_emails.term) {
+    var isTp = _emails.party === 'tp';
+    var loadedFlag = isTp ? _emails.tpLoaded : _emails.loaded;
+    var termVal = isTp ? _emails.tpTerm : _emails.term;
+    var srcRows = isTp ? _emails.tpRows : _emails.rows;
+    if (!loadedFlag || !termVal) {
+      prompt.innerHTML = isTp
+        ? '🔍 Search a <strong>transport partner</strong> (name, TP id, phone or email) to list every job comm we sent them — across all their bookings.'
+        : '🔍 Search a customer’s <strong>email or phone</strong> above to list the emails we’ve sent them (Marketing + Transactional).';
       prompt.style.display = 'block'; content.style.display = 'none'; return;
     }
     prompt.style.display = 'none';
-    var rows = _emails.rows.filter(emailRowMatch);
+    var rows = srcRows.filter(emailRowMatch);
     rows.sort(function(a, b) { return String(b.INTERACTION_DATETIME || '').localeCompare(String(a.INTERACTION_DATETIME || '')); });
     var thead = document.getElementById('thead-emails'), tbody = document.getElementById('tbody-emails');
     var empty = document.getElementById('empty-emails'), footer = document.getElementById('footer-emails');
@@ -1806,7 +1859,8 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     var content = document.getElementById('drawerBody'); content.innerHTML = '';
     var grid = document.createElement('div'); grid.className = 'convo-meta-grid';
     [
-      { label: 'Data subject',     val: emailPartyKey(r) === 'tp' ? 'Transport partner' : 'Customer' },
+      { label: 'Data subject',     val: emailPartyKey(r) === 'tp' ? 'Transport Partner' : 'Customer' },
+      { label: 'Listing',          val: r.LISTING_ID != null && r.LISTING_ID !== '' ? String(r.LISTING_ID) : null, skipIfEmpty: true },
       { label: 'Category',         val: r.EMAIL_CLASS },
       { label: 'Type',             val: prettyEmailType(r.EMAIL_TYPE, r.EMAIL_CLASS), wrap: true },
       { label: 'Subject',          val: r.SUBJECT, wrap: true },
@@ -1815,6 +1869,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       { label: 'Direction',        val: r.DIRECTION },
       { label: 'Date / Time (UK)', val: fmtDateTime(r.INTERACTION_DATETIME) }
     ].forEach(function(f) {
+      if ((f.val == null || f.val === '') && f.skipIfEmpty) return;
       var item = document.createElement('div'); item.className = 'convo-meta-item';
       var lbl = document.createElement('div'); lbl.className = 'convo-meta-label'; lbl.textContent = f.label;
       var vd = document.createElement('div'); vd.className = 'convo-meta-value'; if (f.wrap) vd.style.wordBreak = 'break-word';
@@ -1891,9 +1946,9 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       fa.download = 'interaction_hub_freshdesk_' + new Date().toISOString().slice(0, 10) + '.csv'; fa.click();
       return;
     }
-    var rows = _emails.rows.filter(emailRowMatch);
+    var rows = (_emails.party === 'tp' ? _emails.tpRows : _emails.rows).filter(emailRowMatch);
     if (!rows.length) { alert('No emails to export.'); return; }
-    var cols = ['PARTY', 'EMAIL_CLASS', 'INTERACTION_DATETIME', 'EMAIL_TYPE', 'SUBJECT', 'RECIPIENT', 'CHANNEL', 'DIRECTION'];
+    var cols = ['PARTY', 'EMAIL_CLASS', 'INTERACTION_DATETIME', 'EMAIL_TYPE', 'SUBJECT', 'RECIPIENT', 'LISTING_ID', 'CHANNEL', 'DIRECTION'];
     var csv = cols.join(',') + '\n';
     rows.forEach(function(r) {
       csv += cols.map(function(c) { var v = r[c]; if (v == null) return ''; v = String(v).replace(/"/g, '""'); return /[",\n]/.test(v) ? '"' + v + '"' : v; }).join(',') + '\n';
@@ -2008,10 +2063,20 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         document.querySelectorAll('#emails-partySeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });
         btn.classList.add('on'); _emails.party = btn.getAttribute('data-party') || 'customer';
         var dbtn = document.querySelector('#emails-catSeg .seg-btn[data-cat="Direct"]');
+        var inp = document.getElementById('emails-search');
+        var lbl = document.getElementById('emails-searchLabel');
         if (_emails.party === 'tp') {
           if (dbtn) dbtn.style.display = 'none';
           if (_emails.cat === 'Direct') { _emails.cat = ''; setEmailsCatActive(''); }
-        } else if (dbtn) { dbtn.style.display = ''; }
+          if (lbl) lbl.textContent = 'Transport Partner';
+          if (inp) { inp.placeholder = 'TP name, id, phone or email…'; inp.value = _emails.tpTerm || ''; }
+        } else {
+          if (dbtn) dbtn.style.display = '';
+          if (lbl) lbl.textContent = 'Customer';
+          if (inp) { inp.placeholder = 'Email or phone…'; inp.value = _emails.term || ''; }
+        }
+        var activeTerm = _emails.party === 'tp' ? _emails.tpTerm : _emails.term;
+        document.getElementById('emails-clearBtn').style.display = activeTerm ? 'inline-flex' : 'none';
         renderEmails();
       });
     });
@@ -2026,13 +2091,15 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         document.querySelectorAll('#emails-windowSeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });
         btn.classList.add('on'); _emails.days = parseInt(btn.getAttribute('data-days'), 10) || 90;
         _emails.fdLoaded = false; _emails.fdRows = [];
-        if (_emails.term) { loadEmails(); if (_emails.cat === 'Direct') loadFreshdesk(); }
+        if (_emails.party === 'tp') { if (_emails.tpTerm) loadTpEmails(); }
+        else if (_emails.term) { loadEmails(); if (_emails.cat === 'Direct') loadFreshdesk(); }
       });
     });
     var sb = document.getElementById('emails-searchBtn'); if (sb) sb.addEventListener('click', doEmailSearch);
     var si = document.getElementById('emails-search'); if (si) si.addEventListener('keydown', function(e) { if (e.key === 'Enter') doEmailSearch(); });
     var cb = document.getElementById('emails-clearBtn'); if (cb) cb.addEventListener('click', function() {
       _emails.term = ''; _emails.rows = []; _emails.loaded = false; _emails.fdRows = []; _emails.fdLoaded = false;
+      _emails.tpTerm = ''; _emails.tpRows = []; _emails.tpLoaded = false;
       document.getElementById('emails-search').value = ''; cb.style.display = 'none'; renderEmails();
     });
     var eb = document.getElementById('emails-exportBtn'); if (eb) eb.addEventListener('click', exportEmailsCSV);

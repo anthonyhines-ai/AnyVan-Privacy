@@ -226,6 +226,19 @@ New `PARTY` column (`customer` | `transport_partner`) drives a **Customer / Tran
 - TP class is a **type→class heuristic** now (route-match% = offer). Booking-scoped and exact for the validated set; a precise allocation-timestamp classifier is deferred to the **TP-subject search** phase (search by TP → all their jobs; needs a resolver via the provider/allocation dimension, as TPs are not in `DIM_USER_CUSTOMER`).
 - Same metadata-only, no-body, phone-linked-identity properties as §8b.
 
+## 8d. Transport-partner data-subject search (2026-09-18)
+**Driver:** both parties to a booking can raise a data-subject request, so the hub must answer a **TP's** request too — every job comm we sent that TP across *all* their bookings, not just one customer's job. Delivers the "TP-search next" step flagged in §8c.
+
+**Key finding — exact attribution, no allocation-window guesswork.** `HARMONISED.PRODUCTION.LISTING_COMMUNICATION` carries **`RECIPIENT_ID`**; for `TARGET='provider'` rows that is the TP's `USER_ID` in `CONFORMED.PRODUCTION.DIM_USER_TRANSPORTPROVIDER`. One listing can involve several TPs over its life (deallocations, route-match offers to multiple drivers, final assignment — Ellie's Sep job hit 6 drivers), and `RECIPIENT_ID` keeps each comm tied to the TP that actually received it. So the allocation-timestamp classifier I'd expected to need isn't required for attribution.
+
+**Query (`interaction_hub_tp_emails`, new, public):** resolve the TP by `mode` = user id (`USER_ID`/`ID`) · name (`FULL_NAME`/`NICKNAME`) · phone (last-10 of `PRIMARY`/`SECONDARY_PHONE_NUMBER`) · email → `USER_ID`, then `LISTING_COMMUNICATION` where `TARGET='provider' AND RECIPIENT_ID = USER_ID AND CHANNEL='email'`. Class as §8c (route-match% = TP-Marketing, else TP-Transactional). Returns `LISTING_ID` per row so each comm is traceable to its job.
+
+**Validated:** Titi Preda (`USER_ID 5435275`) → **133 provider emails across 102 distinct jobs** in 200 days (3 TP-Marketing, 130 TP-Transactional), `RECIPIENT_ID` scoped to that one TP; name / phone / email all resolve to the same id.
+
+**UI:** the Emails tab's **Customer / Transport Partner** toggle now switches the *search subject*. In Transport-Partner mode the search box accepts a TP name/id/phone/email and lists that TP's comms across all jobs; the drawer shows the `Listing` each comm belongs to. Customer mode is unchanged. Export carries `PARTY` + `LISTING_ID`.
+
+**Limits / next:** email-only for now (SMS/WhatsApp to TPs exist in `LISTING_COMMUNICATION` and can be added the same way); the current customer-search query still returns booking-scoped provider rows but the tab now routes TP viewing through the dedicated search; a two-way/inbound TP contact channel (if any) is out of scope. Redaction for a TP export mirrors §7 (blank the *other* party's PII — here the customer's).
+
 ## 9. Governance notes
 - Snowflake accessed **read-only** (`SELECT` against PRODUCTION); no writes.
 - No customer PII committed in this record or the dashboard HTML; transcript content stays in Snowflake and is read live behind dashboard auth. Customer-facing exports are redacted + human-signed-off before release (§7).
@@ -234,6 +247,7 @@ New `PARTY` column (`customer` | `transport_partner`) drives a **Customer / Tran
 
 ## 10. Sources
 - Snowflake (read-only): `CONFORMED.PRODUCTION.CALL_TRANSCRIPT_CALLS` / `CALL_TRANSCRIPT_SEGMENTS` / `CALL_TRANSCRIPT_CLASSIFIED`; `FCT_TWILIO_CALL_METRICS`; `MART_SALES_OPS.PRODUCTION.CS_QA_VOICE_BASE` / `CALL_SPEAKER_ROLES` / `CALL_TRANSCRIPT_NORMALISED`; coverage & join tests (7d).
-- AV Dashboards queries `interaction_hub_calls` (`3FMEoLMS0TRU0niESsyKpb5dUln`), `interaction_hub_phone_lookup` (`3FWzBkT0qCZzI4X6N2kEDg317ZS`), `interaction_hub_emails` (`3J3TLtoFXR6NHz2NgOaI7uDxdMG`, SQL v3).
+- AV Dashboards queries `interaction_hub_calls` (`3FMEoLMS0TRU0niESsyKpb5dUln`), `interaction_hub_phone_lookup` (`3FWzBkT0qCZzI4X6N2kEDg317ZS`), `interaction_hub_emails` (`3J3TLtoFXR6NHz2NgOaI7uDxdMG`, SQL v3), `interaction_hub_tp_emails` (`3JUqzkcjNB05zLDUcwu9YXkjPkB`, §8d).
 - Lifecycle classifier (§8c): `HARMONISED.PRODUCTION.LISTING_COMMUNICATION`, `HARMONISED.PRODUCTION.EVENTS_EMAIL`, and `CONFORMED.PRODUCTION.MASTER_LISTING` (`LISTING_CREATED_DATE` / `LISTING_COMPLETED_DATE` booking windows). Rule reproduced Ant's manual categorisation 30/30.
+- TP search (§8d): `CONFORMED.PRODUCTION.DIM_USER_TRANSPORTPROVIDER` (TP identity) + `LISTING_COMMUNICATION.RECIPIENT_ID` (exact per-TP attribution). Routed via the `anyvan-data` skill.
 - Prior: `interaction-hub/2026-08-26-call-recording-playback-diagnosis.md`.
