@@ -45,6 +45,9 @@ API quirks and formatting rules apply to any such integration. Keep this updated
 ## AV Dashboards
 - Deploy via `get_upload_token` → HTTP `PUT`; **don’t** use `update_dashboard` (truncates).
   `@anyvan.com`-gated, not a public channel.
+- **Live is source of truth.** `get_dashboard_html`-diff the page **before and after** every `PUT`
+  (a stale-repo publish once reverted live-only work). Change a saved query via temp-query → verify →
+  `update_query` (pin the dashboard) → delete temp; never edit a live query blind.
 
 _Canonical version-controlled copy lives in `anthonyhines-ai/AnyVan-Privacy` at
 `docs/conventions.md` + `CLAUDE.md`._

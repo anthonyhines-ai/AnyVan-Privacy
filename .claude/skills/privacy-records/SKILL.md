@@ -59,6 +59,13 @@ Raised by · Data source · Subject; add **Status** for appraisals) → numbered
 - **`LISTING_TERRORITY` is an intentional typo** in the schema — use it as-is.
 - Reuse the phone/postcode + date SQL templates in
   `booking-lookups/2026-08-18-phone-number-lookup-07497-700277.md` §5.
+- **Communications lookups (SAR/DSAR):** the per-booking send log is
+  `HARMONISED.PRODUCTION.LISTING_COMMUNICATION` (`RECIPIENT_ID` = recipient `USER_ID`; `TARGET`
+  `customer`→`DIM_USER_CUSTOMER` / `provider`→`DIM_USER_TRANSPORTPROVIDER`). A booking has **two
+  data subjects** — customer and transport partner — and either can request their data. Classify
+  each comm **by booking lifecycle, not sending platform** (in-window = Transactional incl.
+  agent-generated HubSpot; pre-listing/post-completion = Marketing; inbound = Operational). Full
+  method in `customer-communications-mapping.md` §3.1–3.2 and `booking-lookups/METHODOLOGY-communication-history.md`.
 
 ## 5. Research & recommendation discipline (appraisals)
 

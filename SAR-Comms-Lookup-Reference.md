@@ -19,6 +19,8 @@
 
 A **complete** SAR unions both documents.
 
+> **Two data subjects.** A booking's comms go to the **customer** *and* the **transport partner**, and either can raise a DSR. Provider-facing comms are attributed exactly via `LISTING_COMMUNICATION.RECIPIENT_ID` → `DIM_USER_TRANSPORTPROVIDER` — see `customer-communications-mapping.md` §3.1. When packaging a TP's SAR, redact the *customer's* PII (and vice-versa).
+
 ---
 
 ## 2. Lookup flow from a Freshdesk ticket
