@@ -26,6 +26,13 @@ contact id, listing id(s), prelisting id(s)**, and later the **Twilio call SIDs 
 Remember **prelisting id ≠ listing id** (see `/CLAUDE.md`), and that most channels key off a
 subset of these — the map below names which.
 
+**Two data subjects.** A booking generates comms to the **customer** *and* to the **transport
+partner** — both can raise a DSR. On `LISTING_COMMUNICATION`, `RECIPIENT_ID` is the recipient's
+`USER_ID`: `TARGET='customer'` → `DIM_USER_CUSTOMER`, `TARGET='provider'` → the TP in
+`CONFORMED.PRODUCTION.DIM_USER_TRANSPORTPROVIDER` (resolve a TP by `USER_ID`/`ID`/`FULL_NAME`/
+`NICKNAME`/phone last-10/`EMAIL_ADDRESS`). One job can involve several TPs over its life;
+`RECIPIENT_ID` ties each comm to the right one. See `customer-communications-mapping.md` §3.1.
+
 ---
 
 ## 1. Channel → table map
@@ -44,6 +51,7 @@ right-hand key(s).
 | Call CSAT / NPS | `CONFORMED.PRODUCTION.FCT_CALL_CUSTOMER_SATISFACTION` | `CONTACT_ID`, `LAST_TWILIO_CALL_SID`, `LISTING_ID_ASSOCIATED`, `PRE_LISTING_ID_ASSOCIATED` |
 | SMS / WhatsApp (one-way) | `TWILIO_MESSAGE` | `"FROM"` / `"TO"` (last-10); WhatsApp stored as `whatsapp:+44…` |
 | Two-way conversations | `TWILIO_CONVERSATION_MESSAGE` + `TWILIO_CONVERSATION_PARTICIPANT` | `PARTICIPANT_IDENTITY`, `AUTHOR` |
+| App comms spine — per booking (email/sms/whats-app) | `LISTING_COMMUNICATION` | `LISTING_ID`; `RECIPIENT_ID` = recipient **USER_ID** — customer (`DIM_USER_CUSTOMER`) or transport partner (`DIM_USER_TRANSPORTPROVIDER`) per `TARGET`; filter `DELETED_ROW=FALSE` |
 | Transactional messaging | `EVENTS_MESSAGING_MESSAGE` | `RESOLVED_USER_PHONE` / `RESOLVED_USER_EMAIL` / `USER_ID` |
 | Email events (itemised) | `EVENTS_EMAIL` | `EMAIL_ADDRESS` |
 | Email (HubSpot wide) | `HUBSPOT_EVENTS_EMAIL`, `HUBSPOT_EMAIL_CAMPAIGNS` | email |
@@ -143,6 +151,12 @@ across listings, and **Template B** for postcode + date.
 - **Direction skew.** Most "communication" is **outbound automation** (WhatsApp + email). The
   customer's own inbound contributions are usually the **phone calls** (audio only). Flag this so
   the reader doesn't mistake it for a two-way text thread.
+- **Classify by lifecycle, not platform.** Marketing vs Transactional is decided by *when* a send
+  sits in the booking journey, not which system sent it — an agent-generated **HubSpot** email
+  inside a live booking window (`LISTING_CREATED_DATE` → `COALESCE(LISTING_COMPLETED_DATE, now)`)
+  is **Transactional**; the same platform pre-listing or post-completion is **Marketing**;
+  customer-initiated inbound is **Operational**. Full rule + the TP classes (route-match =
+  offer/Marketing) in `customer-communications-mapping.md` §3.2.
 - Searches are **not** territory-restricted; add a `LISTING_TERRORITY` filter only if required.
 - Reserved words `"FROM"` / `"TO"`; the `LISTING_TERRORITY` typo; and the last-10 phone rule — all
   as noted in `/CLAUDE.md`.
