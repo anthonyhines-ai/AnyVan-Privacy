@@ -445,6 +445,12 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     <!-- Freshdesk callout consolidated into the single Direct (Freshdesk) category panel below -->
     <div class="filter-bar">
       <div class="filter-row">
+        <span class="filter-label">Data subject</span>
+        <div class="seg-group" id="emails-partySeg">
+          <button class="seg-btn on" data-party="customer">Customer</button>
+          <button class="seg-btn" data-party="tp">Transport partner</button>
+        </div>
+        <div class="filter-sep"></div>
         <span class="filter-label">Category</span>
         <div class="seg-group" id="emails-catSeg">
           <button class="seg-btn on" data-cat="">All</button>
@@ -1651,7 +1657,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   // Customer-scoped list of emails AnyVan sent (Transactional = EVENTS_MESSAGING_MESSAGE,
   // Marketing = EVENTS_EMAIL), classed by purpose — never by sending platform. "All" = both.
   // Direct communications (Freshdesk) are not pulled in — a manual link is offered instead.
-  var _emails = { rows: [], loaded: false, cat: '', mode: 'email', term: '', days: 90, kpisLoaded: false, fdRows: [], fdLoaded: false, fdLoading: false };
+  var _emails = { rows: [], loaded: false, cat: '', party: 'customer', mode: 'email', term: '', days: 90, kpisLoaded: false, fdRows: [], fdLoaded: false, fdLoading: false };
   var EMAIL_COLS = [
     { key: 'EMAIL_CLASS',          label: 'Category',        w: '110px' },
     { key: 'INTERACTION_DATETIME', label: 'Date / Time (UK)', w: '150px' },
@@ -1660,9 +1666,19 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     { key: 'RECIPIENT',            label: 'Recipient',       w: '200px' },
     { key: 'CHANNEL',              label: 'Channel',         w: '80px'  }
   ];
+  // PARTY = data subject the comm concerns: 'customer' or 'transport_partner' (TP). Older query
+  // rows carry no PARTY — treat those as customer so nothing regresses before the query catches up.
+  function emailPartyKey(r) { return (r.PARTY === 'transport_partner' || r.PARTY === 'tp') ? 'tp' : 'customer'; }
+  // Category buttons stay Marketing/Transactional; on the TP side they match the TP- classes too.
+  function emailRowMatch(r) {
+    if (emailPartyKey(r) !== _emails.party) return false;
+    if (!_emails.cat) return true;
+    var cls = r.EMAIL_CLASS || '';
+    return cls === _emails.cat || cls === 'TP-' + _emails.cat;
+  }
   function prettyEmailType(v, cls) {
-    if (v == null || v === '') return cls === 'Transactional' ? '(no template)' : '(campaign)';
-    if (cls === 'Transactional') {
+    if (v == null || v === '') return /Transactional$/.test(cls) ? '(no template)' : '(campaign)';
+    if (/Transactional$/.test(cls)) {
       var seg = String(v).split('/').pop().replace(/_(en|es|fr|de|it)$/i, '').replace(/_/g, ' ');
       return seg.charAt(0).toUpperCase() + seg.slice(1);
     }
@@ -1739,12 +1755,12 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       return;
     }
     directPanel.style.display = 'none';
-    allCaveat.classList.toggle('show', _emails.cat === '');
+    allCaveat.classList.toggle('show', _emails.cat === '' && _emails.party === 'customer');
     if (!_emails.loaded || !_emails.term) {
       prompt.style.display = 'block'; content.style.display = 'none'; return;
     }
     prompt.style.display = 'none';
-    var rows = _emails.rows.filter(function(r) { return !_emails.cat || r.EMAIL_CLASS === _emails.cat; });
+    var rows = _emails.rows.filter(emailRowMatch);
     rows.sort(function(a, b) { return String(b.INTERACTION_DATETIME || '').localeCompare(String(a.INTERACTION_DATETIME || '')); });
     var thead = document.getElementById('thead-emails'), tbody = document.getElementById('tbody-emails');
     var empty = document.getElementById('empty-emails'), footer = document.getElementById('footer-emails');
@@ -1763,7 +1779,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       EMAIL_COLS.forEach(function(c) {
         var td = document.createElement('td'); var v = r[c.key]; td.title = v != null ? String(v) : '';
         if (c.key === 'EMAIL_CLASS') {
-          var b = document.createElement('span'); b.className = 'match-badge ' + (v === 'Marketing' ? 'match-name' : 'match-exact');
+          var b = document.createElement('span'); b.className = 'match-badge ' + (/Marketing$/.test(v) ? 'match-name' : 'match-exact');
           b.textContent = v || '—'; td.appendChild(b);
         } else if (c.key === 'INTERACTION_DATETIME' && v) {
           var parts = String(v).split(' '); var dp = parts[0];
@@ -1790,6 +1806,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     var content = document.getElementById('drawerBody'); content.innerHTML = '';
     var grid = document.createElement('div'); grid.className = 'convo-meta-grid';
     [
+      { label: 'Data subject',     val: emailPartyKey(r) === 'tp' ? 'Transport partner' : 'Customer' },
       { label: 'Category',         val: r.EMAIL_CLASS },
       { label: 'Type',             val: prettyEmailType(r.EMAIL_TYPE, r.EMAIL_CLASS), wrap: true },
       { label: 'Subject',          val: r.SUBJECT, wrap: true },
@@ -1829,7 +1846,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   // Transactional only — the row's INTERACTION_ID is the EVENTS_MESSAGING_MESSAGE MESSAGE_ID.
   async function renderEmailPreview(container, r) {
     container.innerHTML = '';
-    if (r.EMAIL_CLASS === 'Marketing') {
+    if (/Marketing$/.test(r.EMAIL_CLASS)) {
       container.appendChild(emailPreviewNote('Marketing email — the campaign creative is not stored in the warehouse. The subject and send metadata above are the record; open the campaign in the marketing platform for the full creative.'));
       return;
     }
@@ -1874,9 +1891,9 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
       fa.download = 'interaction_hub_freshdesk_' + new Date().toISOString().slice(0, 10) + '.csv'; fa.click();
       return;
     }
-    var rows = _emails.rows.filter(function(r) { return !_emails.cat || r.EMAIL_CLASS === _emails.cat; });
+    var rows = _emails.rows.filter(emailRowMatch);
     if (!rows.length) { alert('No emails to export.'); return; }
-    var cols = ['EMAIL_CLASS', 'INTERACTION_DATETIME', 'EMAIL_TYPE', 'SUBJECT', 'RECIPIENT', 'CHANNEL', 'DIRECTION'];
+    var cols = ['PARTY', 'EMAIL_CLASS', 'INTERACTION_DATETIME', 'EMAIL_TYPE', 'SUBJECT', 'RECIPIENT', 'CHANNEL', 'DIRECTION'];
     var csv = cols.join(',') + '\n';
     rows.forEach(function(r) {
       csv += cols.map(function(c) { var v = r[c]; if (v == null) return ''; v = String(v).replace(/"/g, '""'); return /[",\n]/.test(v) ? '"' + v + '"' : v; }).join(',') + '\n';
@@ -1977,7 +1994,27 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     });
     footer.textContent = rows.length ? ('Showing ' + rows.length + ' Freshdesk ticket' + (rows.length !== 1 ? 's' : '') + ' for ' + _emails.term + ' (' + windowLabel(_emails.days) + ')') : '';
   }
+  function setEmailsCatActive(cat) {
+    document.querySelectorAll('#emails-catSeg .seg-btn').forEach(function(b) {
+      b.classList.toggle('on', (b.getAttribute('data-cat') || '') === cat);
+    });
+  }
   (function wireEmailsTab() {
+    // Data-subject toggle: customer vs transport partner. TP has no Freshdesk (support is
+    // customer-scoped), so hide the Direct button on the TP side. Client-side filter only —
+    // the query returns both parties, so flipping is instant with no re-fetch.
+    document.querySelectorAll('#emails-partySeg .seg-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('#emails-partySeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });
+        btn.classList.add('on'); _emails.party = btn.getAttribute('data-party') || 'customer';
+        var dbtn = document.querySelector('#emails-catSeg .seg-btn[data-cat="Direct"]');
+        if (_emails.party === 'tp') {
+          if (dbtn) dbtn.style.display = 'none';
+          if (_emails.cat === 'Direct') { _emails.cat = ''; setEmailsCatActive(''); }
+        } else if (dbtn) { dbtn.style.display = ''; }
+        renderEmails();
+      });
+    });
     document.querySelectorAll('#emails-catSeg .seg-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         document.querySelectorAll('#emails-catSeg .seg-btn').forEach(function(b) { b.classList.remove('on'); });

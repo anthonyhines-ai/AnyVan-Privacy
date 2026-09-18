@@ -187,6 +187,45 @@ Two audiences, one source:
 - Phone-linking merges accounts sharing a number — right for SAR/dispute completeness, small over-merge risk if a phone is genuinely shared; the identity card shows how many accounts matched.
 - Proper follow-up for Data Eng: **ingest Mandrill** into a governed table if a true send-event (with subject/status) transactional source is wanted beyond the app's `LISTING_COMMUNICATION` log.
 
+## 8c. Emails tab — lifecycle classifier + Customer/Transport-partner toggle (2026-09-18)
+**Driver:** Ant reviewed the per-customer comms export and set the classification rule. It is **lifecycle-based, not platform-based** — the same HubSpot email is Marketing or Transactional depending on *when* in the booking journey it was sent. This **supersedes §8b's note** that day-of-move HubSpot sends "read Marketing… acceptable" (they now read **Transactional**).
+
+**The rule (customer's data-subject view):**
+
+| Stage | Rule | Category |
+|---|---|---|
+| Before any listing exists | quote / price nurture | **Marketing** |
+| Listing created → job completed | anything about the live job (incl. agent-generated HubSpot day-of-move) | **Transactional** |
+| After completion / no active job | "come back" re-engagement | **Marketing** |
+| Customer contacts us (inbound) | Freshdesk | **Operational** |
+| Sent to the driver/TP about the job | not the customer's data | **Not customer-facing** → shown under the TP toggle |
+
+**Transport-partner (TP) view** — the customer's booking also generates comms *to* the allocated driver. Same lifecycle logic keyed on allocation, not the customer window:
+- `route-match` / `route-match-back` = job **offers** (pre-allocation) → **TP-Marketing**.
+- `driver-assigned` / `driver-reminder` / `job-changed` / `job-completed` / `driver-deallocated` = servicing an allocated job → **TP-Transactional**.
+Rationale: **both parties can raise a data-subject request**, so the hub must surface TP-facing comms too.
+
+**Classifier (deployed in `interaction_hub_emails`, dashboard SQL v3):**
+```sql
+-- HubSpot (no listing_id): test the send against the customer's booking windows
+CASE WHEN EXISTS (SELECT 1 FROM cust_windows w          -- MASTER_LISTING per linked user
+                  WHERE send_ts >= w.LISTING_CREATED_DATE
+                    AND send_ts <= COALESCE(w.LISTING_COMPLETED_DATE, CURRENT_TIMESTAMP()))
+     THEN 'Transactional' ELSE 'Marketing' END           -- in-window = Transactional
+-- LISTING_COMMUNICATION (per-booking): customer target = Transactional; provider target:
+CASE WHEN TARGET='provider' AND TYPE ILIKE 'route-match%' THEN 'TP-Marketing'
+     WHEN TARGET='provider'                               THEN 'TP-Transactional'
+     ELSE 'Transactional' END
+```
+New `PARTY` column (`customer` | `transport_partner`) drives a **Customer / Transport-partner toggle** on the Emails tab (client-side filter, no re-fetch; Freshdesk hidden on the TP side).
+
+**Validated:** the rule reproduced Ant's own manual categorisation **30/30** on the full export, and the live pinned query returns the email-subset **22/22** correctly for the reported customer — the day-of-move HubSpot email now **Transactional**, the pre-listing quote **Marketing**, provider comms split TP-Marketing (4) / TP-Transactional (5).
+
+**Scope / limits:**
+- **KPI tiles left as-is** — they are a *system-wide* monitor and the lifecycle test needs per-recipient booking windows, too heavy to apply across all sends inside the 30s query budget. The per-customer list (the SAR-relevant path) is what changed. Flagged to Ant; revisit if the tiles must match the new definition.
+- TP class is a **type→class heuristic** now (route-match% = offer). Booking-scoped and exact for the validated set; a precise allocation-timestamp classifier is deferred to the **TP-subject search** phase (search by TP → all their jobs; needs a resolver via the provider/allocation dimension, as TPs are not in `DIM_USER_CUSTOMER`).
+- Same metadata-only, no-body, phone-linked-identity properties as §8b.
+
 ## 9. Governance notes
 - Snowflake accessed **read-only** (`SELECT` against PRODUCTION); no writes.
 - No customer PII committed in this record or the dashboard HTML; transcript content stays in Snowflake and is read live behind dashboard auth. Customer-facing exports are redacted + human-signed-off before release (§7).
@@ -195,5 +234,6 @@ Two audiences, one source:
 
 ## 10. Sources
 - Snowflake (read-only): `CONFORMED.PRODUCTION.CALL_TRANSCRIPT_CALLS` / `CALL_TRANSCRIPT_SEGMENTS` / `CALL_TRANSCRIPT_CLASSIFIED`; `FCT_TWILIO_CALL_METRICS`; `MART_SALES_OPS.PRODUCTION.CS_QA_VOICE_BASE` / `CALL_SPEAKER_ROLES` / `CALL_TRANSCRIPT_NORMALISED`; coverage & join tests (7d).
-- AV Dashboards queries `interaction_hub_calls` (`3FMEoLMS0TRU0niESsyKpb5dUln`), `interaction_hub_phone_lookup` (`3FWzBkT0qCZzI4X6N2kEDg317ZS`).
+- AV Dashboards queries `interaction_hub_calls` (`3FMEoLMS0TRU0niESsyKpb5dUln`), `interaction_hub_phone_lookup` (`3FWzBkT0qCZzI4X6N2kEDg317ZS`), `interaction_hub_emails` (`3J3TLtoFXR6NHz2NgOaI7uDxdMG`, SQL v3).
+- Lifecycle classifier (§8c): `HARMONISED.PRODUCTION.LISTING_COMMUNICATION`, `HARMONISED.PRODUCTION.EVENTS_EMAIL`, and `CONFORMED.PRODUCTION.MASTER_LISTING` (`LISTING_CREATED_DATE` / `LISTING_COMPLETED_DATE` booking windows). Rule reproduced Ant's manual categorisation 30/30.
 - Prior: `interaction-hub/2026-08-26-call-recording-playback-diagnosis.md`.
