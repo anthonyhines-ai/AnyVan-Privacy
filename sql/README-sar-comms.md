@@ -113,8 +113,11 @@ with the sub-type shown as a column. Consent folded into Profile.
 sar_listing_comms, sar_calls, sar_sms, sar_call_transcripts, and my six (sar_messaging,
 sar_comms_log, sar_consent_history, sar_whatsapp_twilio, sar_twilio_conversations, sar_aircall).
 
+**Live source tables captured:** `sar_hubspot_emails`→`EVENTS_EMAIL`; `sar_calls`→`TWILIO_CALL`
+(ID, DIRECTION, STATUS, "FROM", "TO", START_TIME, END_TIME, DURATION); `sar_sms`→`TWILIO_MESSAGE`
+(same table as WhatsApp — SMS vs WhatsApp distinguished by the `whatsapp:` prefix on FROM/TO).
 **Still to fetch before authoring the unions** (needs AV Dashboards MCP up): the live SQL of
-`sar_prelisting_emails`, `sar_call_transcripts`, `sar_sms`, `sar_listings`.
+`sar_prelisting_emails`, `sar_call_transcripts`, `sar_listings`.
 
 **Deploy:** create the 4 unions → validate each in Snowflake → restructure HTML to the 10 tabs
 (generic runOneQuery/buildTable handles rendering; each merged tab shows its TYPE column) →
