@@ -159,6 +159,33 @@ The warehouse holds **no RecordingSids** for the purged period (§5), so the fil
 **~2.34–2.42M** and the total as **~9.34–9.55M**. Distinct conversations (2,338,378 / 9,344,448) is
 the best single point estimate.
 
+### 4.6 Conversation vs leg vs recording — the dedup is non-destructive
+
+Three grains are easily conflated:
+
+| Grain | What it is | Where it lives |
+|---|---|---|
+| **Call leg** | one Twilio Call SID — the customer's inbound leg, each dial-to-agent leg, each transfer leg | `TWILIO_CALL` (one row per leg); the raw proxy counts these |
+| **Conversation** | one customer contact = `COALESCE(PARENT_CALL_ID, ID)`, collapsing the inbound leg + its dial/transfer children | derived (the dedup above) |
+| **Recording file** | the audio object(s) — grain unconfirmed (one per conversation, or one per agent leg); see §5 | Twilio only (no warehouse RecordingSids for this period) |
+
+**A transferred call is one conversation across several legs** — the customer's inbound leg plus one
+leg per agent — so a genuine "Agent A → Agent B" handover is two (or three) Call SIDs but a single
+customer contact, typically on one recording. **This is real but rare:** in Aug 2026 only **2 of
+~207k** inbound conversations carried 2+ substantive agent legs (≥30s) — ~0.001%. The multi-leg
+over-count the dedup removes is overwhelmingly **short dial/ring attempts** (agent phones ringing in
+turn until one answers), not human handovers. *(Caveat: the ≥30s threshold would miss a transfer
+whose first agent leg was brief, and if transfers are modelled via conference/worker legs they may
+not appear as `outbound-dial` in `TWILIO_CALL` at all — see below.)*
+
+**The dedup deletes nothing.** `COUNT(DISTINCT conversation)` collapses legs only for the headline
+number; every leg row persists and any conversation can be expanded to its legs. **And the "which
+agents" detail is not in `TWILIO_CALL` at all** — it carries no agent identity. Agent names and the
+handover live in **`FCT_VOICE_INTERACTIONS`** (`WORKER_FULL_NAME`, grouped by `CONFERENCE_ID`), the
+surface the **Interaction Hub** already uses to show "Agent A → Agent B" per call. So **counting**
+(this note, `TWILIO_CALL`) and **displaying the transfer** (`FCT_VOICE_INTERACTIONS`) are separate
+jobs on separate tables — the retention count cannot erase the ability to show who was on the call.
+
 ---
 
 ## 5. Addendum (part 2: Twilio reconciliation) — **OUTSTANDING**
