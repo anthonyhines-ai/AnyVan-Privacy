@@ -74,8 +74,10 @@ Then finish in the builder:
 2. Confirm the third-party **file upload** (PDF/JPG/PNG, 10MB/file) and the two hidden fields
    `source` + `agent` (for the admin entry point).
 3. Configure: **EU/UK data region**, submission **retention** to the DSR policy minimum,
-   built-in **reCAPTCHA**, AnyVan theme + WCAG pass, and a **confirmation email** quoting
-   `DSR-<submission id>` and the one-calendar-month timeline.
+   built-in **reCAPTCHA**, AnyVan theme + WCAG pass, and the **confirmation email(s)** — copy is
+   drafted in `docs/dsr-confirmation-emails.md` (three requester-type variants, conditional on
+   `197276069`, or the single-template fallback if the plan doesn't support conditional
+   confirmations) — quoting `DSR-<submission id>` and the one-calendar-month timeline.
 4. Decide the repeatable-call-rows approach (the script uses a structured free-text field —
    swap for repeatable rows in the builder if your plan supports it).
 
@@ -130,8 +132,11 @@ Detail: `docs/formstack-to-freshdesk-workflow.md`. Files in `workflow/`.
    python3 ~/.claude/skills/workflow-doctor/workflow_doctor.py executions --env prod --jwt "$WF_JWT" | head
    ```
    Verify: ticket created; subject `DSR-<id> — <type> (<requester>)`; **tags** landed as
-   separate values; the **description** carries all fields (booking ref, TP username, request
-   detail); third-party **vision read** appears in the description.
+   separate values; the **description** carries all fields for *that* requester/request type only
+   (booking ref, TP username or third-party auth read as applicable, and only that one request
+   type's block — never another type's fields); third-party **vision read** appears in the
+   description; the **confirmation email** (`docs/dsr-confirmation-emails.md`) sent, matched the
+   requester type, and quoted the same `DSR-<id>` reference as the ticket subject.
 3. Confirm the existing classifier picks it up on `FRESHDESK_TICKET_CREATED`:
    ```bash
    python3 ~/.claude/skills/workflow-editor/workflow_edit.py list --env prod --jwt "$WF_JWT" | grep -i freshdesk

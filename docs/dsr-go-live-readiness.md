@@ -3,7 +3,7 @@
 **INTERNAL — no customer PII.** The single source of truth for *what's left* before the
 **"AnyVan UK - Privacy Requests"** Formstack form (id `6559077`) → workflow-system → Freshdesk goes
 live. Companion to `docs/go-live-guide.md` (the stage-by-stage *how*); this file is the current
-state + the outstanding items. Last updated 2026-09-02.
+state + the outstanding items. Last updated 2026-09-24.
 
 ---
 
@@ -13,15 +13,22 @@ state + the outstanding items. Last updated 2026-09-02.
 - **Contract + workflow prompts** re-pointed at the live form: `docs/dsr-field-mapping.md` (32 live
   fields/ids/options), `workflow/config_prompt.md`, `workflow/user_prompt.md`.
 - **`workflow/actions.json`** = a single `FRESHDESK_TICKET_CREATE` wiring one custom field,
-  `cf_privacy_due_date`.
+  `cf_privacy_due_date`. The ticket `description` contract (`workflow/config_prompt.md`) now scopes
+  itself strictly to the submission's own requester type and request type — a Customer/SAR ticket
+  never carries TP or Third-Party fields, or the other four request types' fields.
+- **Confirmation-email content drafted** — `docs/dsr-confirmation-emails.md` has ready-to-paste
+  copy for all three requester types (Customer / Transport Partner / Authorised Third Party),
+  satisfying Art. 12(3) (reference, one-month timeline, privacy@anyvan.com), with the Third Party
+  variant correctly *not* promising the clock starts before authorisation is verified. Configuring
+  it live in Formstack is still outstanding — see blocker #2.
 - **Not done:** the workflow has **never been created** (no `workflow_id`); the **trigger is not
-  chosen**; the **Email Output** is not configured.
+  chosen**; the **Email Output** is not configured (content is drafted, see above).
 
 ## Blockers before go-live
 | # | Item | State | Owner | Secret |
 |---|---|---|---|---|
 | 1 | **Verify the Formstack→workflow event bridge** for form `6559077`, then choose the trigger — Formstack-event (workflow creates the ticket, recommended) vs Freshdesk-event (Email Output creates it, workflow enriches) | 🔴 | Workflow admin | `WF_JWT` |
-| 2 | **Configure the Email Output** — requester confirmation (Art. 12(3): reference + one-month timeline + privacy@anyvan.com); or, if trigger = Freshdesk-event, the notification that raises the ticket | 🔴 | Formstack builder | `FORMSTACK_TOKEN` |
+| 2 | **Configure the Email Output** with the drafted copy in `docs/dsr-confirmation-emails.md` — requester confirmation (Art. 12(3): reference + one-month timeline + privacy@anyvan.com), three requester-type variants conditional on `197276069`; or, if trigger = Freshdesk-event, the notification that raises the ticket | 🟠 (content drafted; not yet configured live) | Formstack builder | `FORMSTACK_TOKEN` |
 | 3 | **Confirm the `cf_privacy_due_date` live key** via `GET /api/v2/ticket_fields`; adjust `actions.json` if suffixed | 🟠 | Freshdesk admin | Freshdesk key |
 | 4 | **Create the DRY_RUN workflow** (`workflow/create.sh`) — records a `workflow_id` | 🔴 | Workflow admin | `WF_JWT` |
 | 5 | **Confirm the submission-id path** `{event.payload.UniqueID}` against a real `FORMSTACK_FORM_SUBMITTED` payload | 🔴 | Workflow admin | `WF_JWT` |
@@ -68,5 +75,5 @@ transactional send-log (Comms tab → `LISTING_COMMUNICATION`).
 
 ## Sources
 `docs/dsr-field-mapping.md` · `docs/go-live-guide.md` · `docs/formstack-to-freshdesk-workflow.md` ·
-`docs/freshdesk-custom-fields.md` · `workflow/config_prompt.md` · `workflow/actions.json` ·
-`customer-communications-mapping.md` · `sar-data-extract.html`.
+`docs/freshdesk-custom-fields.md` · `docs/dsr-confirmation-emails.md` · `workflow/config_prompt.md` ·
+`workflow/actions.json` · `customer-communications-mapping.md` · `sar-data-extract.html`.
