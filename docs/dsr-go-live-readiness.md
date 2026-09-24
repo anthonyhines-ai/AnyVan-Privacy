@@ -21,14 +21,24 @@ state + the outstanding items. Last updated 2026-09-24.
   satisfying Art. 12(3) (reference, one-month timeline, privacy@anyvan.com), with the Third Party
   variant correctly *not* promising the clock starts before authorisation is verified. Configuring
   it live in Formstack is still outstanding — see blocker #2.
-- **Not done:** the workflow has **never been created** (no `workflow_id`); the **trigger is not
-  chosen**; the **Email Output** is not configured (content is drafted, see above).
+- **Trigger decision is now live, not hypothetical.** Ant built a Formstack **notification** ("Customer
+  Privacy Request Email [UK]", id `9711486`) to `privacy@anyvan.com` — a Freshdesk-connected mailbox —
+  which **is** the Freshdesk-event trigger from blocker #1: Formstack's own Email Output raises the
+  ticket, no workflow-system involvement. `docs/dsr-notification-matrix.md` documents this and the
+  15-notification build (`workflow/build-formstack-notifications.py`, not yet applied live — see
+  blocker #1a) that scopes each ticket to its own requester type + request type. **Open question for
+  Ant:** does this replace the AI-workflow path (`workflow/actions.json`'s `FRESHDESK_TICKET_CREATE`)
+  or does the workflow still run afterwards to enrich the ticket the notification created?
+- **Not done:** the workflow has **never been created** (no `workflow_id`); the **Email Output**
+  (customer/TP/third-party confirmation, as opposed to the privacy@ notification above) is not
+  configured (content is drafted, see above).
 
 ## Blockers before go-live
 | # | Item | State | Owner | Secret |
 |---|---|---|---|---|
-| 1 | **Verify the Formstack→workflow event bridge** for form `6559077`, then choose the trigger — Formstack-event (workflow creates the ticket, recommended) vs Freshdesk-event (Email Output creates it, workflow enriches) | 🔴 | Workflow admin | `WF_JWT` |
-| 2 | **Configure the Email Output** with the drafted copy in `docs/dsr-confirmation-emails.md` — requester confirmation (Art. 12(3): reference + one-month timeline + privacy@anyvan.com), three requester-type variants conditional on `197276069`; or, if trigger = Freshdesk-event, the notification that raises the ticket | 🟠 (content drafted; not yet configured live) | Formstack builder | `FORMSTACK_TOKEN` |
+| 1 | **Choose the trigger** — Formstack-event (workflow creates the ticket) vs Freshdesk-event (Formstack notification → `privacy@anyvan.com` creates it, workflow — if any — enriches). Leaning Freshdesk-event now that `9711486` exists and works this way. | 🟠 (a live example exists; the choice isn't yet written down as a decision) | Ant | — |
+| 1a | **Apply the 15-notification matrix** (`docs/dsr-notification-matrix.md`, `workflow/build-formstack-notifications.py --apply`) — retargets `9711486` to Customer+SAR only and adds the other 14 requester/request-type combinations, each showing only its own fields | 🟠 (script written + dry-run verified; not yet applied live — blocked on a live-write permission in the build session, see script's own notes) | Formstack builder | `FORMSTACK_TOKEN` |
+| 2 | **Configure the Email Output confirmation** with the drafted copy in `docs/dsr-confirmation-emails.md` — requester confirmation (Art. 12(3): reference + one-month timeline + privacy@anyvan.com), three requester-type variants conditional on `197276069`. This is separate from the `privacy@anyvan.com` notification above (blocker #1a) — that one creates the ticket; this one is what the requester themself receives. | 🟠 (content drafted; not yet configured live) | Formstack builder | `FORMSTACK_TOKEN` |
 | 3 | **Confirm the `cf_privacy_due_date` live key** via `GET /api/v2/ticket_fields`; adjust `actions.json` if suffixed | 🟠 | Freshdesk admin | Freshdesk key |
 | 4 | **Create the DRY_RUN workflow** (`workflow/create.sh`) — records a `workflow_id` | 🔴 | Workflow admin | `WF_JWT` |
 | 5 | **Confirm the submission-id path** `{event.payload.UniqueID}` against a real `FORMSTACK_FORM_SUBMITTED` payload | 🔴 | Workflow admin | `WF_JWT` |
@@ -75,5 +85,6 @@ transactional send-log (Comms tab → `LISTING_COMMUNICATION`).
 
 ## Sources
 `docs/dsr-field-mapping.md` · `docs/go-live-guide.md` · `docs/formstack-to-freshdesk-workflow.md` ·
-`docs/freshdesk-custom-fields.md` · `docs/dsr-confirmation-emails.md` · `workflow/config_prompt.md` ·
-`workflow/actions.json` · `customer-communications-mapping.md` · `sar-data-extract.html`.
+`docs/freshdesk-custom-fields.md` · `docs/dsr-confirmation-emails.md` · `docs/dsr-notification-matrix.md` ·
+`workflow/config_prompt.md` · `workflow/actions.json` · `workflow/build-formstack-notifications.py` ·
+`customer-communications-mapping.md` · `sar-data-extract.html`.
