@@ -191,23 +191,14 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
 <div class="main-tabs" id="tabBar" style="display:none;">
   <div class="main-tab active" data-tab="overview" onclick="switchTab('overview')">Overview</div>
   <div class="main-tab" data-tab="profile" onclick="switchTab('profile')">Profile <span class="tab-count" id="cnt-profile">0</span></div>
-  <div class="main-tab" data-tab="listings" onclick="switchTab('listings')">Listings <span class="tab-count" id="cnt-listings">0</span></div>
+  <div class="main-tab" data-tab="bookings" onclick="switchTab('bookings')">Bookings <span class="tab-count" id="cnt-bookings">0</span></div>
   <div class="main-tab" data-tab="payments" onclick="switchTab('payments')">Payments <span class="tab-count" id="cnt-payments">0</span></div>
   <div class="main-tab" data-tab="stripe" onclick="switchTab('stripe')">Stripe <span class="tab-count" id="cnt-stripe">0</span></div>
-  <div class="main-tab" data-tab="calls" onclick="switchTab('calls')">Calls <span class="tab-count" id="cnt-calls">0</span></div>
-  <div class="main-tab" data-tab="sms" onclick="switchTab('sms')">SMS <span class="tab-count" id="cnt-sms">0</span></div>
-  <div class="main-tab" data-tab="transcripts" onclick="switchTab('transcripts')">Transcripts <span class="tab-count" id="cnt-transcripts">0</span></div>
   <div class="main-tab" data-tab="emails" onclick="switchTab('emails')">Emails <span class="tab-count" id="cnt-emails">0</span></div>
+  <div class="main-tab" data-tab="calls" onclick="switchTab('calls')">Calls <span class="tab-count" id="cnt-calls">0</span></div>
+  <div class="main-tab" data-tab="messages" onclick="switchTab('messages')">Messages <span class="tab-count" id="cnt-messages">0</span></div>
   <div class="main-tab" data-tab="freshdesk" onclick="switchTab('freshdesk')">Freshdesk <span class="tab-count" id="cnt-freshdesk">0</span></div>
-  <div class="main-tab" data-tab="comms" onclick="switchTab('comms')">Comms <span class="tab-count" id="cnt-comms">0</span></div>
   <div class="main-tab" data-tab="feedback" onclick="switchTab('feedback')">Feedback <span class="tab-count" id="cnt-feedback">0</span></div>
-  <div class="main-tab" data-tab="prelisting" onclick="switchTab('prelisting')">Pre-Listing <span class="tab-count" id="cnt-prelisting">0</span></div>
-  <div class="main-tab" data-tab="messaging" onclick="switchTab('messaging')">Messaging <span class="tab-count" id="cnt-messaging">0</span></div>
-  <div class="main-tab" data-tab="commslog" onclick="switchTab('commslog')">Comms Log <span class="tab-count" id="cnt-commslog">0</span></div>
-  <div class="main-tab" data-tab="consent" onclick="switchTab('consent')">Consent <span class="tab-count" id="cnt-consent">0</span></div>
-  <div class="main-tab" data-tab="whatsapp" onclick="switchTab('whatsapp')">WhatsApp/SMS <span class="tab-count" id="cnt-whatsapp">0</span></div>
-  <div class="main-tab" data-tab="chat2way" onclick="switchTab('chat2way')">Chat 2-way <span class="tab-count" id="cnt-chat2way">0</span></div>
-  <div class="main-tab" data-tab="aircall" onclick="switchTab('aircall')">Aircall <span class="tab-count" id="cnt-aircall">0</span></div>
 </div>
 
 <!-- Main content -->
@@ -241,19 +232,23 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     </div>
   </div>
 
-  <!-- Profile tab -->
+  <!-- Profile tab (customer profile + consent / opt-out history) -->
   <div class="tab-panel" id="panel-profile">
     <div class="data-section">
       <div class="data-header"><div class="data-title">Customer Profile</div><div class="data-actions"><button class="btn-export" onclick="exportTab('profile')">Export CSV</button></div></div>
       <div id="profileContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
     </div>
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Marketing / Consent History</div><div class="data-actions"><button class="btn-export" onclick="exportTab('consent')">Export CSV</button></div></div>
+      <div id="consentContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
   </div>
 
-  <!-- Listings tab -->
-  <div class="tab-panel" id="panel-listings">
+  <!-- Bookings tab (Listings; pre-listing quotes are a follow-up) -->
+  <div class="tab-panel" id="panel-bookings">
     <div class="data-section">
-      <div class="data-header"><div class="data-title">Listings</div><div class="data-actions"><button class="btn-export" onclick="exportTab('listings')">Export CSV</button></div></div>
-      <div id="listingsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+      <div class="data-header"><div class="data-title">Bookings — Listings</div><div class="data-actions"><button class="btn-export" onclick="exportTab('bookings')">Export CSV</button></div></div>
+      <div id="bookingsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
     </div>
   </div>
 
@@ -273,35 +268,27 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     </div>
   </div>
 
-  <!-- Calls tab -->
+  <!-- Emails tab (all email types; TYPE column) -->
+  <div class="tab-panel" id="panel-emails">
+    <div class="data-section">
+      <div class="data-header"><div class="data-title">Emails — all types (Marketing · Transactional · System log · Pre-Listing)</div><div class="data-actions"><button class="btn-export" onclick="exportTab('emails')">Export CSV</button></div></div>
+      <div id="emailsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+    </div>
+  </div>
+
+  <!-- Calls tab (all voice; TYPE column) -->
   <div class="tab-panel" id="panel-calls">
     <div class="data-section">
-      <div class="data-header"><div class="data-title">Twilio Calls</div><div class="data-actions"><button class="btn-export" onclick="exportTab('calls')">Export CSV</button></div></div>
+      <div class="data-header"><div class="data-title">Calls — Twilio · Aircall · Transcripts</div><div class="data-actions"><button class="btn-export" onclick="exportTab('calls')">Export CSV</button></div></div>
       <div id="callsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
     </div>
   </div>
 
-  <!-- SMS tab -->
-  <div class="tab-panel" id="panel-sms">
+  <!-- Messages tab (all non-voice messaging; TYPE column) -->
+  <div class="tab-panel" id="panel-messages">
     <div class="data-section">
-      <div class="data-header"><div class="data-title">Twilio SMS Messages</div><div class="data-actions"><button class="btn-export" onclick="exportTab('sms')">Export CSV</button></div></div>
-      <div id="smsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
-    </div>
-  </div>
-
-  <!-- Transcripts tab -->
-  <div class="tab-panel" id="panel-transcripts">
-    <div class="data-section">
-      <div class="data-header"><div class="data-title">Call Transcripts</div><div class="data-actions"><button class="btn-export" onclick="exportTab('transcripts')">Export CSV</button></div></div>
-      <div id="transcriptsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
-    </div>
-  </div>
-
-  <!-- Emails tab -->
-  <div class="tab-panel" id="panel-emails">
-    <div class="data-section">
-      <div class="data-header"><div class="data-title">Email Events (HubSpot)</div><div class="data-actions"><button class="btn-export" onclick="exportTab('emails')">Export CSV</button></div></div>
-      <div id="emailsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
+      <div class="data-header"><div class="data-title">Messages — WhatsApp · SMS · 2-way chat · Send-log</div><div class="data-actions"><button class="btn-export" onclick="exportTab('messages')">Export CSV</button></div></div>
+      <div id="messagesContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
     </div>
   </div>
 
@@ -313,63 +300,11 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     </div>
   </div>
 
-  <!-- Comms tab -->
-  <div class="tab-panel" id="panel-comms">
-    <div class="data-section">
-      <div class="data-header"><div class="data-title">Listing Communications</div><div class="data-actions"><button class="btn-export" onclick="exportTab('comms')">Export CSV</button></div></div>
-      <div id="commsContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
-    </div>
-  </div>
-
   <!-- Feedback tab -->
   <div class="tab-panel" id="panel-feedback">
     <div class="data-section">
       <div class="data-header"><div class="data-title">Listing Feedback</div><div class="data-actions"><button class="btn-export" onclick="exportTab('feedback')">Export CSV</button></div></div>
       <div id="feedbackContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
-    </div>
-  </div>
-
-  <!-- Pre-listing tab -->
-  <div class="tab-panel" id="panel-prelisting">
-    <div class="data-section">
-      <div class="data-header"><div class="data-title">Pre-Listing Emails</div><div class="data-actions"><button class="btn-export" onclick="exportTab('prelisting')">Export CSV</button></div></div>
-      <div id="prelistingContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
-    </div>
-  </div>
-  <div class="tab-panel" id="panel-messaging">
-    <div class="data-section">
-      <div class="data-header"><div class="data-title">Messaging — Email / RCS / WhatsApp</div><div class="data-actions"><button class="btn-export" onclick="exportTab('messaging')">Export CSV</button></div></div>
-      <div id="messagingContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
-    </div>
-  </div>
-  <div class="tab-panel" id="panel-commslog">
-    <div class="data-section">
-      <div class="data-header"><div class="data-title">Comms Log — all channels (send log)</div><div class="data-actions"><button class="btn-export" onclick="exportTab('commslog')">Export CSV</button></div></div>
-      <div id="commslogContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
-    </div>
-  </div>
-  <div class="tab-panel" id="panel-consent">
-    <div class="data-section">
-      <div class="data-header"><div class="data-title">Marketing / Consent History</div><div class="data-actions"><button class="btn-export" onclick="exportTab('consent')">Export CSV</button></div></div>
-      <div id="consentContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
-    </div>
-  </div>
-  <div class="tab-panel" id="panel-whatsapp">
-    <div class="data-section">
-      <div class="data-header"><div class="data-title">WhatsApp / SMS — Twilio</div><div class="data-actions"><button class="btn-export" onclick="exportTab('whatsapp')">Export CSV</button></div></div>
-      <div id="whatsappContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
-    </div>
-  </div>
-  <div class="tab-panel" id="panel-chat2way">
-    <div class="data-section">
-      <div class="data-header"><div class="data-title">Chat 2-way — Twilio Conversations</div><div class="data-actions"><button class="btn-export" onclick="exportTab('chat2way')">Export CSV</button></div></div>
-      <div id="chat2wayContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
-    </div>
-  </div>
-  <div class="tab-panel" id="panel-aircall">
-    <div class="data-section">
-      <div class="data-header"><div class="data-title">Aircall Calls + Recordings</div><div class="data-actions"><button class="btn-export" onclick="exportTab('aircall')">Export CSV</button></div></div>
-      <div id="aircallContent"><div class="data-loading"><div class="spinner"></div>Waiting for search…</div></div>
     </div>
   </div>
 </div>
@@ -408,15 +343,15 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
     <div class="info-section">
       <h3>🗄 Data Sources</h3>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Customer Profile (DIM_USER_CUSTOMER) <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">Name, email, phone, country, language, consent flags, login history. Matched by email.</div>
+        <div class="info-accordion-header">Profile + Consent <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Customer profile (DIM_USER_CUSTOMER — name, email, phone, country, language, consent flags, login history) plus the marketing/consent opt-in/opt-out change history from HubSpot. Matched by email.</div>
       </div>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Listings (LISTING) <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">All customer listings — title, status, dates, bids, feedback. Linked via USER_ID from profile. Max 500 rows.</div>
+        <div class="info-accordion-header">Bookings <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Customer listings (LISTING) — title, status, dates, bids, feedback. Linked via USER_ID from email. Max 500 rows. (Pre-listing quotes are a tracked follow-up — not yet surfaced.)</div>
       </div>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Payments (PAYMENT) <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-header">Payments <span class="info-accordion-chevron">▾</span></div>
         <div class="info-accordion-body">AnyVan payment records — amount, method, status, transaction IDs. Linked via USER_ID. Max 1000 rows.</div>
       </div>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
@@ -424,60 +359,24 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         <div class="info-accordion-body">Stripe payment intents across all 3 territories. Matched by RECEIPT_EMAIL. Max 1000 rows.</div>
       </div>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Twilio Calls <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">Call records — direction, duration, timestamps. Matched by phone suffix (last 10 digits). Requires phone input.</div>
+        <div class="info-accordion-header">Emails — all types (TYPE column) <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Every email in one place, tagged by TYPE: <strong>Marketing</strong> (HubSpot EVENTS_EMAIL sends/opens/clicks/bounces), <strong>Transactional</strong> (EVENTS_MESSAGING_MESSAGE email — rendered subject + body, 2026-05-19+), <strong>System log</strong> (LISTING_COMMUNICATION email send-log, 2022+), <strong>Pre-Listing</strong> (quote/enquiry emails). Matched by email.</div>
       </div>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Twilio SMS <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">SMS message records — direction, body, status. Matched by phone suffix. Requires phone input.</div>
+        <div class="info-accordion-header">Calls — all sources (TYPE column) <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Every voice call in one place, tagged by TYPE: <strong>Twilio</strong> (TWILIO_CALL), <strong>Aircall</strong> (AIRCALL_CALL, incl. in-warehouse recording URL), <strong>Transcript</strong> (CALL_TRANSCRIPT_SEGMENTS, aggregated to one row per call). Matched by phone suffix (last 10 digits). Requires phone input.</div>
       </div>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Call Transcripts <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">Speech-to-text transcripts segmented by speaker. Matched by phone digits. Requires phone input. Max 5000 segments.</div>
-      </div>
-      <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Email Events — HubSpot <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">HubSpot email event log — sends, opens, clicks, bounces. Matched by email. (Transactional email body/subject is now in the Messaging and Comms Log tabs.)</div>
+        <div class="info-accordion-header">Messages — all channels (TYPE column) <span class="info-accordion-chevron">▾</span></div>
+        <div class="info-accordion-body">Every non-voice message in one place, tagged by TYPE: <strong>WhatsApp/SMS</strong> (TWILIO_MESSAGE), <strong>2-way chat</strong> (TWILIO_CONVERSATION_MESSAGE, incl. AnyVan.com live chat), <strong>platform</strong> (EVENTS_MESSAGING_MESSAGE — WhatsApp/RCS/Push/SMS), <strong>System log</strong> (LISTING_COMMUNICATION sms/whats-app). Matched by phone suffix. Requires phone input.</div>
       </div>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
         <div class="info-accordion-header">Freshdesk Tickets <span class="info-accordion-chevron">▾</span></div>
         <div class="info-accordion-body">Support tickets — subject, description, status, priority. Matched by REQUESTER_EMAIL. Max 1000 rows.</div>
       </div>
       <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Listing Communications <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">System communications tied to listings — emails, SMS, notifications. Linked via USER_ID → listings. Max 2000 rows.</div>
-      </div>
-      <div class="info-accordion" onclick="this.classList.toggle('open')">
         <div class="info-accordion-header">Listing Feedback <span class="info-accordion-chevron">▾</span></div>
         <div class="info-accordion-body">Customer feedback and ratings on listings. Linked via USER_ID → listings.</div>
-      </div>
-      <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Pre-Listing Emails <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">Emails sent before listing activation — templates, timestamps. Matched by email.</div>
-      </div>
-      <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Messaging — Email / RCS / WhatsApp <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">Modern messaging-platform sends: email, RCS and WhatsApp with rendered subject, body and marketing/transactional consent. Matched by email. From 2026-05-19 (WhatsApp 2026-06-17).</div>
-      </div>
-      <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Comms Log — all channels (send log) <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">Full transactional send-log across email/SMS/WhatsApp, 2022+, incl. older history. Subject/body in TOKENS. Linked via USER_ID.</div>
-      </div>
-      <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Marketing / Consent History <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">Marketing/consent opt-in-out property-change history from HubSpot. Resolved via email → HubSpot contact.</div>
-      </div>
-      <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">WhatsApp / SMS — Twilio <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">One-way automated WhatsApp + SMS bodies from Twilio. Matched by phone suffix. Requires phone input.</div>
-      </div>
-      <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Chat 2-way — Twilio Conversations <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">Two-way conversational WhatsApp/chat bodies (Twilio Conversations), joined via participant identity. Matched by phone suffix. Requires phone input.</div>
-      </div>
-      <div class="info-accordion" onclick="this.classList.toggle('open')">
-        <div class="info-accordion-header">Aircall Calls + Recordings <span class="info-accordion-chevron">▾</span></div>
-        <div class="info-accordion-body">Aircall voice calls incl. the in-warehouse recording URL. Matched by phone suffix. Requires phone input.</div>
       </div>
     </div>
     <div class="info-section">
@@ -512,25 +411,21 @@ var _searchEmail = '';
 var _searchPhone = '';
 var _phoneSuffix = '';
 
+// Consolidated 10-tab model. Each key maps to one named query + one panel
+// (content div id = key + 'Content'). 'consent' has no top tab — it renders as
+// a second table inside the Profile panel (cnt-consent is absent; the cnt
+// writes below are null-guarded via setCnt).
 var QUERIES = {
-  profile: {name:'sar_customer_profile', needsPhone:false, label:'Customer Profile'},
-  listings: {name:'sar_listings', needsPhone:false, label:'Listings'},
-  payments: {name:'sar_payments', needsPhone:false, label:'Payments'},
-  stripe: {name:'sar_stripe_payments', needsPhone:false, label:'Stripe Payments'},
-  calls: {name:'sar_calls', needsPhone:true, label:'Twilio Calls'},
-  sms: {name:'sar_sms', needsPhone:true, label:'Twilio SMS'},
-  transcripts: {name:'sar_call_transcripts', needsPhone:true, label:'Call Transcripts'},
-  emails: {name:'sar_hubspot_emails', needsPhone:false, label:'Email Events (HubSpot)'},
-  freshdesk: {name:'sar_freshdesk', needsPhone:false, label:'Freshdesk Tickets'},
-  comms: {name:'sar_listing_comms', needsPhone:false, label:'Listing Communications'},
-  feedback: {name:'sar_listing_feedback', needsPhone:false, label:'Listing Feedback'},
-  prelisting: {name:'sar_prelisting_emails', needsPhone:false, label:'Pre-Listing Emails'},
-  messaging: {name:'sar_messaging', needsPhone:false, label:'Messaging (Email/RCS/WhatsApp)'},
-  commslog: {name:'sar_comms_log', needsPhone:false, label:'Comms Log (all channels)'},
-  consent: {name:'sar_consent_history', needsPhone:false, label:'Consent History'},
-  whatsapp: {name:'sar_whatsapp_twilio', needsPhone:true, label:'WhatsApp / SMS (Twilio)'},
-  chat2way: {name:'sar_twilio_conversations', needsPhone:true, label:'Chat 2-way'},
-  aircall: {name:'sar_aircall', needsPhone:true, label:'Aircall Calls'}
+  profile:   {name:'sar_customer_profile', needsPhone:false, label:'Customer Profile'},
+  consent:   {name:'sar_consent_history',  needsPhone:false, label:'Marketing / Consent History'},
+  bookings:  {name:'sar_listings',         needsPhone:false, label:'Bookings (Listings)'},
+  payments:  {name:'sar_payments',         needsPhone:false, label:'Payments'},
+  stripe:    {name:'sar_stripe_payments',  needsPhone:false, label:'Stripe Payments'},
+  emails:    {name:'sar_emails_all',       needsPhone:false, label:'Emails (Marketing/Transactional/System/Pre-Listing)'},
+  calls:     {name:'sar_calls_all',        needsPhone:true,  label:'Calls (Twilio/Aircall/Transcripts)'},
+  messages:  {name:'sar_messages_all',     needsPhone:true,  label:'Messages (WhatsApp/SMS/Chat/Send-log)'},
+  freshdesk: {name:'sar_freshdesk',        needsPhone:false, label:'Freshdesk Tickets'},
+  feedback:  {name:'sar_listing_feedback', needsPhone:false, label:'Listing Feedback'}
 };
 
 function normPhone(raw) {
@@ -608,6 +503,13 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Null-safe tab-count write. Some queries (e.g. consent, folded into the
+// Profile panel) have no cnt-<key> chip; skip silently for those.
+function setCnt(key, val) {
+  var c = document.getElementById('cnt-' + key);
+  if (c) c.textContent = val;
+}
+
 function fmtDate(v) {
   if (!v) return '—';
   try {
@@ -672,7 +574,7 @@ function runOneQuery(key, attempt) {
     var rows = res.rows || res.data || (Array.isArray(res) ? res : []);
     _sarData[key] = rows;
     _sarMeta[key] = {status:'success', count:rows.length, cached: res.cached !== false};
-    document.getElementById('cnt-' + key).textContent = rows.length;
+    setCnt(key, rows.length);
     if (el) el.innerHTML = buildTable(rows);
   }).catch(function(err) {
     var msg = (err && (err.message || err.error)) ? (err.message || err.error) : String(err);
@@ -686,7 +588,7 @@ function runOneQuery(key, attempt) {
     console.error('[SAR] ' + key + ' failed after ' + (attempt + 1) + ' attempt(s):', err);
     _sarData[key] = [];
     _sarMeta[key] = {status:'error', error: msg};
-    document.getElementById('cnt-' + key).textContent = '!';
+    setCnt(key, '!');
     if (el) el.innerHTML = '<div class="data-empty" style="color:var(--red)">Error: ' + esc(msg) + '<br><span style="font-size:10px;color:var(--tx3)">Query: ' + esc(q.name) + ' · Check browser console for details</span></div>';
   });
 }
@@ -741,11 +643,11 @@ async function runSAR() {
       _sarData[key] = [];
       _sarMeta[key] = {status:'skipped', reason:'No phone provided'};
       if (el) el.innerHTML = '<div class="data-empty">Phone number required — not provided</div>';
-      document.getElementById('cnt-' + key).textContent = '—';
+      setCnt(key, '—');
       return;
     }
     if (el) el.innerHTML = '<div class="data-loading"><div class="spinner"></div>Queued — ' + esc(q.label) + '…</div>';
-    document.getElementById('cnt-' + key).textContent = '…';
+    setCnt(key, '…');
     toRun.push(key);
   });
 
@@ -902,7 +804,7 @@ function clearAll() {
   document.getElementById('panel-overview').style.display = 'none';
   switchTab('overview');
   Object.keys(QUERIES).forEach(function(k) {
-    document.getElementById('cnt-' + k).textContent = '0';
+    setCnt(k, '0');
     var el = document.getElementById(k + 'Content');
     if (el) el.innerHTML = '<div class="data-loading"><div class="spinner"></div>Waiting for search…</div>';
   });
