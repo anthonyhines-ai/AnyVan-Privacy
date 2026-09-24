@@ -149,13 +149,17 @@ accordion rewritten. Structure verified: 10 tabs = 10 panels = 10 content divs =
 **Kept (not retired):** sar_customer_profile, sar_listings, sar_payments, sar_stripe_payments,
 sar_freshdesk, sar_listing_feedback, **sar_consent_history** (now feeds the Profile consent table).
 
-**Deploy — PENDING (blocked).** The HTML PUT to the live dashboard needs the `get_upload_token` JWT
-in a shell `curl`; the session's auto-mode classifier blocks that as credential materialisation, and
-the MCP `update_dashboard` fallback can truncate a live compliance tool. Live dashboard stays on the
-working 19-tab version until the PUT. **Old queries NOT yet retired** — retire only after the new
-HTML is verified live: sar_hubspot_emails, sar_prelisting_emails, sar_listing_comms, sar_comms_log,
-sar_messaging, sar_calls, sar_call_transcripts, sar_aircall, sar_sms, sar_whatsapp_twilio,
-sar_twilio_conversations.
+**Deploy — ✅ DONE 2026-09-24.** HTML PUT to the live dashboard
+(https://dashboards.anyvan.com/operations/sar-data-extract) via `get_upload_token` → HTTP PUT
+(`success:true`), then the deployed HTML was fetched back and verified byte-complete (10 tabs, Profile
+carrying the consent second table, `QUERIES` pointing at the 3 unions, closing tags intact — no
+truncation). Auto-versioned; `rollback_dashboard` restores the prior 19-tab version if needed.
+
+**Old queries — retirement DEFERRED (rollback insurance).** The 11 superseded queries are left live
+so a dashboard rollback to the 19-tab version still works. Retire them once Ant confirms the new
+10-tab dashboard works in the browser: sar_hubspot_emails, sar_prelisting_emails, sar_listing_comms,
+sar_comms_log, sar_messaging, sar_calls, sar_call_transcripts, sar_aircall, sar_sms,
+sar_whatsapp_twilio, sar_twilio_conversations.
 
 **Follow-up (product question for Ant):** surface pre-listing *bookings/quotes* under Bookings?
 (needs a new source query — the quote/pre-listing table, keyed by email.)
