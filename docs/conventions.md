@@ -65,6 +65,90 @@ these, update this file in the same PR.
   `FRESHDESK_TICKET_CREATE` action → use a **custom date field** (`cf_privacy_due_date`) populated by
   the workflow instead. SLA/automation can’t do arbitrary date arithmetic.
 
+## Jiminny Video Lookup (SAR/DSAR)
+
+**Purpose:** Locate and retrieve video consultation recordings (property assessments, flat tours) during SAR data compilation.
+
+### Search methodology (validated)
+- **Primary method:** Jiminny UI search by **customer email address**
+  - Enters Jiminny → Search/Filter section → enter customer email (e.g., `monibag2000@yahoo.com`)
+  - Returns list of all calls/videos for that customer with date, time, agent name, type, duration
+  - Verify date/time matches expected consultation (e.g., 17 June 2026 ~14:30)
+  - Download MP4/MOV file to secure location
+
+- **Alternative searches** (if email search returns no video):
+  - Search by phone number (`07881361498` or `+447881361498`)
+  - Search by booking reference (`9454215`)
+  - Browse by agent name (if known from booking notes)
+
+- **If not found in Jiminny:** Escalate to Interaction Hub team, Google Drive, or third-party assessment platforms (Robinhood, Tradify, etc.)
+
+### MCP connector (limitations & status)
+- **Tools:** `mcp__Jiminny__search_calls` / `mcp__Jiminny__get_call` (search/retrieval)
+  - **Limitation:** Searches by email, phone, booking ref, or date range often return "No Jiminny data matched" even when data exists via UI search
+  - **Status:** Manual Jiminny UI search remains the **only reliable method** for locating videos (confirmed via Monika Baginska SAR 2026-09-09)
+  - **Recommendation:** Use UI search as primary; MCP connector for transcript retrieval only after video is located
+- **Legacy tool:** `mcp__AnyVan_MCP__get_conversation_transcript` — deprecated; use Jiminny connector instead
+
+### Important notes
+- **Jiminny data is NOT in Snowflake** — direct UI search is the only reliable method
+- **Video ownership:** Recording is AnyVan's; customer entitled to copy per GDPR Article 15
+- **PII in video:** Redact agent name (e.g., "Alex York" → `[AGENT]`); confirm no issue with sharing property footage
+- **Storage:** Jiminny is third-party processor — confirm DPA in place before delivery
+- **Retention:** Keep copy 3 months post-delivery per retention policy
+
+### Video lookup SLA
+- **Locate & download video:** by Day 4–5 of SAR (before PII redaction review)
+- **Verify playback:** confirm file plays, audio clear, duration matches Jiminny metadata
+- **Include in archive:** add to encrypted SAR delivery (WeTransfer, 3-day expiry)
+
+### Detailed guide
+- See `../booking-lookups/METHODOLOGY-jiminny-video-lookup.md` for step-by-step UI navigation, fallback locations, and troubleshooting
+
+## SAR Email Delivery (GDPR Article 15 Secure Delivery)
+
+**Purpose:** Deliver compiled SAR data archive to customer via encrypted file + email notification.
+
+### Email delivery method (validated)
+- **Encryption:** AES-256 password-protected ZIP archive
+- **Transport:** WeTransfer Free (3-day link expiry, no login required)
+- **Communication channel:** Email to customer's registered email (primary or secondary)
+- **Password delivery:** Included in same email (GDPR/ICO guidance allows same channel if both are present)
+- **Fallback:** If email bounces, try secondary email; if both fail, escalate to support for phone verification
+
+### Email template
+```
+Subject: Your Subject Access Request — Download Link
+
+Dear [Customer Name],
+
+Your Subject Access Request (SAR) data compilation is ready for download.
+
+Access your data here:
+[WEBTRANSFER_LINK]
+
+Archive password:
+[ARCHIVE_PASSWORD]
+
+The download link will expire in 3 days. Once downloaded, please verify all files are present and notify us if you have any questions.
+
+This completes AnyVan's response to your GDPR Article 15 (Right of Access) request received on [DATE_RECEIVED].
+
+Best regards,
+AnyVan Privacy & Compliance Team
+```
+
+### Delivery SLA
+- **Email send:** by Day 9 of SAR (before statutory 30-day deadline)
+- **Record:** Timestamp, recipient email, delivery confirmation
+- **Follow-up:** If no reply within 3 days, consider optional reminder email
+
+### Important notes
+- **No SMS delivery:** Email-only per current AnyVan compliance policy
+- **Archive readiness:** Verify all files present, metadata correct, and link tested before sending
+- **Retention:** Keep email delivery record for 3 years per UK GDPR compliance
+- **DPA confirmation:** Verify Jiminny, Twilio, and any third-party data processors have DPA in place before delivery
+
 ## Workflow-system
 
 - Use the org **`workflow-editor`** skill (CRUD on definitions) and **`workflow-doctor`** skill

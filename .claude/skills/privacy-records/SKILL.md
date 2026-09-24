@@ -4,14 +4,16 @@ description: >
   Produce and file AnyVan privacy records and decision documents in the AnyVan-Privacy repo's house
   style. Use whenever working in the AnyVan-Privacy repo, or when Ant asks to create/record any of:
   a PII or booking lookup (find bookings by phone number, postcode, address, account/listing ID); a
-  Subject Access Request (SAR / DSAR) note or data-subject request; a data-protection or privacy
-  options appraisal / vendor comparison (e.g. secure file delivery, call-recording delivery, storage
-  tooling); a retention, redaction, or disposal note; or any "add/write a privacy record or doc".
+  Subject Access Request (SAR / DSAR) note or data-subject request; a SAR operational execution log
+  or email delivery template; a data-protection or privacy options appraisal / vendor comparison
+  (e.g. secure file delivery, call-recording delivery, storage tooling); a retention, redaction,
+  or disposal note; or any "add/write a privacy record or doc".
   Enforces the repo's filing conventions (YYYY-MM-DD-kebab-case.md in a topic subfolder), the
   metadata-table + numbered-section + governance-notes structure, the CONFIDENTIAL/PII vs INTERNAL
   banner rule, and the PII / git-history guardrail. Routes any warehouse question through the
   anyvan-data skill (Snowflake PRODUCTION, read-only). Do not use for building dashboards, or for
-  audits already covered by the dedicated auditor skills.
+  audits already covered by the dedicated auditor skills. SAR operational patterns are documented
+  in docs/conventions.md (Jiminny video lookup, email delivery, 3-day WeTransfer expiry).
 ---
 
 # Privacy records (AnyVan-Privacy)
