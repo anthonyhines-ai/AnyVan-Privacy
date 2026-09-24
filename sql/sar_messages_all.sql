@@ -12,8 +12,10 @@
 -- Matched on the last 10 phone digits (:phone_suffix). The send-log arm resolves
 -- the phone to USER_ID via DIM_USER_CUSTOMER (RECIPIENT_ID = USER_ID).
 -- Live-chat bodies before ~Apr-2026 are not in Snowflake (known gap).
+-- Text columns cast ::string and timestamps ::TIMESTAMP_NTZ so the UNION arms
+-- share one type per column.
 -- Shared column contract: OCCURRED_AT, TYPE, SUBJECT, STATUS, BODY, REFERENCE, DETAIL.
--- STATUS: validate in Snowflake with a dummy :phone_suffix before deploy.
+-- STATUS: Snowflake-validated (compiles; dummy :phone_suffix -> 0 rows, no PII).
 ------------------------------------------------------------------------------
 WITH u AS (
   SELECT DISTINCT USER_ID
@@ -24,14 +26,14 @@ WITH u AS (
 SELECT * FROM (
   -- Twilio SMS / one-way WhatsApp
   SELECT
-    tm.DATE_SENT                                             AS OCCURRED_AT,
+    tm.DATE_SENT::TIMESTAMP_NTZ                              AS OCCURRED_AT,
     CASE WHEN tm."FROM" ILIKE 'whatsapp:%' OR tm."TO" ILIKE 'whatsapp:%'
          THEN 'WhatsApp' ELSE 'SMS' END                     AS TYPE,
     CAST(NULL AS VARCHAR)                                    AS SUBJECT,
-    tm.DIRECTION                                             AS STATUS,
-    tm.BODY                                                  AS BODY,
+    tm.DIRECTION::string                                     AS STATUS,
+    tm.BODY::string                                          AS BODY,
     tm.ID::string                                           AS REFERENCE,
-    'From ' || COALESCE(tm."FROM", '') || ' To ' || COALESCE(tm."TO", '') AS DETAIL
+    ('From ' || COALESCE(tm."FROM", '') || ' To ' || COALESCE(tm."TO", ''))::string AS DETAIL
   FROM HARMONISED.PRODUCTION.TWILIO_MESSAGE tm
   WHERE RIGHT(REGEXP_REPLACE(COALESCE(tm."FROM", ''), '[^0-9]', ''), 10) = :phone_suffix
      OR RIGHT(REGEXP_REPLACE(COALESCE(tm."TO",   ''), '[^0-9]', ''), 10) = :phone_suffix
@@ -39,13 +41,13 @@ SELECT * FROM (
   UNION ALL
   -- Two-way conversational chat (WhatsApp / AnyVan.com live chat)
   SELECT
-    cm.CREATED_AT,
+    cm.CREATED_AT::TIMESTAMP_NTZ,
     '2-way chat',
     CAST(NULL AS VARCHAR),
     CAST(NULL AS VARCHAR),
-    cm.BODY,
+    cm.BODY::string,
     cm.CONVERSATION_ID::string,
-    cm.AUTHOR
+    cm.AUTHOR::string
   FROM HARMONISED.PRODUCTION.TWILIO_CONVERSATION_MESSAGE cm
   JOIN (
     SELECT DISTINCT CONVERSATION_ID
@@ -56,13 +58,13 @@ SELECT * FROM (
   UNION ALL
   -- Messaging platform, non-email channels (WhatsApp / RCS / Push / SMS)
   SELECT
-    mm.EVENT_TIMESTAMP,
-    mm.CHANNEL,
-    mm.RENDERED_SUBJECT,
-    mm.EVENT_NAME,
-    mm.MESSAGE,
+    mm.EVENT_TIMESTAMP::TIMESTAMP_NTZ,
+    mm.CHANNEL::string,
+    mm.RENDERED_SUBJECT::string,
+    mm.EVENT_NAME::string,
+    mm.MESSAGE::string,
     mm.REQUEST_METADATA_CONTEXT:listingId::string,
-    'template=' || COALESCE(mm.TEMPLATE_KEY, '')
+    ('template=' || COALESCE(mm.TEMPLATE_KEY, ''))::string
   FROM HARMONISED.PRODUCTION.EVENTS_MESSAGING_MESSAGE mm
   WHERE mm.CHANNEL <> 'EMAIL'
     AND RIGHT(REGEXP_REPLACE(COALESCE(mm.RESOLVED_USER_PHONE, ''), '[^0-9]', ''), 10) = :phone_suffix
@@ -70,13 +72,13 @@ SELECT * FROM (
   UNION ALL
   -- System send-log, SMS / WhatsApp channels
   SELECT
-    lc.CREATED_AT,
+    lc.CREATED_AT::TIMESTAMP_NTZ,
     'System log',
     TRY_PARSE_JSON(lc.TOKENS):subject::string,
-    lc.STATUS,
-    lc.DETAILS,
+    lc.STATUS::string,
+    lc.DETAILS::string,
     lc.LISTING_ID::string,
-    lc.CHANNEL
+    lc.CHANNEL::string
   FROM HARMONISED.PRODUCTION.LISTING_COMMUNICATION lc
   JOIN u ON u.USER_ID = lc.RECIPIENT_ID
   WHERE COALESCE(lc.DELETED_ROW, FALSE) = FALSE
