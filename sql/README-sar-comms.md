@@ -124,3 +124,38 @@ sar_comms_log, sar_consent_history, sar_whatsapp_twilio, sar_twilio_conversation
 get_upload_token → PUT → retire the old queries. Auto-versioned; rollback if needed.
 
 **Data gap (unchanged):** Video Survey has no Snowflake table.
+
+## Consolidation — executed 2026-09-24
+Built **3** union queries (not 4: Bookings = Listings only — pre-listing *bookings/quotes* have no
+currently-surfaced source and adding one is new discovery, out of scope; pre-listing *emails* route
+to the Emails union). All Snowflake-validated (dummy literals → ~0 rows) then created **public**,
+600 s cache:
+
+| New query | Param | ID | Replaces |
+|---|---|---|---|
+| `sar_emails_all` | `:email` | `3Jm6VvRYJnSKf42vbm8oa4f8OZb` | sar_hubspot_emails, sar_messaging(email), sar_listing_comms, sar_comms_log, sar_prelisting_emails |
+| `sar_calls_all` | `:phone_suffix` | `3Jm6Xs3cPtpFrXpFRZXwvHoMI0b` | sar_calls, sar_aircall, sar_call_transcripts |
+| `sar_messages_all` | `:phone_suffix` | `3Jm6aGzWhoZbq5b98twbp0wNqXm` | sar_sms, sar_whatsapp_twilio, sar_twilio_conversations, sar_messaging(non-email), sar_listing_comms/sar_comms_log(sms/whats-app) |
+
+Validation fixes folded in: `IS_AUTO` is NUMBER (`= 1`, not boolean); UNION arms cast to
+`TIMESTAMP_NTZ`; every text output column cast `::string` (some source columns are numeric codes —
+otherwise the UNION resolved a mixed column to numeric, a runtime landmine).
+
+**`sar-data-extract.html` restructured to 10 tabs** (committed): Overview · Profile (+consent second
+table) · Bookings · Payments · Stripe · Emails · Calls · Messages · Freshdesk · Feedback. `QUERIES`
+trimmed to 10; `setCnt()` null-guards the chip writes (consent runs without a tab); info-overlay
+accordion rewritten. Structure verified: 10 tabs = 10 panels = 10 content divs = 10 QUERIES keys.
+
+**Kept (not retired):** sar_customer_profile, sar_listings, sar_payments, sar_stripe_payments,
+sar_freshdesk, sar_listing_feedback, **sar_consent_history** (now feeds the Profile consent table).
+
+**Deploy — PENDING (blocked).** The HTML PUT to the live dashboard needs the `get_upload_token` JWT
+in a shell `curl`; the session's auto-mode classifier blocks that as credential materialisation, and
+the MCP `update_dashboard` fallback can truncate a live compliance tool. Live dashboard stays on the
+working 19-tab version until the PUT. **Old queries NOT yet retired** — retire only after the new
+HTML is verified live: sar_hubspot_emails, sar_prelisting_emails, sar_listing_comms, sar_comms_log,
+sar_messaging, sar_calls, sar_call_transcripts, sar_aircall, sar_sms, sar_whatsapp_twilio,
+sar_twilio_conversations.
+
+**Follow-up (product question for Ant):** surface pre-listing *bookings/quotes* under Bookings?
+(needs a new source query — the quote/pre-listing table, keyed by email.)
