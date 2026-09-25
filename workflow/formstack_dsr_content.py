@@ -1,14 +1,20 @@
 """
-Shared field ids/labels and per-(requester type, request type) content blocks for the
-"AnyVan UK - Privacy Requests" Formstack form (id 6559077).
-
-Used by both build-formstack-notifications.py (the internal email to privacy@anyvan.com that
-raises the Freshdesk ticket) and build-formstack-confirmations.py (the acknowledgement email to
-the requester). Keeping the content in one module means the two audiences never drift apart on
-field ids or on which requester/request-type combination gets which facts.
+Shared field ids/labels and content blocks for the "AnyVan UK - Privacy Requests" Formstack form
+(id 6559077), used by both build-formstack-notifications.py (the internal email to
+privacy@anyvan.com that raises the Freshdesk ticket) and build-formstack-confirmations.py (the
+acknowledgement email to the requester). Keeping the content in one module means the two
+audiences never drift apart on field ids, and both share the same visual design: Georgia serif,
+an 18px body / 24px bold headline, and <hr> section dividers, matching the format of Ant's
+original hand-built notification ("Customer Privacy Request Email [UK]", id 9711486).
 
 Field ids/labels confirmed live via GET /forms/6559077/fields (2026-09-24); keep in sync with
 docs/dsr-field-mapping.md.
+
+⚠️ Formstack notification cap discovered live 2026-09-25: this form's plan allows at most 5
+notification emails total. There is no such cap on confirmations (16 created in testing with no
+error). This is why notifications are keyed by requester type ONLY (3 total, each covering all 5
+request types inside one email) while confirmations keep the full 3x5 = 15-variant matrix. See
+docs/dsr-notification-matrix.md.
 """
 
 DUE_DATE = ("197302298", "Privacy Due Date")
@@ -45,6 +51,9 @@ DEL_SCOPE = ("197276099", "What data would you like deleted?")
 
 ADDITIONAL_INFO = ("197276106", "Additional Information")
 
+REQUEST_TYPE_RAW = ("197276089", "What would you like us to do?")
+SUBMISSION_ID = "{$_submission_id}"
+
 REQUESTER_TYPE_FIELD = "197276069"
 REQUEST_TYPE_FIELD = "197276089"
 
@@ -70,110 +79,8 @@ def mt(field):
 
 
 # ---------------------------------------------------------------------------
-# Confirmation-email (to the requester) content, keyed by kind
-# ---------------------------------------------------------------------------
-
-# What the requester is told we've received, per request type. SAR deliberately doesn't split by
-# data category (Call Recording/s, Chat Transcript/s, ... are a multi-select checkbox, not a
-# radio; up to 2^6 combinations, and Formstack's logic can't express "contains one of" cleanly).
-# Instead the SAR line merges in whichever categories were actually ticked, so a call-recording
-# request and a chat-transcript request read differently from the same one template.
-REQUEST_TYPE_CONFIRMATION_LINE = {
-    "sar": (
-        "We've received your <strong>Subject Access Request</strong> and logged it under "
-        "reference <strong>DSR-{$_submission_id}</strong>. You asked us to provide: %s."
-    )
-    % mt(SAR_CATEGORIES),
-    "rectification": (
-        "We've received your request to <strong>correct</strong> the following and logged it "
-        "under reference <strong>DSR-{$_submission_id}</strong>: %s."
-    )
-    % mt(RECT_WHICH),
-    "deletion": (
-        "We've received your request to <strong>delete</strong> the following and logged it "
-        "under reference <strong>DSR-{$_submission_id}</strong>: %s."
-    )
-    % mt(DEL_SCOPE),
-    "portability": (
-        "We've received your <strong>data portability</strong> request and logged it under "
-        "reference <strong>DSR-{$_submission_id}</strong>. We'll provide your data in a "
-        "commonly used, machine-readable format (CSV/JSON) within 30 days."
-    ),
-    "marketing": (
-        "We've received your <strong>marketing opt-out</strong> request and logged it under "
-        "reference <strong>DSR-{$_submission_id}</strong>."
-    ),
-}
-
-# Timeline commitment, per request type. Marketing opt-outs are operationally actioned far faster
-# than a subject-access-style request, so that one leads with the working SLA and states the
-# statutory 30-day allowance as a caveat rather than the headline (confirmed by Ant 2026-09-25).
-REQUEST_TYPE_TIMELINE_LINE = {
-    "sar": (
-        "Under UK GDPR, we aim to respond within <strong>one calendar month</strong> of receiving "
-        "your request. If your request is complex, or you've raised more than one, we may need to "
-        "extend this by a further two months; we'll tell you if that happens and explain why."
-    ),
-    "rectification": (
-        "Under UK GDPR, we aim to respond within <strong>one calendar month</strong> of receiving "
-        "your request."
-    ),
-    "deletion": (
-        "Under UK GDPR, we aim to respond within <strong>one calendar month</strong> of receiving "
-        "your request."
-    ),
-    "portability": (
-        "Under UK GDPR, we aim to respond within <strong>one calendar month</strong> of receiving "
-        "your request."
-    ),
-    "marketing": (
-        "We aim to update your marketing preferences within <strong>5 working days</strong>. Please "
-        "note that, in line with UK GDPR regulations, we have up to <strong>30 days</strong> to "
-        "action this request."
-    ),
-}
-
-# Requester-type framing: the opening line, and the verification paragraph that follows the
-# reference/timeline. Customer gets no extra verification paragraph.
-REQUESTER_CONFIRMATION_OPENING = {
-    "customer": "Thank you for contacting AnyVan about your personal data.",
-    "tp": "Thank you for contacting AnyVan about your personal data as one of our Transport Partners.",
-    "third_party": "Thank you for contacting AnyVan on behalf of another person about their personal data.",
-}
-
-REQUESTER_CONFIRMATION_VERIFICATION = {
-    "customer": "",
-    "tp": (
-        "We may need to verify your identity against your AnyVan Transport Partner account before "
-        "we can act on your request, and may contact you via your registered TP details to do so."
-    ),
-    "third_party": (
-        "Before we can proceed, we need to check that you're authorised to act on the data "
-        "subject's behalf. We'll review the proof of authorisation you provided and may contact "
-        "you and/or the data subject directly to confirm this. <strong>The one-calendar-month "
-        "statutory response period does not start until we've confirmed your authorisation</strong>; "
-        "we'll write to confirm once it has been verified, or let you know if we need more "
-        "information first."
-    ),
-}
-
-CONFIRMATION_SUBJECT = {
-    "customer": "Your AnyVan Privacy Request: Reference DSR-{$_submission_id}",
-    "tp": "Your AnyVan Privacy Request: Reference DSR-{$_submission_id}",
-    "third_party": (
-        "Your AnyVan Privacy Request on Behalf of Another Person: Reference "
-        "DSR-{$_submission_id}"
-    ),
-}
-
-# Small-print footer line, same on all 15 confirmations, clarifying what a "working day" means
-# (relevant to the Marketing Opt-Out timeline, but stated generally since any of these could
-# reference working/business days in a reply). Confirmed by Ant 2026-09-25.
-CONFIRMATION_FOOTER_SMALL_PRINT = "Our business days are Monday to Friday."
-
-
-# ---------------------------------------------------------------------------
-# Notification-email (to privacy@anyvan.com) content blocks, keyed by kind
+# Shared visual design: Georgia serif, 18px body / 24px bold headline, <hr> dividers.
+# Matches Ant's original hand-built notification ("Customer Privacy Request Email [UK]").
 # ---------------------------------------------------------------------------
 
 def p(html, size=18):
@@ -184,8 +91,16 @@ def h(text, size=18):
     return '<p><span style="font-size: %dpx; font-family: Georgia, serif;"><strong>%s</strong></span></p>' % (size, text)
 
 
+def headline(text):
+    return '<p><span style="font-family: Georgia, serif; font-size: 24px;"><strong>%s</strong></span></p>' % text
+
+
 HR = "<hr>"
 
+
+# ---------------------------------------------------------------------------
+# Blocks shared by both notifications and confirmations
+# ---------------------------------------------------------------------------
 
 def requester_subject_block():
     return (
@@ -262,9 +177,78 @@ def request_type_block(kind):
     raise ValueError(kind)
 
 
+def all_request_type_blocks():
+    """All 5 request-type blocks concatenated, for the notification design forced by the
+    5-notification-per-form cap: one notification per requester type, so the actual request type
+    isn't known until the reader sees which block has populated fields (the other 4 blocks'
+    merge fields render blank). See the module docstring."""
+    return "".join(request_type_block(k) for k, _, _ in REQUEST_TYPES)
+
+
 def footer_block():
     return (
         h("Additional Information")
         + p("Additional Information: %s" % mt(ADDITIONAL_INFO))
         + p("Declaration confirmed by requester (UK GDPR Art. 12(3)).", size=14)
     )
+
+
+# ---------------------------------------------------------------------------
+# Confirmation-email (to the requester) content, keyed by requester type only
+# ---------------------------------------------------------------------------
+
+REQUESTER_CONFIRMATION_OPENING = {
+    "customer": "Thank you for contacting AnyVan about your personal data.",
+    "tp": "Thank you for contacting AnyVan about your personal data as one of our Transport Partners.",
+    "third_party": "Thank you for contacting AnyVan on behalf of another person about their personal data.",
+}
+
+# One generic reference/timeline pair covering all 5 request types (the confirmation isn't gated
+# on request type, so it merges in the raw selection rather than picking a per-type paragraph;
+# see docs/dsr-confirmation-emails.md for why this reads fine for any of the 5 options).
+CONFIRMATION_REQUEST_LINE = (
+    "We've received your request (%s) and logged it under reference <strong>DSR-%s</strong>. "
+    "Please quote this reference in any further correspondence."
+) % (mt(REQUEST_TYPE_RAW), SUBMISSION_ID)
+
+CONFIRMATION_TIMELINE_LINE = (
+    "Under UK GDPR, we aim to respond within <strong>one calendar month</strong> of receiving "
+    "your request. If you've asked us to update your marketing preferences, this is normally "
+    "actioned much sooner, within <strong>5 working days</strong>; the statutory allowance for "
+    "that is <strong>30 days</strong>."
+)
+
+REQUESTER_CONFIRMATION_VERIFICATION = {
+    "customer": "",
+    "tp": (
+        "We may need to verify your identity against your AnyVan Transport Partner account before "
+        "we can act on your request, and may contact you via your registered TP details to do so."
+    ),
+    "third_party": (
+        "Before we can proceed, we need to check that you're authorised to act on the data "
+        "subject's behalf. We'll review the proof of authorisation you provided and may contact "
+        "you and/or the data subject directly to confirm this. <strong>The one-calendar-month "
+        "statutory response period does not start until we've confirmed your authorisation</strong>; "
+        "we'll write to confirm once it has been verified, or let you know if we need more "
+        "information first."
+    ),
+}
+
+CONFIRMATION_SUBJECT = {
+    "customer": "Your AnyVan Privacy Request: Reference DSR-{$_submission_id}",
+    "tp": "Your AnyVan Privacy Request: Reference DSR-{$_submission_id}",
+    "third_party": (
+        "Your AnyVan Privacy Request on Behalf of Another Person: Reference "
+        "DSR-{$_submission_id}"
+    ),
+}
+
+CONFIRMATION_HEADLINE = {
+    "customer": "Your AnyVan Privacy Request",
+    "tp": "Your AnyVan Privacy Request",
+    "third_party": "Your AnyVan Privacy Request on Behalf of Another Person",
+}
+
+# Small-print footer line, same on all confirmations, clarifying what a "working day" means
+# (relevant to the Marketing Opt-Out timeline, but stated generally). Confirmed by Ant 2026-09-25.
+CONFIRMATION_FOOTER_SMALL_PRINT = "Our business days are Monday to Friday."

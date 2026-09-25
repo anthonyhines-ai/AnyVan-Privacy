@@ -1,10 +1,9 @@
-# DSR Formstack notifications: the 3x5 requester/request-type matrix
+# DSR Formstack notifications: one email per requester type
 
 **INTERNAL (no customer PII).** How the "AnyVan UK - Privacy Requests" form (id `6559077`) actually
-raises a Freshdesk ticket, and the 15-notification build that makes each ticket show only the
-fields relevant to its own requester type and request type. Companion to
-`docs/dsr-go-live-readiness.md` and `workflow/build-formstack-notifications.py` (the script that
-builds this). Written 2026-09-24.
+raises a Freshdesk ticket. Companion to `docs/dsr-go-live-readiness.md` and
+`workflow/build-formstack-notifications.py` (the script that builds this). Written 2026-09-24,
+rewritten 2026-09-25 after discovering a hard Formstack plan limit (see below).
 
 ## This is a different mechanism from `workflow/`
 Formstack has two separate kinds of outbound email, easy to conflate:
@@ -13,8 +12,7 @@ Formstack has two separate kinds of outbound email, easy to conflate:
   becomes a ticket via Freshdesk's email-to-ticket pipe. Subject → ticket subject, body → ticket
   description, `fromType:"field"` (the data subject's email field) → ticket requester.
 - **Confirmation**: sent to the *form submitter* (customer/TP/third party) acknowledging receipt.
-  **None exist yet on the live form** (`GET /forms/6559077/confirmations` → `{"confirmations":[]}`).
-  `docs/dsr-confirmation-emails.md` now has the full matching 3x5 matrix (`workflow/build-formstack-confirmations.py`); still to be applied live, and its payload shape is unverified (no prior live example to confirm against, unlike this notification matrix).
+  Live as the full 3x5 matrix; see `docs/dsr-confirmation-emails.md`.
 
 Ant built one notification by hand in the Formstack builder: **"Customer Privacy Request Email
 [UK]"** (id `9711486`), gated on `197276069 == "A Customer"`, sent to `privacy@anyvan.com`. This
@@ -30,68 +28,62 @@ created (per blocker #1's phrasing: "Freshdesk-event … workflow enriches"). **
 this doc doesn't decide it, it just flags that today's notification work makes the choice live
 rather than hypothetical.
 
-## The matrix
-The original Customer notification had **no request-type condition**; it fires for every Customer
-submission regardless of `dsr_type`, and its body unconditionally includes every SAR-specific
-section (Chat/Call/Email date ranges) even for a Deletion or Rectification request, because
-Formstack merge fields don't support inline conditionals; an unanswered field just renders blank
-inline ("Chat Transcripts From: to "), it doesn't disappear. The only way to keep a ticket scoped to
-*its own* request type is one notification per **(requester type, request type)** combination, each
-gated by two ANDed conditions and each body containing only that combination's blocks.
+## ⚠️ Hard limit discovered live 2026-09-25: 5 notification emails per form
+The first build of this matrix tried the same 3 requester types x 5 request types = 15-notification
+design used for confirmations. 5 creates succeeded (the Customer requester type, one per request
+type); the 6th failed with `{"error": "This form reached the notification emails limit"}`, and
+every further create failed the same way. This is a **Formstack plan-level cap**, not a bug: 5
+notification emails total, for the whole form, no matter how they're split. There is **no such cap
+on confirmations** (16 created in testing with no error), which is why confirmations can be the
+full 15-variant matrix while notifications cannot.
 
-3 requester types x 5 request types = **15 notifications**:
+## The live design: 3 notifications, one per requester type
+Each notification is gated on requester type only (`197276069`) and covers **all 5 request types
+inside one email**: every request-type block (SAR, Rectification, Deletion, Data Portability,
+Marketing Opt-Out) is concatenated unconditionally. Only the block matching what was actually
+selected has populated merge fields; the other 4 render blank (the same "blank means not
+applicable" pattern already accepted for SAR's own multi-select categories, extended to the whole
+request-type axis because the notification budget doesn't allow splitting further).
 
-| | SAR | Rectification | Deletion | Data Portability | Marketing Opt-Out |
-|---|---|---|---|---|---|
-| **Customer** | ✅ existing `9711486`, retargeted | new | new | new | new |
-| **Transport Partner** | new | new | new | new | new |
-| **Authorised Third Party** | new | new | new | new | new |
+| Requester type | Notification | Live id |
+|---|---|---|
+| Customer | Customer Privacy Request Email [UK] | `9711486` (retargeted from the original) |
+| Transport Partner | Transport Partner Privacy Request Email [UK] | `9770031` |
+| Authorised Third Party | Authorised Third Party Privacy Request Email [UK] | `9770032` |
 
-Each notification:
-- **Logic**: `conditional: "all"`, two checks: `197276069` (requester type) equals its option,
-  **and** `197276089` (request type) equals its option. This is the fix for the existing
-  notification too; retargeting it to also require `dsr_type == "Subject Access Request"` so it
-  no longer fires (duplicating the ticket) for e.g. a Customer Deletion request once the new
-  Deletion notification exists.
-- **Recipients**: `privacy@anyvan.com` (unchanged).
-- **From**: `fromType: "field"`, `fromValue: "197276072"` (the data subject's email), unchanged,
-  and the same known gap as before: for an Authorised Third Party submission this is still the data
-  subject's email, not the third party's own (no such field exists on the form; flagged inline in
-  that block's body).
-- **Body**: three parts, always in this order:
-  1. **Requester & Subject** (always): full name, email, phone, alt phone, booking ref.
-  2. **Requester-type block**: omitted entirely for Customer; Transport Partner gets business
-     type/trading name/company name/username; Authorised Third Party gets authorisation
-     details/proof-of-authorisation/the no-acting-party-email flag.
-  3. **Request-type block**: exactly one of: SAR (categories, all applicable date ranges, chat
-     method, reason), Rectification (which data + correct info), Deletion (scopes), Data
-     Portability (standard note), Marketing Opt-Out (standard note).
-  Then **Additional Information** + a Declaration line, always last.
+This uses 3 of the 5 available slots, leaving 2 spare (e.g. for a future non-DSR notification on
+this form, or if Ant later wants a 4th/5th variant).
 
-## Known residual limitation
-Within the SAR block, the date-range/chat-method rows still render for every SAR ticket regardless
-of which data categories (`197276090`) were actually ticked; Formstack has no inline "hide if
-category X not ticked" for notification bodies. A field the requester left blank just prints blank
-inline (e.g. "Chat Transcripts From: to "). Splitting further (SAR x category-combination) would
-explode the matrix well past 15 notifications for diminishing value; the ticket-handling agent
-reads the ticked-categories line first and treats blank date rows as "not applicable" rather than
-"missing". Revisit only if this causes real triage confusion.
+Each notification, in order:
+1. **Headline**: `[UK] New {requester type} Privacy Request | {raw "What would you like us to do?"
+   answer, merged} | Privacy Request Due: {computed date}`, then `<hr>`.
+2. **Requester & Subject** (always): full name, email, phone, alt phone, booking ref.
+3. **Requester-type block**: omitted entirely for Customer; Transport Partner gets business
+   type/trading name/company name/username; Authorised Third Party gets authorisation
+   details/proof-of-authorisation/the no-acting-party-email flag.
+4. **All 5 request-type blocks**, concatenated (SAR, Rectification, Deletion, Data Portability,
+   Marketing Opt-Out), plus a small-print line telling the reader that only the block matching the
+   headline's request type will have populated fields.
+5. **Additional Information** + a Declaration line, always last.
+
+Design matches Ant's original hand-built notification: Georgia serif, 24px bold headline, 18px
+body text, `<hr>` section dividers.
 
 ## Build script
 `workflow/build-formstack-notifications.py`: `--dry-run` prints every payload with no API calls;
-`--apply` (with `FORMSTACK_TOKEN` set) updates `9711486` in place and creates the other 14. Rerun
-it any time the field ids or block content change; it's idempotent on the existing one (PUT,
-full-payload replace) but **not** idempotent on the 14 new ones (each run's `--apply` creates them
-again if run twice, so check `GET /forms/6559077/notifications` first, or delete stragglers via
-`DELETE /notifications/{id}` before re-running).
+`--apply` (with `FORMSTACK_TOKEN` set) PUTs the 3 known ids in place and DELETEs the 2 stray
+request-type-specific notifications left over from the abandoned 15-variant attempt. It is
+idempotent (PUT, full-payload replace against fixed ids) as long as the 3 ids in
+`EXISTING_NOTIFICATION_IDS_TO_REUSE` stay correct; re-verify with
+`GET /forms/6559077/notifications` (dedupe by id: the list endpoint echoes each one twice) before
+re-running if the live ids might have changed.
 
-The field ids/labels and the requester-type/request-type block builders live in
-`workflow/formstack_dsr_content.py`, shared with `workflow/build-formstack-confirmations.py` so the
-two audiences (privacy@ notification vs requester confirmation) never drift apart on field ids or on
-which combination gets which facts.
+The field ids/labels and the shared content blocks live in `workflow/formstack_dsr_content.py`,
+shared with `workflow/build-formstack-confirmations.py` so the two audiences never drift apart on
+field ids, even though their designs now differ in shape (3 vs 15 variants) because of the cap.
 
 ## Sources
-`docs/dsr-go-live-readiness.md` (blocker #1) · `docs/dsr-confirmation-emails.md` (the paired
-confirmation-side matrix) · `docs/dsr-field-mapping.md` · `workflow/config_prompt.md` ·
-`workflow/formstack_dsr_content.py` · `workflow/build-formstack-notifications.py` ·
-`workflow/build-formstack-confirmations.py`.
+`docs/dsr-go-live-readiness.md` (blocker #1) · `docs/dsr-confirmation-emails.md` (the confirmation
+side, unaffected by the notification cap) · `docs/dsr-field-mapping.md` · `docs/conventions.md`
+(the cap + confirmation payload shape, recorded there for future Formstack work) ·
+`workflow/formstack_dsr_content.py` · `workflow/build-formstack-notifications.py`.

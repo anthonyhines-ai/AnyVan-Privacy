@@ -8,26 +8,26 @@ one notification by hand in the Formstack builder ("Customer Privacy Request Ema
 9711486): it's sent to privacy@anyvan.com and is how the Freshdesk ticket actually gets created
 (via Freshdesk's email-to-ticket pipe); this is the "Freshdesk-event" trigger option from
 docs/dsr-go-live-readiness.md blocker #1, not the AI-workflow FRESHDESK_TICKET_CREATE action in
-workflow/actions.json. See docs/dsr-notification-matrix.md for the full picture and the open
-question this raises about workflow/.
+workflow/actions.json. See docs/dsr-notification-matrix.md for the full picture.
 
-This script builds the other 14 requester-type x request-type combinations (3 requester types x
-5 request types = 15 total) and re-points the existing Customer/SAR one so it only fires for
-Customer + SAR (today it has no request-type check at all, so it fires for every Customer
-submission regardless of type). Each notification's body renders only its own requester-type
-block and its own one request-type block, per docs/dsr-notification-matrix.md.
+⚠️ Formstack caps this form's plan at 5 notification emails total (discovered live 2026-09-25: a
+3 requester type x 5 request type = 15-notification matrix hit "This form reached the notification
+emails limit" on the 6th create). So this script builds ONE notification per requester type (3
+total, matching Ant's original design), each covering all 5 request types inside one email (every
+request-type block concatenated; only the block matching what was actually selected has populated
+merge fields, the other 4 render blank). This uses 3 of 5 slots.
 
 Usage:
-  # preview every payload (no token, no API calls)
+  # preview every payload; no token, no API calls
   python3 workflow/build-formstack-notifications.py --dry-run
 
-  # apply for real (updates 9711486 in place, creates the other 14)
+  # apply for real (updates 9711486 in place as Customer; creates/reuses TP and Third Party)
   FORMSTACK_TOKEN=<fs_pat_...> python3 workflow/build-formstack-notifications.py --apply
 
 API notes: GET /forms/{id}/notifications lists them (a known listing quirk can echo the same
 notification twice; GET /notifications/{id} is the source of truth for one record). Update is
 PUT /notifications/{id} with the FULL payload (not a partial patch; a partial body 400s). Create
-is POST /forms/{id}/notifications.
+is POST /forms/{id}/notifications, and is capped at 5 per form on this plan.
 """
 
 import os
@@ -39,38 +39,60 @@ from formstack_dsr_content import (
     REQ_FULLNAME,
     REQUEST_TYPE_FIELD,
     REQUESTER_TYPE_FIELD,
-    REQUEST_TYPES,
     REQUESTERS,
+    REQUEST_TYPE_RAW,
+    all_request_type_blocks,
     footer_block,
+    h,
+    headline,
     mt,
-    request_type_block,
+    p,
     requester_subject_block,
     requester_type_block,
+    HR,
 )
 
 FORM_ID = 6559077
-EXISTING_CUSTOMER_SAR_NOTIFICATION_ID = 9711486
+
+# The 5 notification ids created before this script discovered the plan cap (all currently
+# "Customer Privacy Request Email [UK] - <request type>"). Reused here: the first 3 are
+# retargeted to the new one-per-requester-type design; the other 2 are deleted as no longer
+# needed. Fill in from `GET /forms/6559077/notifications` if this ever needs re-running from a
+# different starting state.
+EXISTING_NOTIFICATION_IDS_TO_REUSE = {
+    "customer": 9711486,
+    "tp": 9770031,
+    "third_party": 9770032,
+}
+EXISTING_NOTIFICATION_IDS_TO_DELETE = [9770033, 9770034]
 
 
-def build_notification(requester, request_type):
+def build_notification(requester):
     r_kind, r_label, r_option = requester
-    q_kind, q_label, q_option = request_type
-
-    header = (
-        '<p><span style="font-family: Georgia, serif; font-size: 24px;"><strong>[UK] New %s Privacy Request | %s | Privacy Request Due: %s</strong></span></p><hr>'
-        % (r_label, q_label, mt(DUE_DATE))
-    )
 
     message = (
-        header
+        headline(
+            "[UK] New %s Privacy Request | %s | Privacy Request Due: %s"
+            % (r_label, mt(REQUEST_TYPE_RAW), mt(DUE_DATE))
+        )
+        + HR
         + requester_subject_block()
         + requester_type_block(r_kind)
-        + request_type_block(q_kind)
+        + all_request_type_blocks()
+        + p(
+            "Only the section above matching the request type shown at the top will have "
+            "populated fields; blank rows in the other sections mean not applicable.",
+            size=12,
+        )
         + footer_block()
     )
 
-    subject = "[UK] %s Privacy Data Request: %s for %s [{$_submission_id}]" % (r_label, q_label, mt(REQ_FULLNAME))
-    name = "%s Privacy Request Email [UK] - %s" % (r_label, q_label)
+    subject = "[UK] %s Privacy Data Request: %s for %s [{$_submission_id}]" % (
+        r_label,
+        mt(REQUEST_TYPE_RAW),
+        mt(REQ_FULLNAME),
+    )
+    name = "%s Privacy Request Email [UK]" % r_label
 
     payload = {
         "name": name,
@@ -90,7 +112,6 @@ def build_notification(requester, request_type):
             "conditional": "all",
             "checks": [
                 {"field": REQUESTER_TYPE_FIELD, "condition": "equals", "option": r_option},
-                {"field": REQUEST_TYPE_FIELD, "condition": "equals", "option": q_option},
             ],
         },
     }
@@ -106,21 +127,21 @@ def main():
     dry = not apply_
 
     for requester in REQUESTERS:
-        for request_type in REQUEST_TYPES:
-            name, payload = build_notification(requester, request_type)
-            is_existing = requester[0] == "customer" and request_type[0] == "sar"
-            if is_existing:
-                if dry:
-                    print("WOULD PUT  (update %d):" % EXISTING_CUSTOMER_SAR_NOTIFICATION_ID, name)
-                    continue
-                status, resp = call("PUT", "/notifications/%d" % EXISTING_CUSTOMER_SAR_NOTIFICATION_ID, payload, token)
-                print(name, "-> PUT", status, resp)
-            else:
-                if dry:
-                    print("WOULD POST (create):", name)
-                    continue
-                status, resp = call("POST", "/forms/%d/notifications" % FORM_ID, payload, token)
-                print(name, "-> POST", status, resp)
+        r_kind = requester[0]
+        name, payload = build_notification(requester)
+        notif_id = EXISTING_NOTIFICATION_IDS_TO_REUSE[r_kind]
+        if dry:
+            print("WOULD PUT (retarget %d):" % notif_id, name)
+            continue
+        status, resp = call("PUT", "/notifications/%d" % notif_id, payload, token)
+        print(name, "-> PUT", status, resp if status != 200 else {"id": resp.get("id"), "name": resp.get("name")})
+
+    for stray_id in EXISTING_NOTIFICATION_IDS_TO_DELETE:
+        if dry:
+            print("WOULD DELETE (no longer needed):", stray_id)
+            continue
+        status, resp = call("DELETE", "/notifications/%d" % stray_id, None, token)
+        print("delete", stray_id, "->", status, resp)
 
 
 if __name__ == "__main__":

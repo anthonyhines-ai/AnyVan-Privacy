@@ -75,6 +75,21 @@ these, update this file in the same PR.
   field id is actually resolved; the label after it is what the Formstack UI's own field-picker
   would insert, kept for readability/parity with what a human builder would produce by hand, but a
   wrong or stale label text still merges correctly.
+- **⚠️ This plan caps notification emails at 5 per form** (discovered live 2026-09-25): a 6th
+  `POST /forms/{id}/notifications` 400s with `{"error": "This form reached the notification emails
+  limit"}`. There is no such cap on confirmations (16 created in one test run with no error), so
+  design the requester-facing side (confirmations) as granularly as you like, but keep the
+  internal side (notifications) to at most 5 variants total.
+- **Confirmation payload shape** (confirmed live 2026-09-25, `POST /forms/{id}/confirmations`):
+  `{name, subject, message, format, toField, senderEmail, logic}`. `toField` is the field id
+  (bare string) whose answer is the recipient address; `senderEmail` is the visible From address.
+  Both are required; a payload missing either 400s naming the specific missing key
+  (`"A toField is required"`, then `"A senderEmail is required"`) rather than listing every
+  requirement up front, so discover the shape by adding one field at a time against a real 400.
+  `DELETE /confirmations/{id}` works the same way as fields/notifications, returning `{"id": ...}`.
+- **The list-endpoint duplicate-echo quirk applies to confirmations too**: `GET /forms/{id}/
+  confirmations` echoed each of 15 created confirmations twice in one array (30 rows, 15 distinct
+  ids), same as the notifications list quirk above; dedupe by id.
 
 ## Number / date formatting conventions (DSR)
 
