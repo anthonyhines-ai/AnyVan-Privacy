@@ -35,14 +35,11 @@ ticked** — `{$197276090 What data would you like to access?}` renders as plain
 inserted, so a call-recording request and a chat-transcript request read differently from the same
 one template without needing to be separate templates.
 
-## Open decision — Marketing Opt-Out timeline
-The `marketing` cell currently commits to **5 working days** (statutory backstop: one calendar
-month) — a placeholder judgement call, not a decided SLA. Opt-outs are typically actioned far
-faster than a subject-access-style request in most teams' processes; a flat one-month promise on
-an opt-out probably undersells what actually happens. **Ant to confirm or override** the 5-working-day
-figure in `workflow/formstack_dsr_content.py`'s `REQUEST_TYPE_TIMELINE_LINE["marketing"]` before this
-goes live — deliberately kept as clean, shippable copy in that file (no bracketed editorial notes
-inside a string that gets POSTed straight into a live email).
+## Decided — Marketing Opt-Out timeline
+Confirmed by Ant 2026-09-25: the `marketing` cell leads with the **5 working day** operational SLA
+and states the statutory **30-day** GDPR allowance as a caveat, not the headline — opt-outs are
+actioned far faster than a subject-access-style request in practice, so the working SLA is what the
+requester is told to expect, with the legal backstop named for completeness.
 
 ## Setup — conditional confirmations
 Each of the 15 is gated the same way as its notification counterpart: `conditional: "all"`, two

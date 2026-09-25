@@ -106,8 +106,8 @@ REQUEST_TYPE_CONFIRMATION_LINE = {
 }
 
 # Timeline commitment, per request type. Marketing opt-outs are operationally actioned far faster
-# than a subject-access-style request — flagged for Ant to confirm/override before this goes live
-# (docs/dsr-confirmation-emails.md carries the same flag inline).
+# than a subject-access-style request, so that one leads with the working SLA and states the
+# statutory 30-day allowance as a caveat rather than the headline (confirmed by Ant 2026-09-25).
 REQUEST_TYPE_TIMELINE_LINE = {
     "sar": (
         "Under UK GDPR, we aim to respond within <strong>one calendar month</strong> of receiving "
@@ -126,13 +126,10 @@ REQUEST_TYPE_TIMELINE_LINE = {
         "Under UK GDPR, we aim to respond within <strong>one calendar month</strong> of receiving "
         "your request."
     ),
-    # DEFAULT PENDING ANT'S CONFIRMATION — see docs/dsr-confirmation-emails.md. This is a sensible
-    # placeholder (opt-outs are usually actioned far faster than a month), not a decided SLA. It is
-    # deliberately clean, customer-safe text — no bracketed internal notes belong in a line that
-    # ships straight into a live email — so review the doc before --apply, not this string.
     "marketing": (
-        "We aim to update your marketing preferences within <strong>5 working days</strong>; the "
-        "statutory backstop remains one calendar month."
+        "We aim to update your marketing preferences within <strong>5 working days</strong>. Please "
+        "note that, in line with UK GDPR regulations, we have up to <strong>30 days</strong> to "
+        "action this request."
     ),
 }
 
