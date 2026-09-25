@@ -13,8 +13,8 @@ Formstack has two separate kinds of outbound email, easy to conflate:
   becomes a ticket via Freshdesk's email-to-ticket pipe. Subject → ticket subject, body → ticket
   description, `fromType:"field"` (the data subject's email field) → ticket requester.
 - **Confirmation** — sent to the *form submitter* (customer/TP/third party) acknowledging receipt.
-  **None exist yet** (`GET /forms/6559077/confirmations` → `{"confirmations":[]}`). This is the
-  piece `docs/dsr-confirmation-emails.md` drafted copy for — still to be configured.
+  **None exist yet on the live form** (`GET /forms/6559077/confirmations` → `{"confirmations":[]}`).
+  `docs/dsr-confirmation-emails.md` now has the full matching 3x5 matrix (`workflow/build-formstack-confirmations.py`) — still to be applied live, and its payload shape is unverified (no prior live example to confirm against, unlike this notification matrix).
 
 Ant built one notification by hand in the Formstack builder: **"Customer Privacy Request Email
 [UK]"** (id `9711486`), gated on `197276069 == "A Customer"`, sent to `privacy@anyvan.com`. This
@@ -85,7 +85,13 @@ full-payload replace) but **not** idempotent on the 14 new ones (each run's `--a
 again if run twice — check `GET /forms/6559077/notifications` first, or delete stragglers via
 `DELETE /notifications/{id}` before re-running).
 
+The field ids/labels and the requester-type/request-type block builders live in
+`workflow/formstack_dsr_content.py`, shared with `workflow/build-formstack-confirmations.py` so the
+two audiences (privacy@ notification vs requester confirmation) never drift apart on field ids or on
+which combination gets which facts.
+
 ## Sources
-`docs/dsr-go-live-readiness.md` (blocker #1) · `docs/dsr-confirmation-emails.md` (the separate,
-not-yet-built confirmation side) · `docs/dsr-field-mapping.md` · `workflow/config_prompt.md` ·
-`workflow/build-formstack-notifications.py`.
+`docs/dsr-go-live-readiness.md` (blocker #1) · `docs/dsr-confirmation-emails.md` (the paired
+confirmation-side matrix) · `docs/dsr-field-mapping.md` · `workflow/config_prompt.md` ·
+`workflow/formstack_dsr_content.py` · `workflow/build-formstack-notifications.py` ·
+`workflow/build-formstack-confirmations.py`.
