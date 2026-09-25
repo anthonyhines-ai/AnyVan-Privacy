@@ -39,7 +39,6 @@ import sys
 from formstack_api import call
 from formstack_dsr_content import (
     DUE_DATE,
-    REQ_FULLNAME,
     REQUEST_TYPE_FIELD,
     REQUESTER_TYPE_RAW,
     REQUEST_TYPES,
@@ -47,7 +46,6 @@ from formstack_dsr_content import (
     footer_block,
     headline,
     mt,
-    p,
     request_type_block,
     requester_subject_block,
     HR,
@@ -85,7 +83,10 @@ def build_notification(request_type):
         + footer_block()
     )
 
-    subject = "[UK] %s Privacy Data Request for %s [{$_submission_id}]" % (q_label, mt(REQ_FULLNAME))
+    subject = "[UK] %s Privacy Data Request | Requester Type: %s [{$_submission_id}]" % (
+        q_label,
+        mt(REQUESTER_TYPE_RAW),
+    )
     name = "%s Privacy Request Email [UK]" % q_label
 
     payload = {
