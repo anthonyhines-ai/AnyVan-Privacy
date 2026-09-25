@@ -41,6 +41,56 @@ these, update this file in the same PR.
   encodes all of the above; it supports `--dry-run`, a full create, and an additive
   `--form <id>` mode (adds only new fields + refreshes options on an existing form).
 
+## Formstack notifications (distinct from confirmations)
+
+- **Two different email types, easy to conflate:** a **notification** goes to an internal address
+  (e.g. `privacy@anyvan.com`); on the DSR form this is what actually raises the Freshdesk ticket,
+  via Freshdesk's email-to-ticket pipe. A **confirmation** goes to the *form submitter*. Check
+  `GET /forms/{id}/confirmations` vs `GET /forms/{id}/notifications`; don't assume which exists.
+- **Endpoints (confirmed live, 2026-09-24):**
+  - List: `GET /forms/{formId}/notifications` (⚠️ has been observed **echoing the same
+    notification twice** in the array, identical `id`/content both times); don't treat count as
+    the number of distinct notifications, dedupe by `id`.
+  - Single record: `GET /notifications/{id}` (**top-level**, not nested under `/forms/{formId}/`;
+    that 404s). This is the source of truth for one notification's fields.
+  - Create: `POST /forms/{formId}/notifications`.
+  - Update: `PUT /notifications/{id}` with the **full payload**: a partial body (e.g. just
+    `{"name": "..."}`) 400s with `"A valid fromType is required..."`. Always GET first, change what
+    you need, PUT the whole object back.
+  - No delete tested yet; assume `DELETE /notifications/{id}` by analogy with other resources,
+    confirm before relying on it.
+- **`logic` shape matches on both GET and CREATE for notifications**, unlike fields (see below), so
+  no legacy-shape transform is needed: `{action:"show", conditional:"all"|"any",
+  checks:[{field:"<fieldId>", condition:"equals", option:"<value>"}]}`. Multiple `checks` with
+  `conditional:"all"` = AND (used to gate a notification on two different field answers at once,
+  e.g. requester type AND request type together).
+- **No inline conditional merge in the body.** A notification body is plain merge substitution
+  (`{$<fieldId> <label text>}`); there's no if/else block for "only show this paragraph when field
+  X = Y" *within* a single notification. To show only-relevant-content per combination of answers,
+  build one notification per combination (gated by `logic`), not one notification with conditional
+  text inside it. `hideEmpty` exists as a param but does **not** make an unanswered merge field's
+  *row* disappear: it still prints inline (e.g. "Chat Transcripts From: to " with nothing between);
+  it hasn't been found to do anything more granular in testing so far.
+- **Merge tag label text is cosmetic, not functional**: `{$<fieldId> <label>}`, only the numeric
+  field id is actually resolved; the label after it is what the Formstack UI's own field-picker
+  would insert, kept for readability/parity with what a human builder would produce by hand, but a
+  wrong or stale label text still merges correctly.
+- **⚠️ This plan caps notification emails at 5 per form** (discovered live 2026-09-25): a 6th
+  `POST /forms/{id}/notifications` 400s with `{"error": "This form reached the notification emails
+  limit"}`. There is no such cap on confirmations (16 created in one test run with no error), so
+  design the requester-facing side (confirmations) as granularly as you like, but keep the
+  internal side (notifications) to at most 5 variants total.
+- **Confirmation payload shape** (confirmed live 2026-09-25, `POST /forms/{id}/confirmations`):
+  `{name, subject, message, format, toField, senderEmail, logic}`. `toField` is the field id
+  (bare string) whose answer is the recipient address; `senderEmail` is the visible From address.
+  Both are required; a payload missing either 400s naming the specific missing key
+  (`"A toField is required"`, then `"A senderEmail is required"`) rather than listing every
+  requirement up front, so discover the shape by adding one field at a time against a real 400.
+  `DELETE /confirmations/{id}` works the same way as fields/notifications, returning `{"id": ...}`.
+- **The list-endpoint duplicate-echo quirk applies to confirmations too**: `GET /forms/{id}/
+  confirmations` echoed each of 15 created confirmations twice in one array (30 rows, 15 distinct
+  ids), same as the notifications list quirk above; dedupe by id.
+
 ## Number / date formatting conventions (DSR)
 
 - **Booking reference:** normalise by **prepending `AV` to a digits-only value**
@@ -172,3 +222,6 @@ AnyVan Privacy & Compliance Team
 - Formstack build spec: `formstack-dsr-build.md` · builder script: `../workflow/build-formstack-form.js`
 - Workflow wiring runbook: `formstack-to-freshdesk-workflow.md`
 - Freshdesk fields: `freshdesk-custom-fields.md`
+- Formstack-notification (ticket-raising) matrix: `dsr-notification-matrix.md` · builder script:
+  `../workflow/build-formstack-notifications.py`
+- Drafted requester-confirmation copy: `dsr-confirmation-emails.md`

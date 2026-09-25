@@ -53,7 +53,6 @@ history even if later deleted.**
 ```
 docs/                       # DSR pipeline runbooks + conventions (see work-stream 1)
 workflow/                   # the workflow-system definition + Formstack build script
-backend/                    # superseded self-hosted Lambda — parked, NOT deployed
 skills/                     # packaged, org-shareable skills (anyvan-formstack-freshdesk)
 .claude/skills/             # repo-scoped skills that auto-load here (privacy-records)
 templates/                  # house-style skeletons — copy one to start a new record
@@ -70,7 +69,10 @@ Add a new topic subfolder when a genuinely new genre of record appears; one Mark
 ## Work-streams — read the deep guide for the one you're touching
 1. **DSR intake pipeline (Formstack → workflow-system → Freshdesk).** **Read `docs/conventions.md`
    first** for the API/format/Freshdesk gotchas, then `docs/go-live-guide.md` (runbook),
-   `docs/dsr-field-mapping.md` (the contract), and the **`anyvan-formstack-freshdesk`** skill.
+   `docs/dsr-field-mapping.md` (the contract), `docs/dsr-confirmation-emails.md` (drafted
+   requester-confirmation copy), `docs/dsr-notification-matrix.md` (the Formstack-notification
+   path that actually raises the Freshdesk ticket (a different mechanism from the AI workflow),
+   and the **`anyvan-formstack-freshdesk`** skill.
    Live Formstack form is `6559077` — prefer the builder's additive `--form` mode over a rebuild.
 2. **Privacy investigations / lookups & DSAR sweeps.** Produce one dated record in the house style
    (below); the **`privacy-records`** skill operationalises it. Reusable data maps:
