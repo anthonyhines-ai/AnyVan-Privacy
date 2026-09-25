@@ -24,6 +24,9 @@ requester-type framing and request-type framing never have to be re-written 15 t
   `REQUEST_TYPE_CONFIRMATION_LINE` + `REQUEST_TYPE_TIMELINE_LINE`).
 - **Verification paragraph** (by requester type only, omitted entirely for Customer,
   `REQUESTER_CONFIRMATION_VERIFICATION`).
+- **Footer small print** (same on all 15, `CONFIRMATION_FOOTER_SMALL_PRINT`): "Our business days
+  are Monday to Friday." Confirmed by Ant 2026-09-25, added mainly to support the Marketing
+  Opt-Out "5 working days" line but stated on every variant for consistency.
 
 ## Why SAR isn't split further by data category
 "Call recording", "chat transcript", "email correspondence" etc. are options inside one **checkbox**

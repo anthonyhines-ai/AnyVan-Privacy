@@ -32,6 +32,7 @@ import sys
 
 from formstack_api import call
 from formstack_dsr_content import (
+    CONFIRMATION_FOOTER_SMALL_PRINT,
     CONFIRMATION_SUBJECT,
     REQUEST_TYPE_CONFIRMATION_LINE,
     REQUEST_TYPE_TIMELINE_LINE,
@@ -68,6 +69,7 @@ def build_confirmation(requester, request_type):
     message = (
         body_html
         + '<p><span style="font-size: 15px;">Kind regards,<br>AnyVan Privacy Team</span></p>'
+        + '<p><span style="font-size: 11px; color: #767676;">%s</span></p>' % CONFIRMATION_FOOTER_SMALL_PRINT
     )
 
     subject = CONFIRMATION_SUBJECT[r_kind]

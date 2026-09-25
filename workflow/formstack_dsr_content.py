@@ -166,6 +166,11 @@ CONFIRMATION_SUBJECT = {
     ),
 }
 
+# Small-print footer line, same on all 15 confirmations, clarifying what a "working day" means
+# (relevant to the Marketing Opt-Out timeline, but stated generally since any of these could
+# reference working/business days in a reply). Confirmed by Ant 2026-09-25.
+CONFIRMATION_FOOTER_SMALL_PRINT = "Our business days are Monday to Friday."
+
 
 # ---------------------------------------------------------------------------
 # Notification-email (to privacy@anyvan.com) content blocks, keyed by kind
