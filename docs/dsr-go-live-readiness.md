@@ -25,12 +25,15 @@ state + the outstanding items. Last updated 2026-09-25.
   (confirmed by Ant 2026-09-25).
 - **Trigger decision is now live, not hypothetical, and notifications are also live.** Applying the
   original 15-notification design hit a real Formstack plan cap of **5 notification emails per
-  form** (confirmed live 2026-09-25); redesigned to **3 notifications, one per requester type**
-  (ids `9711486`, `9770031`, `9770032`), each covering all 5 request types inside one email. See
-  `docs/dsr-notification-matrix.md` for the full story. `privacy@anyvan.com` (a Freshdesk-connected
-  mailbox) is the Freshdesk-event trigger from blocker #1: Formstack's own Email Output raises the
-  ticket, no workflow-system involvement. **Open question for Ant:** does this replace the
-  AI-workflow path (`workflow/actions.json`'s `FRESHDESK_TICKET_CREATE`) or does the workflow still
+  form** (confirmed live 2026-09-25); redesigned to **5 notifications, one per request type**
+  (ids `9711486` SAR, `9770031` Rectification, `9770032` Deletion, `9770051` Data Portability,
+  `9770052` Marketing Opt-Out), each showing precisely and only that request type's own fields, no
+  blanks, per Ant's priority; requester-type detail is the smaller compromise, shown in every
+  notification with blank fields when not applicable. See `docs/dsr-notification-matrix.md` for the
+  full story. `privacy@anyvan.com` (a Freshdesk-connected mailbox) is the Freshdesk-event trigger
+  from blocker #1: Formstack's own Email Output raises the ticket, no workflow-system involvement.
+  **Open question for Ant:** does this replace the AI-workflow path
+  (`workflow/actions.json`'s `FRESHDESK_TICKET_CREATE`) or does the workflow still
   run afterwards to enrich the ticket the notification created?
 - **Not done:** the workflow has **never been created** (no `workflow_id`).
 
@@ -38,7 +41,7 @@ state + the outstanding items. Last updated 2026-09-25.
 | # | Item | State | Owner | Secret |
 |---|---|---|---|---|
 | 1 | **Choose the trigger**: Formstack-event (workflow creates the ticket) vs Freshdesk-event (Formstack notification → `privacy@anyvan.com` creates it, workflow enriches if one still runs). Leaning Freshdesk-event now that the 3-notification matrix is live and works this way. | 🟠 (live and working; the choice isn't yet written down as a decision) | Ant | n/a |
-| 1a | ~~Apply the notification matrix~~ **Done 2026-09-25**: 3 notifications live (one per requester type, each covering all 5 request types), see `docs/dsr-notification-matrix.md` for the 5-email-cap story that shaped the final design. | ✅ | Formstack builder | n/a |
+| 1a | ~~Apply the notification matrix~~ **Done 2026-09-25**: 5 notifications live (one per request type, each showing precisely and only that type's own fields), see `docs/dsr-notification-matrix.md` for the 5-email-cap story and the axis choice that shaped the final design. | ✅ | Formstack builder | n/a |
 | 2 | ~~Apply the confirmation matrix~~ **Done 2026-09-25**: all 15 confirmations live, see `docs/dsr-confirmation-emails.md`. | ✅ | Formstack builder | n/a |
 | 3 | **Confirm the `cf_privacy_due_date` live key** via `GET /api/v2/ticket_fields`; adjust `actions.json` if suffixed | 🟠 | Freshdesk admin | Freshdesk key |
 | 4 | **Create the DRY_RUN workflow** (`workflow/create.sh`): records a `workflow_id` | 🔴 | Workflow admin | `WF_JWT` |

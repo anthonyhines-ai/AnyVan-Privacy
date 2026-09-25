@@ -12,9 +12,13 @@ docs/dsr-field-mapping.md.
 
 ⚠️ Formstack notification cap discovered live 2026-09-25: this form's plan allows at most 5
 notification emails total. There is no such cap on confirmations (16 created in testing with no
-error). This is why notifications are keyed by requester type ONLY (3 total, each covering all 5
-request types inside one email) while confirmations keep the full 3x5 = 15-variant matrix. See
-docs/dsr-notification-matrix.md.
+error). Notifications are therefore keyed by REQUEST TYPE only (5 total, one per request type,
+each showing exactly and only that type's own fields, no blanks) rather than by requester type:
+Ant confirmed the request-type detail (dates, categories, deletion scope, etc.) is what needs
+precise capture, so that's the axis that gets the full 5-slot budget. Requester-type detail (a
+handful of TP/third-party identity fields) is the smaller compromise and is shown unconditionally
+in every notification, blank when not applicable. Confirmations keep the full 3x5 = 15-variant
+matrix. See docs/dsr-notification-matrix.md.
 """
 
 DUE_DATE = ("197302298", "Privacy Due Date")
@@ -52,6 +56,7 @@ DEL_SCOPE = ("197276099", "What data would you like deleted?")
 ADDITIONAL_INFO = ("197276106", "Additional Information")
 
 REQUEST_TYPE_RAW = ("197276089", "What would you like us to do?")
+REQUESTER_TYPE_RAW = ("197276069", "Are You.......")
 SUBMISSION_ID = "{$_submission_id}"
 
 REQUESTER_TYPE_FIELD = "197276069"
@@ -177,12 +182,15 @@ def request_type_block(kind):
     raise ValueError(kind)
 
 
-def all_request_type_blocks():
-    """All 5 request-type blocks concatenated, for the notification design forced by the
-    5-notification-per-form cap: one notification per requester type, so the actual request type
-    isn't known until the reader sees which block has populated fields (the other 4 blocks'
-    merge fields render blank). See the module docstring."""
-    return "".join(request_type_block(k) for k, _, _ in REQUEST_TYPES)
+def all_requester_type_blocks():
+    """TP + Third Party blocks concatenated (Customer's block is empty, so it isn't needed here),
+    for the notification design forced by the 5-notification-per-form cap: notifications are keyed
+    by request type, so the actual requester type isn't known until the reader sees which block
+    has populated fields (the other one renders blank). This is the smaller of the two possible
+    compromises: requester-type detail is a handful of identity fields, versus the full
+    request-type detail (dates, categories, deletion scope) that stays exact per notification.
+    See the module docstring."""
+    return requester_type_block("tp") + requester_type_block("third_party")
 
 
 def footer_block():

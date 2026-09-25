@@ -1,9 +1,10 @@
-# DSR Formstack notifications: one email per requester type
+# DSR Formstack notifications: one email per request type
 
 **INTERNAL (no customer PII).** How the "AnyVan UK - Privacy Requests" form (id `6559077`) actually
 raises a Freshdesk ticket. Companion to `docs/dsr-go-live-readiness.md` and
 `workflow/build-formstack-notifications.py` (the script that builds this). Written 2026-09-24,
-rewritten 2026-09-25 after discovering a hard Formstack plan limit (see below).
+rewritten 2026-09-25 twice: first after discovering a hard Formstack plan limit, then again after
+Ant clarified the priority (see below).
 
 ## This is a different mechanism from `workflow/`
 Formstack has two separate kinds of outbound email, easy to conflate:
@@ -30,40 +31,48 @@ rather than hypothetical.
 
 ## ⚠️ Hard limit discovered live 2026-09-25: 5 notification emails per form
 The first build of this matrix tried the same 3 requester types x 5 request types = 15-notification
-design used for confirmations. 5 creates succeeded (the Customer requester type, one per request
-type); the 6th failed with `{"error": "This form reached the notification emails limit"}`, and
-every further create failed the same way. This is a **Formstack plan-level cap**, not a bug: 5
-notification emails total, for the whole form, no matter how they're split. There is **no such cap
-on confirmations** (16 created in testing with no error), which is why confirmations can be the
-full 15-variant matrix while notifications cannot.
+design used for confirmations. 5 creates succeeded; the 6th failed with `{"error": "This form
+reached the notification emails limit"}`, and every further create failed the same way. This is a
+**Formstack plan-level cap**, not a bug: 5 notification emails total, for the whole form, no matter
+how they're split. There is **no such cap on confirmations** (16 created in testing with no error),
+which is why confirmations can be the full 15-variant matrix while notifications cannot.
 
-## The live design: 3 notifications, one per requester type
-Each notification is gated on requester type only (`197276069`) and covers **all 5 request types
-inside one email**: every request-type block (SAR, Rectification, Deletion, Data Portability,
-Marketing Opt-Out) is concatenated unconditionally. Only the block matching what was actually
-selected has populated merge fields; the other 4 render blank (the same "blank means not
-applicable" pattern already accepted for SAR's own multi-select categories, extended to the whole
-request-type axis because the notification budget doesn't allow splitting further).
+## Which axis gets the 5 slots: request type, not requester type
+The first fix split by **requester type** (3 notifications, one per Customer/TP/Third Party, each
+covering all 5 request types inside one email with 4 of the 5 request-type blocks always blank).
+Ant corrected this: **he wants the notification to show precisely and only the data/path the
+submitter actually took**, not a superset with blank rows. Request-type detail (SAR's dates and
+categories, the deletion scope, the rectification specifics, etc.) is the bulk of what a ticket
+needs and the thing that most needed exact capture, so that's the axis that gets the full 5-slot
+budget: **one notification per request type**, each showing exactly and only that type's own
+fields, with no other request type's fields present anywhere in the email.
 
-| Requester type | Notification | Live id |
+Requester-type detail (Transport Partner business/username fields, Authorised Third Party
+authorisation fields) is the smaller compromise this forces: since only 5 slots exist and they're
+now spent on request type, requester-type fields are shown **unconditionally in every notification,
+blank when not applicable** (the same "blank means not applicable" pattern already accepted for
+SAR's own multi-select data categories, now applied to this smaller axis instead of the larger one).
+
+| Request type | Notification | Live id |
 |---|---|---|
-| Customer | Customer Privacy Request Email [UK] | `9711486` (retargeted from the original) |
-| Transport Partner | Transport Partner Privacy Request Email [UK] | `9770031` |
-| Authorised Third Party | Authorised Third Party Privacy Request Email [UK] | `9770032` |
+| SAR | SAR Privacy Request Email [UK] | `9711486` (retargeted from the original) |
+| Rectification | Rectification Privacy Request Email [UK] | `9770031` |
+| Deletion | Deletion Privacy Request Email [UK] | `9770032` |
+| Data Portability | Data Portability Privacy Request Email [UK] | `9770051` |
+| Marketing Opt-Out | Marketing Opt-Out Privacy Request Email [UK] | `9770052` |
 
-This uses 3 of the 5 available slots, leaving 2 spare (e.g. for a future non-DSR notification on
-this form, or if Ant later wants a 4th/5th variant).
+This uses all 5 available slots; there is no headroom left on this plan for further notification
+splitting without a plan upgrade.
 
 Each notification, in order:
-1. **Headline**: `[UK] New {requester type} Privacy Request | {raw "What would you like us to do?"
+1. **Headline**: `[UK] New {request type} Privacy Request | Requester Type: {raw "Are You......."
    answer, merged} | Privacy Request Due: {computed date}`, then `<hr>`.
 2. **Requester & Subject** (always): full name, email, phone, alt phone, booking ref.
-3. **Requester-type block**: omitted entirely for Customer; Transport Partner gets business
-   type/trading name/company name/username; Authorised Third Party gets authorisation
-   details/proof-of-authorisation/the no-acting-party-email flag.
-4. **All 5 request-type blocks**, concatenated (SAR, Rectification, Deletion, Data Portability,
-   Marketing Opt-Out), plus a small-print line telling the reader that only the block matching the
-   headline's request type will have populated fields.
+3. **Transport Partner Details** and **Authorised Third Party Details** blocks, both always present
+   (blank fields when the submission wasn't that requester type).
+4. **This notification's own request-type block only**: exactly the fields for SAR, or
+   Rectification, or Deletion, or Data Portability, or Marketing Opt-Out; never any other type's
+   fields.
 5. **Additional Information** + a Declaration line, always last.
 
 Design matches Ant's original hand-built notification: Georgia serif, 24px bold headline, 18px
@@ -71,16 +80,15 @@ body text, `<hr>` section dividers.
 
 ## Build script
 `workflow/build-formstack-notifications.py`: `--dry-run` prints every payload with no API calls;
-`--apply` (with `FORMSTACK_TOKEN` set) PUTs the 3 known ids in place and DELETEs the 2 stray
-request-type-specific notifications left over from the abandoned 15-variant attempt. It is
-idempotent (PUT, full-payload replace against fixed ids) as long as the 3 ids in
-`EXISTING_NOTIFICATION_IDS_TO_REUSE` stay correct; re-verify with
-`GET /forms/6559077/notifications` (dedupe by id: the list endpoint echoes each one twice) before
-re-running if the live ids might have changed.
+`--apply` (with `FORMSTACK_TOKEN` set) PUTs all 5 known live ids in place, so it's idempotent to
+re-run whenever the field ids or block content change. Re-verify against
+`GET /forms/6559077/notifications` if the live ids in `EXISTING_NOTIFICATION_IDS_TO_REUSE` ever
+stop matching reality (dedupe by id: the list endpoint echoes each one twice).
 
 The field ids/labels and the shared content blocks live in `workflow/formstack_dsr_content.py`,
 shared with `workflow/build-formstack-confirmations.py` so the two audiences never drift apart on
-field ids, even though their designs now differ in shape (3 vs 15 variants) because of the cap.
+field ids, even though their designs differ in shape (5 vs 15 variants, and different axes) because
+of the cap.
 
 ## Sources
 `docs/dsr-go-live-readiness.md` (blocker #1) · `docs/dsr-confirmation-emails.md` (the confirmation
