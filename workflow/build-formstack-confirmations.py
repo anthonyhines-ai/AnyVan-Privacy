@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-Build the "AnyVan UK - Privacy Requests" Formstack CONFIRMATIONS (form 6559077) — the
+Build the "AnyVan UK - Privacy Requests" Formstack CONFIRMATIONS (form 6559077): the
 acknowledgement email sent to the requester (customer/TP/third party), as opposed to
 build-formstack-notifications.py's internal email to privacy@anyvan.com that raises the ticket.
 
 ⚠️ UNVERIFIED PAYLOAD SHAPE. Unlike notifications (confirmed live via GET /forms/6559077/
-notifications on 2026-09-24), no confirmation has ever been created on this form —
+notifications on 2026-09-24), no confirmation has ever been created on this form;
 GET /forms/6559077/confirmations returned {"confirmations":[]}. This script's payload shape is a
 best-effort mirror of the confirmed notification shape (Formstack's own help centre documents
 "Confirmations & Notifications" as one feature family), minus the notification-only fields
-(fromType/fromValue/recipients — a confirmation goes to whoever submitted the form, not to a
+(fromType/fromValue/recipients: a confirmation goes to whoever submitted the form, not to a
 fixed address). Before running this for all 15, create ONE (comment out the others, or run with
---apply --only customer:sar) and GET /notifications/{id}-equivalent — i.e. re-list
-/forms/6559077/confirmations — to see what Formstack actually stored, then fold any correction
+--apply --only customer:sar) and GET /notifications/{id}-equivalent, i.e. re-list
+/forms/6559077/confirmations, to see what Formstack actually stored, then fold any correction
 back into docs/conventions.md the way the notification quirks were, and adjust this script.
 
 Content mirrors build-formstack-notifications.py's requester/request-type matrix but for a
@@ -97,7 +97,7 @@ def main():
         only = sys.argv[sys.argv.index("--only") + 1]  # e.g. "customer:sar"
     token = os.environ.get("FORMSTACK_TOKEN", "")
     if apply_ and not token:
-        print("FORMSTACK_TOKEN is not set — refusing to --apply.", file=sys.stderr)
+        print("FORMSTACK_TOKEN is not set; refusing to --apply.", file=sys.stderr)
         sys.exit(1)
     dry = not apply_
 

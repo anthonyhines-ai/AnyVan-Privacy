@@ -7,7 +7,7 @@ raises the Freshdesk ticket) and build-formstack-confirmations.py (the acknowled
 the requester). Keeping the content in one module means the two audiences never drift apart on
 field ids or on which requester/request-type combination gets which facts.
 
-Field ids/labels confirmed live via GET /forms/6559077/fields (2026-09-24) — keep in sync with
+Field ids/labels confirmed live via GET /forms/6559077/fields (2026-09-24); keep in sync with
 docs/dsr-field-mapping.md.
 """
 
@@ -75,7 +75,7 @@ def mt(field):
 
 # What the requester is told we've received, per request type. SAR deliberately doesn't split by
 # data category (Call Recording/s, Chat Transcript/s, ... are a multi-select checkbox, not a
-# radio — up to 2^6 combinations, and Formstack's logic can't express "contains one of" cleanly).
+# radio; up to 2^6 combinations, and Formstack's logic can't express "contains one of" cleanly).
 # Instead the SAR line merges in whichever categories were actually ticked, so a call-recording
 # request and a chat-transcript request read differently from the same one template.
 REQUEST_TYPE_CONFIRMATION_LINE = {
@@ -112,7 +112,7 @@ REQUEST_TYPE_TIMELINE_LINE = {
     "sar": (
         "Under UK GDPR, we aim to respond within <strong>one calendar month</strong> of receiving "
         "your request. If your request is complex, or you've raised more than one, we may need to "
-        "extend this by a further two months &mdash; we'll tell you if that happens and explain why."
+        "extend this by a further two months; we'll tell you if that happens and explain why."
     ),
     "rectification": (
         "Under UK GDPR, we aim to respond within <strong>one calendar month</strong> of receiving "
@@ -151,17 +151,17 @@ REQUESTER_CONFIRMATION_VERIFICATION = {
         "Before we can proceed, we need to check that you're authorised to act on the data "
         "subject's behalf. We'll review the proof of authorisation you provided and may contact "
         "you and/or the data subject directly to confirm this. <strong>The one-calendar-month "
-        "statutory response period does not start until we've confirmed your authorisation</strong> "
-        "&mdash; we'll write to confirm once it has been verified, or let you know if we need more "
+        "statutory response period does not start until we've confirmed your authorisation</strong>; "
+        "we'll write to confirm once it has been verified, or let you know if we need more "
         "information first."
     ),
 }
 
 CONFIRMATION_SUBJECT = {
-    "customer": "Your AnyVan Privacy Request &mdash; Reference DSR-{$_submission_id}",
-    "tp": "Your AnyVan Privacy Request &mdash; Reference DSR-{$_submission_id}",
+    "customer": "Your AnyVan Privacy Request: Reference DSR-{$_submission_id}",
+    "tp": "Your AnyVan Privacy Request: Reference DSR-{$_submission_id}",
     "third_party": (
-        "Your AnyVan Privacy Request on Behalf of Another Person &mdash; Reference "
+        "Your AnyVan Privacy Request on Behalf of Another Person: Reference "
         "DSR-{$_submission_id}"
     ),
 }
@@ -211,7 +211,7 @@ def requester_type_block(kind):
             + p("Authorisation Details: %s" % mt(TPARTY_AUTH_DETAILS))
             + p("Proof of Authorisation: %s" % mt(TPARTY_PROOF))
             + p(
-                "<em>No acting-party contact email is captured on this form &mdash; the requester email "
+                "<em>No acting-party contact email is captured on this form; the requester email "
                 "above is the data subject's. Verify authorisation before proceeding.</em>",
                 size=14,
             )

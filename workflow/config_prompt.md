@@ -26,7 +26,7 @@ compose the subject and description.
   NOTE: the live form has **no separate acting-party email** for an Authorised Third Party, so for
   a third-party request this is still the data subject's email — **flag in the description** that
   the acting party's own contact email was not captured on the form.
-- `subject` — `DSR-<submission id> — <dsr_type> (<requester_type>)`. No personal data in the subject.
+- `subject` — `DSR-<submission id>: <dsr_type> (<requester_type>)`. No personal data in the subject.
 - `description` — HTML built from **exactly three blocks, in this order** (see "Description
   structure" below for the full spec). Never render a block for a request type or requester type
   other than the one this submission actually is — an agent triaging the ticket should see only

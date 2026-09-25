@@ -8,4 +8,4 @@ A DSR Formstack form was submitted (submission id `{event.payload.UniqueID}`).
 
 Map faithfully from the submission — do not guess. Normalise the booking reference (prepend
 `AV` to a digits-only value). Compose the subject as
-`DSR-{event.payload.UniqueID} — <dsr_type> (<requester_type>)`.
+`DSR-{event.payload.UniqueID}: <dsr_type> (<requester_type>)`.

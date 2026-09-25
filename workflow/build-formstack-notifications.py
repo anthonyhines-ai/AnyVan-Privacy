@@ -2,11 +2,11 @@
 """
 Build / update the "AnyVan UK - Privacy Requests" Formstack notifications (form 6559077).
 
-A Formstack "notification" is an internal email — distinct from a "confirmation" (sent to the
+A Formstack "notification" is an internal email, distinct from a "confirmation" (sent to the
 form submitter; see build-formstack-confirmations.py / docs/dsr-confirmation-emails.md). Ant built
 one notification by hand in the Formstack builder ("Customer Privacy Request Email [UK]", id
 9711486): it's sent to privacy@anyvan.com and is how the Freshdesk ticket actually gets created
-(via Freshdesk's email-to-ticket pipe) — this is the "Freshdesk-event" trigger option from
+(via Freshdesk's email-to-ticket pipe); this is the "Freshdesk-event" trigger option from
 docs/dsr-go-live-readiness.md blocker #1, not the AI-workflow FRESHDESK_TICKET_CREATE action in
 workflow/actions.json. See docs/dsr-notification-matrix.md for the full picture and the open
 question this raises about workflow/.
@@ -18,7 +18,7 @@ submission regardless of type). Each notification's body renders only its own re
 block and its own one request-type block, per docs/dsr-notification-matrix.md.
 
 Usage:
-  # preview every payload — no token, no API calls
+  # preview every payload (no token, no API calls)
   python3 workflow/build-formstack-notifications.py --dry-run
 
   # apply for real (updates 9711486 in place, creates the other 14)
@@ -26,7 +26,7 @@ Usage:
 
 API notes: GET /forms/{id}/notifications lists them (a known listing quirk can echo the same
 notification twice; GET /notifications/{id} is the source of truth for one record). Update is
-PUT /notifications/{id} with the FULL payload (not a partial patch — a partial body 400s). Create
+PUT /notifications/{id} with the FULL payload (not a partial patch; a partial body 400s). Create
 is POST /forms/{id}/notifications.
 """
 
@@ -69,7 +69,7 @@ def build_notification(requester, request_type):
         + footer_block()
     )
 
-    subject = "[UK] %s Privacy Data Request — %s for %s [{$_submission_id}]" % (r_label, q_label, mt(REQ_FULLNAME))
+    subject = "[UK] %s Privacy Data Request: %s for %s [{$_submission_id}]" % (r_label, q_label, mt(REQ_FULLNAME))
     name = "%s Privacy Request Email [UK] - %s" % (r_label, q_label)
 
     payload = {
@@ -101,7 +101,7 @@ def main():
     apply_ = "--apply" in sys.argv
     token = os.environ.get("FORMSTACK_TOKEN", "")
     if apply_ and not token:
-        print("FORMSTACK_TOKEN is not set — refusing to --apply.", file=sys.stderr)
+        print("FORMSTACK_TOKEN is not set; refusing to --apply.", file=sys.stderr)
         sys.exit(1)
     dry = not apply_
 

@@ -1,8 +1,8 @@
 """Minimal Formstack V2025 API helper shared by the build-formstack-*.py scripts.
 
-Auth: a Formstack V2025 Personal Access Token (fs_pat_...), env var only — never pass on the
+Auth: a Formstack V2025 Personal Access Token (fs_pat_...), env var only; never pass on the
 command line or commit it. If one is ever pasted into chat/a file, rotate it (docs/conventions.md).
-Base: https://www.formstack.com/api/v2025 — a .../api/v2 base 401s with a fs_pat_ token.
+Base: https://www.formstack.com/api/v2025; a .../api/v2 base 401s with a fs_pat_ token.
 """
 
 import json

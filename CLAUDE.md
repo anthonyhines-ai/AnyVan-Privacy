@@ -71,7 +71,7 @@ Add a new topic subfolder when a genuinely new genre of record appears; one Mark
    first** for the API/format/Freshdesk gotchas, then `docs/go-live-guide.md` (runbook),
    `docs/dsr-field-mapping.md` (the contract), `docs/dsr-confirmation-emails.md` (drafted
    requester-confirmation copy), `docs/dsr-notification-matrix.md` (the Formstack-notification
-   path that actually raises the Freshdesk ticket — a different mechanism from the AI workflow),
+   path that actually raises the Freshdesk ticket (a different mechanism from the AI workflow),
    and the **`anyvan-formstack-freshdesk`** skill.
    Live Formstack form is `6559077` — prefer the builder's additive `--form` mode over a rebuild.
 2. **Privacy investigations / lookups & DSAR sweeps.** Produce one dated record in the house style

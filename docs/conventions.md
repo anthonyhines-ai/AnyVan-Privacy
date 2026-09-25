@@ -44,35 +44,35 @@ these, update this file in the same PR.
 ## Formstack notifications (distinct from confirmations)
 
 - **Two different email types, easy to conflate:** a **notification** goes to an internal address
-  (e.g. `privacy@anyvan.com`) — on the DSR form this is what actually raises the Freshdesk ticket,
+  (e.g. `privacy@anyvan.com`); on the DSR form this is what actually raises the Freshdesk ticket,
   via Freshdesk's email-to-ticket pipe. A **confirmation** goes to the *form submitter*. Check
-  `GET /forms/{id}/confirmations` vs `GET /forms/{id}/notifications` — don't assume which exists.
+  `GET /forms/{id}/confirmations` vs `GET /forms/{id}/notifications`; don't assume which exists.
 - **Endpoints (confirmed live, 2026-09-24):**
-  - List: `GET /forms/{formId}/notifications` — ⚠️ has been observed **echoing the same
-    notification twice** in the array (identical `id`/content both times); don't treat count as
+  - List: `GET /forms/{formId}/notifications` (⚠️ has been observed **echoing the same
+    notification twice** in the array, identical `id`/content both times); don't treat count as
     the number of distinct notifications, dedupe by `id`.
-  - Single record: `GET /notifications/{id}` — **top-level**, not nested under `/forms/{formId}/`
-    (that 404s). This is the source of truth for one notification's fields.
+  - Single record: `GET /notifications/{id}` (**top-level**, not nested under `/forms/{formId}/`;
+    that 404s). This is the source of truth for one notification's fields.
   - Create: `POST /forms/{formId}/notifications`.
-  - Update: `PUT /notifications/{id}` with the **full payload** — a partial body (e.g. just
+  - Update: `PUT /notifications/{id}` with the **full payload**: a partial body (e.g. just
     `{"name": "..."}`) 400s with `"A valid fromType is required..."`. Always GET first, change what
     you need, PUT the whole object back.
-  - No delete tested yet; assume `DELETE /notifications/{id}` by analogy with other resources —
+  - No delete tested yet; assume `DELETE /notifications/{id}` by analogy with other resources,
     confirm before relying on it.
-- **`logic` shape matches on both GET and CREATE for notifications** — unlike fields (see below),
-  no legacy-shape transform needed: `{action:"show", conditional:"all"|"any",
+- **`logic` shape matches on both GET and CREATE for notifications**, unlike fields (see below), so
+  no legacy-shape transform is needed: `{action:"show", conditional:"all"|"any",
   checks:[{field:"<fieldId>", condition:"equals", option:"<value>"}]}`. Multiple `checks` with
   `conditional:"all"` = AND (used to gate a notification on two different field answers at once,
   e.g. requester type AND request type together).
 - **No inline conditional merge in the body.** A notification body is plain merge substitution
-  (`{$<fieldId> <label text>}`) — there's no if/else block for "only show this paragraph when field
+  (`{$<fieldId> <label text>}`); there's no if/else block for "only show this paragraph when field
   X = Y" *within* a single notification. To show only-relevant-content per combination of answers,
   build one notification per combination (gated by `logic`), not one notification with conditional
   text inside it. `hideEmpty` exists as a param but does **not** make an unanswered merge field's
-  *row* disappear — it still prints inline (e.g. "Chat Transcripts From: to " with nothing between);
+  *row* disappear: it still prints inline (e.g. "Chat Transcripts From: to " with nothing between);
   it hasn't been found to do anything more granular in testing so far.
-- **Merge tag label text is cosmetic, not functional** — `{$<fieldId> <label>}`: only the numeric
-  field id is actually resolved: the label after it is what the Formstack UI's own field-picker
+- **Merge tag label text is cosmetic, not functional**: `{$<fieldId> <label>}`, only the numeric
+  field id is actually resolved; the label after it is what the Formstack UI's own field-picker
   would insert, kept for readability/parity with what a human builder would produce by hand, but a
   wrong or stale label text still merges correctly.
 
