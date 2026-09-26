@@ -97,10 +97,10 @@ full months plus the part-months either side.*
   parent-SID dedup would give the true figure (see §8, and the queued task).
 - **Transient.** The 2.4M avoidable figure is a point-in-time snapshot; it shrinks daily and reaches
   **zero ~5 Feb 2027**.
-- **Not reconciled against Twilio.** Derived from call records, not from Twilio's actual stored-recording
-  inventory. The Twilio tooling available in-session is docs/API-schema search, not a live recordings
-  client; confirmation that the purge ran as the policy implies needs a Flex/console (or Twilio API)
-  reconciliation.
+- **Not reconciled against the served store.** Derived from call records, not from the actual
+  stored-recording inventory. Audio is served from AnyVan's S3 bucket `anyvan-twilio-recordings` via the
+  `twilio-recordings.anyvan.com` proxy, so the true test is that store — and it may follow a different
+  lifecycle than Twilio's own retention (see rec. 2). No live recordings client was available in-session.
 - **Proxy filter.** `completed` + `DURATION > 0` counts connected legs; it may include very short
   connects and excludes ring-only/no-answer legs (which were never recorded anyway).
 
@@ -136,11 +136,17 @@ GROUP BY 1 ORDER BY 1;
 
 1. **Refine the number with a parent-SID dedup** — collapse child dial/transfer legs to distinct
    conversations/recording files for a true count (queued as a follow-up task).
-2. **Reconcile against Twilio.** Confirm the purge actually ran to the policy (survivor boundary
-   ~5 Feb 2026) via the Flex/console or Twilio API, rather than inferring from call records.
-3. **SAR / legal risk.** Document that audio for **any call before ~5 Feb 2026 is unrecoverable**;
-   for any open dispute/SAR/legal-hold, export the retained audio now (it ages out at call-date + 12
-   months) rather than relying on a HubSpot recording link, which persists after the file is purged.
+2. **Reconcile against the store AnyVan actually serves.** Audio is delivered from AnyVan's S3 bucket
+   `anyvan-twilio-recordings` via the `twilio-recordings.anyvan.com` proxy (the Interaction Hub / Sophie
+   QA path). Confirm **where the 3→12-month policy is enforced** — Twilio's native recording retention
+   *or* an S3 lifecycle policy on that bucket — because they can differ, and the S3 copy is what
+   determines retrievability. Verify sample RecordingSids through the proxy (302→audio = present,
+   404 = gone), not just the raw Twilio API.
+3. **SAR / legal risk.** On the current (Twilio-retention) assumption, audio for **any call before
+   ~5 Feb 2026 is unrecoverable** — but confirm against the S3 copy first (rec. 2), as its lifecycle may
+   differ. For any open dispute/SAR/legal-hold, export the retained audio now (it ages out at
+   call-date + 12 months) rather than relying on a HubSpot recording link, which persists after the file
+   is purged.
 4. **Retention-change checklist for next time.** A policy extension does not retro-rescue already-purged
    media; if future changes need historical coverage, pair them with a one-off export *before* the
    change. (Moot for this change — the pre-5-Feb-2026 media is already gone.)
