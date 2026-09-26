@@ -138,4 +138,18 @@ Matching Sophie's `window.open` is the minimum and already works. Nicer: inline 
 - Dashboards/queries via AV Dashboards MCP: `interaction_hub_calls`, `interaction_hub_phone_lookup`, `sophie_calls_v5` (= `SELECT * FROM SOPHIE_CALLS_INCREMENTAL`), and the `sophie-chat-review_v5` HTML (`url = r.TASK_URL`, `window.open`).
 - Snowflake (read-only): source-table schemas; 7-day admin-recovery join test (0/74,975); 30-day RecordingSid coverage; example number + recording lookups; `EVENT_AMY_RECORDING_COMPLETED` schema.
 - Access checks: proxy for the admin recording → `302 → 206 audio/x-wav` with Basic Auth, `401` without; Twilio Recordings API `RE… → call_sid` (= WORKERCALLSID), `media_url` in `anyvan-twilio-recordings`. Credentials were used transiently for verification only and are recorded nowhere.
+
+---
+
+## 7. Current-state verification (2026-09-26)
+
+Re-checked the **live** queries (not this doc's month-old snapshot). The admin-recording backfill **shipped** — but sourced differently than §3 proposed, and it only partly closes the gap.
+
+- **What shipped.** Both `interaction_hub_calls` and `interaction_hub_phone_lookup` now `LEFT JOIN`
+  `rec = (SELECT CALL_SID, MAX(RECORDING_ID) FROM CONFORMED.PRODUCTION.CALL_TRANSCRIPT_CALLS WHERE RECORDING_ID LIKE 'RE%' GROUP BY CALL_SID)`
+  on `INTERACTION_ID` (= `COALESCE(WORKERCALLSID, TASKSID)`), and emit
+  `'https://twilio-recordings.anyvan.com/recordings/' || rec.RECORDING_ID` as `RECORDING_URL` plus `TRANSCRIPT_AVAILABLE`. So admin calls **can** now show a Listen button (and a transcript) — for calls that were transcribed.
+- **Not** the proposed `TWILIO_RECORDING_COMPLETED` table — that still does not exist. The only recording-completed tables are `HARMONISED.DEVELOPMENT.EVENT_AMY_RECORDING_COMPLETED` / `EVENTBUS_EVENTS_AMY_RECORDING_COMPLETED`, both **0 rows**. The recording SID now reaches the hub via the **STT transcript** table `CALL_TRANSCRIPT_CALLS` (~153k rows with an `RE…`; columns include `RECORDING_ID`, `CALL_SID`, `AUDIO_PATH`, `TRANSCRIPT_TEXT`).
+- **Residual gap:** `CALL_TRANSCRIPT_CALLS` covers only calls that were **transcribed**, so audio-only human-agent Flex calls that never went through STT still have no `RE` there → no hub link. **Worked example** (Freshdesk `2264362`, a Feb-2026 customer): **0 of 37** Twilio legs present in `CALL_TRANSCRIPT_CALLS`; all **33** admin voice calls render no Listen button.
+- **To close it for all admin calls:** land a recording SID for **every recorded call**, not just the transcribed subset — i.e. the §3 Option A `recording.completed` ingestion (or a Recordings-API backfill) still applies. Until then, admin-call recordings are retrievable only by feeding the RecordingSid (e.g. from the HubSpot call engagement) to the proxy directly, outside the hub.
 </content>
