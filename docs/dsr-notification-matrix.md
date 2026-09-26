@@ -29,13 +29,23 @@ created (per blocker #1's phrasing: "Freshdesk-event … workflow enriches"). **
 this doc doesn't decide it, it just flags that today's notification work makes the choice live
 rather than hypothetical.
 
-## ⚠️ Hard limit discovered live 2026-09-25: 5 notification emails per form
+## ⚠️ Hard limit discovered live 2026-09-25/26: 5 notification emails per form
 The first build of this matrix tried the same 3 requester types x 5 request types = 15-notification
 design used for confirmations. 5 creates succeeded; the 6th failed with `{"error": "This form
-reached the notification emails limit"}`, and every further create failed the same way. This is a
-**Formstack plan-level cap**, not a bug: 5 notification emails total, for the whole form, no matter
-how they're split. There is **no such cap on confirmations** (16 created in testing with no error),
-which is why confirmations can be the full 15-variant matrix while notifications cannot.
+reached the notification emails limit"}`, and every further create failed the same way.
+
+Ant's read was that this is an API rate/batch limit rather than a real per-form cap, so the build
+script was extended to pace its calls (2s between each) and retry with exponential backoff (8s,
+16s, 24s) on that exact error. Tested live 2026-09-26: every retry, at every backoff length, failed
+with the **identical** error text. A genuine rate limit would either succeed after enough backoff or
+say so explicitly (a 429, "too many requests", "try again in Ns"); this said the same fixed thing
+regardless of how long we waited, which is the signature of a real resource cap, not a throttle.
+**Conclusion: it is a Formstack plan-level cap** — 5 notification emails total, for the whole form,
+no matter how they're split. If more than 5 is ever needed, that requires a Formstack plan upgrade
+(check with Formstack support/billing), not a smarter retry loop.
+
+There is **no such cap on confirmations** (16 created in testing with no error), which is why
+confirmations can be the full 15-variant matrix while notifications cannot.
 
 ## Which axis gets the 5 slots: request type, not requester type
 The first fix split by **requester type** (3 notifications, one per Customer/TP/Third Party, each
