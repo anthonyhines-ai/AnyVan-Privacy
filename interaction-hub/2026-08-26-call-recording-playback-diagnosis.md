@@ -151,5 +151,18 @@ Re-checked the **live** queries (not this doc's month-old snapshot). The admin-r
   `'https://twilio-recordings.anyvan.com/recordings/' || rec.RECORDING_ID` as `RECORDING_URL` plus `TRANSCRIPT_AVAILABLE`. So admin calls **can** now show a Listen button (and a transcript) — for calls that were transcribed.
 - **Not** the proposed `TWILIO_RECORDING_COMPLETED` table — that still does not exist. The only recording-completed tables are `HARMONISED.DEVELOPMENT.EVENT_AMY_RECORDING_COMPLETED` / `EVENTBUS_EVENTS_AMY_RECORDING_COMPLETED`, both **0 rows**. The recording SID now reaches the hub via the **STT transcript** table `CALL_TRANSCRIPT_CALLS` (~153k rows with an `RE…`; columns include `RECORDING_ID`, `CALL_SID`, `AUDIO_PATH`, `TRANSCRIPT_TEXT`).
 - **Residual gap:** `CALL_TRANSCRIPT_CALLS` covers only calls that were **transcribed**, so audio-only human-agent Flex calls that never went through STT still have no `RE` there → no hub link. **Worked example** (Freshdesk `2264362`, a Feb-2026 customer): **0 of 37** Twilio legs present in `CALL_TRANSCRIPT_CALLS`; all **33** admin voice calls render no Listen button.
-- **To close it for all admin calls:** land a recording SID for **every recorded call**, not just the transcribed subset — i.e. the §3 Option A `recording.completed` ingestion (or a Recordings-API backfill) still applies. Until then, admin-call recordings are retrievable only by feeding the RecordingSid (e.g. from the HubSpot call engagement) to the proxy directly, outside the hub.
+- **The recording is independent of the transcript.** A missing transcript only means the hub can't
+  *discover* the RecordingSid from `CALL_TRANSCRIPT_CALLS`; it never means the audio is gone. Any recorded
+  call is reachable by URL if you have (or can resolve) its RecordingSid — regardless of transcription.
+- **To close it for all admin calls (transcript or not):**
+  - **§3 Option A** — land a recording SID for *every recorded call*, not just the transcribed subset
+    (`recording.completed` ingestion or a Recordings-API backfill), then the existing query join lights up.
+  - **§3 Option B** — give the proxy a `GET /recordings/by-call/{CallSid}` route (list a call's recordings
+    via the Twilio Recordings API, redirect to audio) so the hub emits `'…/recordings/by-call/' || WORKERCALLSID`
+    with **no** warehouse or transcript dependency. This is the cleanest answer to "access the untranscribed
+    calls by URL", and handles multi-leg transfers (a CallSid can map to several recordings).
+- **Right now, outside the hub,** an untranscribed call's recording is already retrievable by feeding its
+  RecordingSid to the proxy — from the **HubSpot** call engagement (`hs_call_recording_url` holds the `RE…`),
+  or resolved from the CallSid the warehouse already has via the Twilio Recordings API
+  (`GET /2010-04-01/Accounts/{AccountSid}/Calls/{CallSid}/Recordings.json`) → `twilio-recordings.anyvan.com/recordings/{RE}`.
 </content>
