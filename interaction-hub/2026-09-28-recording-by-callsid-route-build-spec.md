@@ -10,6 +10,16 @@
 | **Raised by** | Anthony Hines (anthony.hines@anyvan.com) |
 | **Surface** | Interaction Hub + recording proxy `twilio-recordings.anyvan.com` |
 | **Context** | Follows `interaction-hub/2026-08-26-call-recording-playback-diagnosis.md` (§3 Option B) |
+| **Status** | **BACKLOG** (raised 2026-09-28) |
+
+## Backlog item
+
+- **B1 — Recording access by CallSid.** Proxy service adds `GET /recordings/by-call/{CallSid}` (§2);
+  then the Hub flips its button to it (§3–4). Gives every call a 🎧 Listen / ⬇️ Download control,
+  transcript or not. *Owner:* proxy/telephony service owner (route) + dashboards (hub flip).
+- **B2 — No-login-friction (recommended).** Put the proxy behind the dashboard's SSO/session so agents
+  don't type the Twilio key at all (§5). *Owner:* proxy/telephony service owner. Depends on / pairs with B1.
+
 
 ---
 
