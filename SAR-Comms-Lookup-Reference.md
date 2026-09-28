@@ -55,6 +55,19 @@ The identity resolution SQL is in `customer-communications-mapping.md` §2. **Re
 
 > **⚠️ Verified 2026-08-19:** AnyVan runs **two** telephony systems. `TWILIO_CALL`, `FCT_VOICE_INTERACTIONS`, and `FCT_TWILIO_CALL_METRICS` contain **no recording URL/SID**. `FCT_VOICE_INTERACTIONS` was **flagged unreliable by the data team** — do not use it as the call spine.
 
+> **🔴 Recording retention gap, confirmed by Ant 2026-09-28 — check this before promising a recording in any SAR/DSR pack.**
+> A **3-month recording-deletion policy** was first instructed on **4 April 2025**; AnyVan moved back to a
+> **12-month** retention starting with recordings dated from **5 May 2026** onward. That 3-month policy was
+> **not retroactively reversed** for the intervening period, so **audio recordings for calls between
+> roughly 4 April 2025 and 4 May 2026 should be assumed deleted** even where the call's metadata row,
+> transcript text, or `RECORDING_ID`/`RECORDINGSID` pointer still exists in Snowflake (deleting the
+> Twilio/Aircall-side audio does not retroactively remove the already-ingested Snowflake row referencing
+> it). This applies to **both** Twilio and Aircall recordings — the policy was about the audio itself, not
+> which telephony system holds it. **Always state this as a `coverage_caveat`** for any SAR/DSR request
+> whose date range falls inside 2025-04-04 to 2026-05-04, and verify a recording actually resolves before
+> promising it to a requester or officer, rather than assuming a non-null `RECORDING`/`RECORDING_ID` means
+> the audio is retrievable.
+
 ### 4.1 Aircall — recording URL available in-warehouse ✅
 `HARMONISED.PRODUCTION.AIRCALL_CALL`
 - `RECORDING` — URL/identifier for the audio (comment: *"the URL or identifier for the audio recording of the call, if available"*). ~70% of rows populated; coverage **2023-05-11 → today**.

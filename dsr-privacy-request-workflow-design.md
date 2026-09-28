@@ -262,7 +262,7 @@ The private note contains, in order:
 - [ ] **Identity** match verdict recorded; officer has verified per policy.
 - [ ] **Date range** applied as requested.
 - [ ] **Third-party PII** flagged for redaction (chat/call transcripts, cc'd parties).
-- [ ] **Coverage caveats** included and accurate for this subject (e.g. booking predates 2026-05-19 → no email bodies).
+- [ ] **Coverage caveats** included and accurate for this subject (e.g. booking predates 2026-05-19 → no email bodies; call falls between 2025-04-04 and 2026-05-04 → recording almost certainly deleted, see §10).
 - [ ] `data_as_of` noted; if the request is very recent, re-run after replication.
 - [ ] **SLA due date** (submission + 1 calendar month) recorded and on track.
 - [ ] Officer **sign-off**: name + date before release.
@@ -275,6 +275,12 @@ The private note contains, in order:
 - **PII in shared/internal artefacts** — mask phones to last-4 in Slack/logs; the SAR pack itself is the subject's own data but third-party PII must be redacted before release.
 - **Dispatch ≠ delivery** — label `STATUS` as "dispatched".
 - **Never auto-release, never auto-delete** — the human gate is the control.
+- **🔴 Recording retention gap, confirmed by Ant 2026-09-28:** a 3-month call-recording deletion policy ran
+  from 4 April 2025 until reverting to 12-month retention for recordings from 5 May 2026 onward, not
+  retroactively. Treat any call recording dated 2025-04-04 to 2026-05-04 as very likely deleted regardless
+  of what `RECORDING`/`RECORDING_ID` shows in Snowflake — a non-null pointer does not mean the audio still
+  resolves. Always surface this as a `coverage_caveat` for a request touching that window; see
+  `SAR-Comms-Lookup-Reference.md` §4.
 
 ---
 
