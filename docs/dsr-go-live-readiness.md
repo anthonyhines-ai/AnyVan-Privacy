@@ -37,6 +37,29 @@ state + the outstanding items. Last updated 2026-09-25.
   run afterwards to enrich the ticket the notification created?
 - **Not done:** the workflow has **never been created** (no `workflow_id`).
 
+## Reconciliation: workflow design vs live dashboards (2026-09-28)
+Ant asked to cross-check `dsr-privacy-request-workflow-design.md` against the two live comms
+dashboards (`interaction-hub.html`, `sar-data-extract.html`) after they were built independently
+of each other. Checked live against Snowflake `information_schema` and the dashboards' own query
+definitions (`AV_Dashboards.get_query`) on 2026-09-28.
+
+**Fixed in this pass:**
+| Finding | Verified fact | Fix |
+|---|---|---|
+| `METHODOLOGY-communication-history.md` pointed transcripts at `EVENTS_CALL_TRANSCRIPTIONS` | That table is raw eventbus ingest with **~15-day retention only** (per its own column comment); the durable store is `CONFORMED.PRODUCTION.CALL_TRANSCRIPT_SEGMENTS` → `CALL_TRANSCRIPT_CALLS`, which is what both live dashboards actually query | Methodology doc repointed to the durable tables |
+| Methodology doc flagged `FRESHDESK_TICKET` as empty (Aug 2026) | **672,975 rows**, 2017-11-02 → today | Stale note removed |
+| `SAR-Comms-Lookup-Reference.md` said Twilio recordings need Flex-only manual download, no warehouse URL | Both live dashboards already serve `https://twilio-recordings.anyvan.com/recordings/{RECORDING_ID}` for Twilio-sourced calls (via `CALL_TRANSCRIPT_CALLS.RECORDING_ID` / Sophie's `RECORDINGSID`) — a working, already-productionised pattern | Doc + workflow design's `twilio_call_sids` query updated to the proven path; Flex kept as fallback until the proxy's officer-access model is confirmed |
+| `interaction-hub.html` labelled its phone lookup "Retention limit: 12 months" | It's a UI query-window default (`Math.min(days, 365)`), not data retention — `TWILIO_CONVERSATION_MESSAGE` alone holds 16.2M rows back to 2021-04-01 | Label + code comment reworded in the repo copy; **not yet redeployed live** (see below) |
+| Suspected coverage gap: `MASTER_LISTING` (design doc) vs raw `LISTING` (dashboard's `sar_listings`) | Checked: both start **2022-01-01**, near-identical row counts (2,438,389 vs 2,438,477) | Confirmed non-issue, no fix needed |
+
+**Still open — needs a decision, not just a doc edit:**
+| Item | Why |
+|---|---|
+| `twilio-recordings.anyvan.com` proxy access/auth for officer use | Live in two dashboards already, but nobody's confirmed whether a privacy officer can use it directly for SAR delivery, or whether it needs the dashboards' own service-level auth. Ask whoever owns the Sophie AI / Twilio integration. |
+| Interaction Hub's reworded retention label — deploy live | Repo copy fixed; pushing to the live dashboard is a separate `get_upload_token` → PUT action on a tool ops use daily — do deliberately, not bundled into a doc PR. |
+| `CALL_TRANSCRIPT_SEGMENTS` / `CALL_TRANSCRIPT_CALLS` masking sign-off | Both tables' own Snowflake comments say masking is **not yet signed off** — transcript text shouldn't go into an officer- or customer-facing SAR pack verbatim until that lands. Needs an owner, not a doc fix. |
+| Jiminny: "not in Snowflake" (interaction-hub, video consultations) vs `JIMINNY_CALL_METADATA`/`JIMINNY_CALL_TRANSCRIPT` (methodology doc, call transcripts) | Likely two different feeds (video vs. text transcript) rather than a real contradiction — not verified against live Jiminny data, flagging rather than asserting fixed. |
+
 ## Blockers before go-live
 | # | Item | State | Owner | Secret |
 |---|---|---|---|---|
@@ -92,4 +115,6 @@ transactional send-log (Comms tab → `LISTING_COMMUNICATION`).
 `docs/freshdesk-custom-fields.md` · `docs/dsr-confirmation-emails.md` · `docs/dsr-notification-matrix.md` ·
 `workflow/config_prompt.md` · `workflow/actions.json` · `workflow/formstack_dsr_content.py` ·
 `workflow/build-formstack-notifications.py` · `workflow/build-formstack-confirmations.py` ·
-`customer-communications-mapping.md` · `sar-data-extract.html`.
+`customer-communications-mapping.md` · `SAR-Comms-Lookup-Reference.md` ·
+`booking-lookups/METHODOLOGY-communication-history.md` · `dsr-privacy-request-workflow-design.md` ·
+`sar-data-extract.html` · `interaction-hub.html`.

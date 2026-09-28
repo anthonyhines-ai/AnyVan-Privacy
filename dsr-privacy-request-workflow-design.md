@@ -153,21 +153,34 @@ ORDER BY started_at
 LIMIT 500;
 ```
 
-**`twilio_call_sids`** — params: `phone_digits:string`, `date_from:string?`, `date_to:string?`
+**`twilio_call_recordings`** — params: `phone_digits:string`, `date_from:string?`, `date_to:string?`
 ```sql
--- Returns Recording SIDs for Twilio calls; officer retrieves audio via Flex (see companion §4.2).
-SELECT r.NORMALIZED_CUSTOMERPHONENUMBER, r.EVENTTIMESTAMP, e.RECORDINGSID
-FROM HARMONISED.PRODUCTION.TWILIO_EVENTS_TASKROUTER_RESERVATIONS r
-JOIN HARMONISED.PRODUCTION.TWILIO_EVENTS e ON e.<JOIN_KEY> = r.<JOIN_KEY>   -- ⚠️ [confirm join key: task/conference/call SID] at build
-WHERE RIGHT(REGEXP_REPLACE(r.NORMALIZED_CUSTOMERPHONENUMBER,'[^0-9]',''), 9) = RIGHT(:phone_digits, 9)
-  AND e.RECORDINGSID IS NOT NULL
-  AND (:date_from IS NULL OR r.EVENTTIMESTAMP >= TO_TIMESTAMP(:date_from))
-  AND (:date_to   IS NULL OR r.EVENTTIMESTAMP <  DATEADD(day,1,TO_TIMESTAMP(:date_to)))
-ORDER BY r.EVENTTIMESTAMP
+-- ⚠️ 2026-09-28 reconciliation: replaces the earlier `twilio_call_sids` design, which relied on an
+-- unresolved TWILIO_EVENTS_TASKROUTER_RESERVATIONS ⋈ TWILIO_EVENTS join. The live interaction-hub /
+-- sar-data-extract dashboards already solve this via CALL_TRANSCRIPT_CALLS (CALL_SID → RECORDING_ID)
+-- and a working recording proxy — see SAR-Comms-Lookup-Reference.md §4.2. Confirm the proxy's
+-- access/auth model for officer use before wiring this into the workflow.
+SELECT c.CUSTOMER_PHONE_DIGITS, MIN(t.EVENT_TIMESTAMP) AS occurred_at, rec.RECORDING_ID,
+       'https://twilio-recordings.anyvan.com/recordings/' || rec.RECORDING_ID AS recording_url
+FROM CONFORMED.PRODUCTION.CALL_TRANSCRIPT_SEGMENTS t
+JOIN CONFORMED.PRODUCTION.CALL_TRANSCRIPT_CALLS rec ON rec.CALL_SID = t.CALL_SID
+JOIN (SELECT DISTINCT CALL_SID, CUSTOMER_PHONE_DIGITS FROM CONFORMED.PRODUCTION.CALL_TRANSCRIPT_SEGMENTS) c ON c.CALL_SID = t.CALL_SID
+WHERE RIGHT(REGEXP_REPLACE(c.CUSTOMER_PHONE_DIGITS,'[^0-9]',''), 10) = RIGHT(:phone_digits, 10)
+  AND rec.RECORDING_ID LIKE 'RE%'
+  AND (:date_from IS NULL OR t.EVENT_TIMESTAMP >= TO_TIMESTAMP(:date_from))
+  AND (:date_to   IS NULL OR t.EVENT_TIMESTAMP <  DATEADD(day,1,TO_TIMESTAMP(:date_to)))
+GROUP BY c.CUSTOMER_PHONE_DIGITS, rec.RECORDING_ID
 LIMIT 500;
 ```
 
-> **Validation note:** all column/join paths except the `twilio_call_sids` bridge key were confirmed against live Snowflake on 2026-08-19. Confirm the reservation→events join key (and the exact live-chat table) at build, then run each through the admin-UI EXPLAIN gate.
+> **Validation note:** all column/join paths confirmed against live Snowflake on 2026-08-19, re-checked
+> 2026-09-28. The Twilio recording path was re-verified live against `information_schema` and the
+> dashboards' own query definitions on 2026-09-28 — `HARMONISED.PRODUCTION.TWILIO_CALL` carries no
+> recording column at all, confirming the original audit; `CALL_TRANSCRIPT_SEGMENTS`/`CALL_TRANSCRIPT_CALLS`
+> (not `TWILIO_EVENTS_TASKROUTER_RESERVATIONS`) is the proven path. Also note: `CALL_TRANSCRIPT_SEGMENTS`/
+> `CALL_TRANSCRIPT_CALLS` transcript text has **no masking policy signed off yet** (per their own Snowflake
+> comments) — do not surface verbatim transcript text in an officer-facing pack until that's resolved.
+> Confirm the exact live-chat table at build, then run each query through the admin-UI EXPLAIN gate.
 
 ---
 
@@ -227,7 +240,7 @@ custom_fields   : { cf_dsr_request_type, cf_dsr_channels, cf_dsr_subject_email,
 The private note contains, in order:
 1. **Request summary** — types, channels, date range, SLA due date.
 2. **Identity match** — matched identifiers + verdict + what to check.
-3. **Communications index** — grouped by channel, chronological; per record: name/type, `sent_at` (ISO/BST), direction, content or link, source, delivery status, preview URL. Aircall rows carry the `RECORDING` URL; Twilio-call rows carry `recording_sid` + the Flex retrieval reminder.
+3. **Communications index** — grouped by channel, chronological; per record: name/type, `sent_at` (ISO/BST), direction, content or link, source, delivery status, preview URL. Aircall rows carry the `RECORDING` URL directly; Twilio-call rows carry the `twilio-recordings.anyvan.com` proxy URL (pending access/auth confirmation — see §4 `twilio_call_recordings`), with the Flex retrieval runbook kept as fallback.
 4. **`portability_json`** — the machine-readable export (mapping-doc §10 shape) for CSV/JSON portability.
 5. **Coverage caveats** — pre-2026-05-19 email bodies absent; marketing = subject/metadata only; Twilio recordings via Flex; Snowflake `data_as_of` staleness (15–60 min).
 
@@ -270,7 +283,7 @@ The private note contains, in order:
 | Intended step | Platform reality | Design choice |
 |---|---|---|
 | "Put it in a Google Doc & share" | No workflow action builds/shares a file; workflow can't call AV Dashboards directly | Officer compiles from the Freshdesk note, **or** exports the file from a parameterised DSR AV Dashboard (workflow → Snowflake → dashboard) — see §8 |
-| "Provide a call download URL" | Aircall URL ✅; Twilio = SID only | Aircall inline; Twilio via Flex "copy link for download" → attach file |
+| "Provide a call download URL" | Aircall URL ✅; Twilio has a working in-house proxy (`twilio-recordings.anyvan.com`, confirmed live in `interaction-hub.html`/`sar-data-extract.html` 2026-09-28) but its access/auth model for officer use is unconfirmed | Aircall inline; Twilio via the proxy once confirmed usable, else Flex "copy link for download" → attach file |
 | "Validate the output" | Platform validates only the AI's decision JSON | Explicit completeness checklist (§9) + officer sign-off |
 | "Check the requester is allowed" | No built-in identity gate | Soft match (§6) + mandatory officer authorisation |
 

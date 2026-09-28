@@ -38,7 +38,8 @@ right-hand key(s).
 | Voice calls (current) | `TWILIO_CALL` | `"FROM"` / `"TO"` (last-10) |
 | Call → listing link | `TWILIO_CALL_TO_LISTING_MAPPING` | `EVENT_ID` (call SID), `LISTING_ID`, `PRE_LISTING_ID` |
 | Voice calls (legacy) | `AIRCALL_CALL` | `RAW_DIGITS` (last-10) |
-| Recording → transcript | `EVENTS_CALL_TRANSCRIPTIONS` | `RECORDING_ID` (`RE…`) |
+| Recording → transcript (recent, ≤~15 days) | `EVENTS_CALL_TRANSCRIPTIONS` | `RECORDING_ID` (`RE…`) |
+| Recording → transcript (durable, any age) | `CONFORMED.PRODUCTION.CALL_TRANSCRIPT_SEGMENTS` (segment-grain) → `CALL_TRANSCRIPT_CALLS` (one row per call) | `RECORDING_ID` (`RE…`), `CALL_SID` |
 | Jiminny transcripts | `JIMINNY_CALL_METADATA`, `JIMINNY_CALL_TRANSCRIPT` | `EVENT_ID`; or AnyVan MCP `get_conversation_transcript(dealId)` |
 | AI voice agents | `EVENTS_AMY_CALL`, `EVENTS_SOPHIE_CALL` | `CALL_SID`, `CALLER_ID`, `LISTING_ID` |
 | Call CSAT / NPS | `CONFORMED.PRODUCTION.FCT_CALL_CUSTOMER_SATISFACTION` | `CONTACT_ID`, `LAST_TWILIO_CALL_SID`, `LISTING_ID_ASSOCIATED`, `PRE_LISTING_ID_ASSOCIATED` |
@@ -49,7 +50,7 @@ right-hand key(s).
 | Email (HubSpot wide) | `HUBSPOT_EVENTS_EMAIL`, `HUBSPOT_EMAIL_CAMPAIGNS` | email |
 | AI chat (Sophie) | `EVENTS_SOPHIE_CHAT` | `LISTING_ID`, `CONVERSATION_SID` |
 | Call-back requests | `EVENTS_CALL_ME_BACK` | `PRE_LISTING_ID`, `CALLBACK_PRE_LISTING_HASH` |
-| Support tickets | `FRESHDESK_TICKET` | (empty as of 2026-08 — check anyway) |
+| Support tickets | `FRESHDESK_TICKET` | `REQUESTER_EMAIL` (confirmed populated 2026-09-28: 672,975 rows, 2017-11-02+ — the earlier "empty as of 2026-08" note was stale) |
 | Reviews | `TRUSTPILOT_PRIVATE_REVIEWS` | `CONSUMER_DISPLAY_NAME` (fuzzy — verify, see §4) |
 | Listing feedback | `HISTORIC_LISTING_FEEDBACK` | `LISTING_ID` |
 
@@ -143,6 +144,7 @@ across listings, and **Template B** for postcode + date.
 - **Direction skew.** Most "communication" is **outbound automation** (WhatsApp + email). The
   customer's own inbound contributions are usually the **phone calls** (audio only). Flag this so
   the reader doesn't mistake it for a two-way text thread.
+- **Transcript masking not yet signed off.** `CALL_TRANSCRIPT_SEGMENTS` / `CALL_TRANSCRIPT_CALLS`'s own Snowflake comments state: *"No masking policy applied yet — pending retention/masking sign-off. Do not expose downstream of an agent-facing surface until that's resolved."* Treat transcript text as internal-review-only until that sign-off lands; don't paste it verbatim into a customer-facing SAR export without checking first.
 - Searches are **not** territory-restricted; add a `LISTING_TERRORITY` filter only if required.
 - Reserved words `"FROM"` / `"TO"`; the `LISTING_TERRORITY` typo; and the last-10 phone rule — all
   as noted in `/CLAUDE.md`.

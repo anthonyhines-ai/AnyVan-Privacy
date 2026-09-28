@@ -216,7 +216,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
         <button class="seg-btn" data-days="180">6 months</button>
         <button class="seg-btn" data-days="365">12 months</button>
       </div>
-      <span class="date-hint" style="margin-left:6px;">Retention limit: 12 months</span>
+      <span class="date-hint" style="margin-left:6px;">History window: up to 12 months (dashboard default — underlying data goes back further; widen via a Snowflake pull for older lookups)</span>
     </div>
     <div class="convo-section">
       <div class="convo-loading" id="loading-phone" style="display:none;"><div class="spinner"></div><span>Searching...</span></div>
@@ -939,7 +939,7 @@ body{margin:0;padding:0;font-family:'Lato',sans-serif;background:var(--bg);color
   // Load the phone lookup for a given window (days), with retry on transient
   // warehouse/timeout failures. Skips re-querying if a >= window is already loaded.
   async function loadPhoneLookup(days) {
-    days = Math.min(days || _phoneDefaultWindow, 365); // cap at 12-month retention limit
+    days = Math.min(days || _phoneDefaultWindow, 365); // dashboard's UI window cap, not a data retention limit — see interaction_hub_phone_lookup's own comment
     if (_phoneLookupLoading) return;
     if (_phoneLookupDays >= days) { renderPhoneResults(); return; } // already have this window (or larger)
     _phoneLookupLoading = true;
