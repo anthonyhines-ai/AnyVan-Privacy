@@ -55,6 +55,19 @@ The identity resolution SQL is in `customer-communications-mapping.md` §2. **Re
 
 > **⚠️ Verified 2026-08-19:** AnyVan runs **two** telephony systems. `TWILIO_CALL`, `FCT_VOICE_INTERACTIONS`, and `FCT_TWILIO_CALL_METRICS` contain **no recording URL/SID**. `FCT_VOICE_INTERACTIONS` was **flagged unreliable by the data team** — do not use it as the call spine.
 
+> **🔴 Recording retention gap, confirmed by Ant 2026-09-28 — check this before promising a recording in any SAR/DSR pack.**
+> A **3-month recording-deletion policy** was first instructed on **4 April 2025**; AnyVan moved back to a
+> **12-month** retention starting with recordings dated from **5 May 2026** onward. That 3-month policy was
+> **not retroactively reversed** for the intervening period, so **audio recordings for calls between
+> roughly 4 April 2025 and 4 May 2026 should be assumed deleted** even where the call's metadata row,
+> transcript text, or `RECORDING_ID`/`RECORDINGSID` pointer still exists in Snowflake (deleting the
+> Twilio/Aircall-side audio does not retroactively remove the already-ingested Snowflake row referencing
+> it). This applies to **both** Twilio and Aircall recordings — the policy was about the audio itself, not
+> which telephony system holds it. **Always state this as a `coverage_caveat`** for any SAR/DSR request
+> whose date range falls inside 2025-04-04 to 2026-05-04, and verify a recording actually resolves before
+> promising it to a requester or officer, rather than assuming a non-null `RECORDING`/`RECORDING_ID` means
+> the audio is retrievable.
+
 ### 4.1 Aircall — recording URL available in-warehouse ✅
 `HARMONISED.PRODUCTION.AIRCALL_CALL`
 - `RECORDING` — URL/identifier for the audio (comment: *"the URL or identifier for the audio recording of the call, if available"*). ~70% of rows populated; coverage **2023-05-11 → today**.
@@ -70,19 +83,34 @@ ORDER BY started_at;
 ```
 - **[confirm]** at build time whether `RECORDING` is a directly-playable HTTPS URL or an Aircall id needing the Aircall API (inspect one non-PII value).
 
-### 4.2 Twilio — Recording SID only → Flex download ⚠️
-No warehouse URL. Get the **Recording SID**, then retrieve via Flex.
+### 4.2 Twilio — recording URL: an in-house proxy already exists ✅ (confirmed live 2026-09-28)
+Update: the "no warehouse URL, Flex-only" read below was the state as of the original audit. Checked
+against the live dashboard queries on 2026-09-28 (`interaction_hub_calls`, `interaction_hub_phone_lookup`,
+`sar_calls_all`) — **both `interaction-hub.html` and `sar-data-extract.html` already serve a direct,
+playable recording URL for Twilio-sourced calls**, built as:
+```
+https://twilio-recordings.anyvan.com/recordings/{RECORDING_ID}
+```
+`RECORDING_ID` comes from `CONFORMED.PRODUCTION.CALL_TRANSCRIPT_CALLS.RECORDING_ID` (joined on `CALL_SID`,
+`LIKE 'RE%'` filter) for ordinary admin calls, and from `MART_SALES_OPS.PRODUCTION.SOPHIE_CALLS_INCREMENTAL.RECORDINGSID`
+for Sophie AI calls. This is a working, already-productionised pattern, not a proposal.
+
+**⚠️ Not yet confirmed:** whether a privacy officer's own credentials can authenticate to
+`twilio-recordings.anyvan.com` directly (it may be scoped to the dashboards' own service auth), and
+whether the same URL is safe to attach/forward outside that proxy. **Confirm the access/auth model
+with whoever owns that proxy (likely the Sophie AI / Twilio integration team) before relying on it
+for SAR delivery** — until then, treat the Flex fallback below as the safe default.
+
+**Superseded reference (kept for context / fallback only):**
 - SID: `HARMONISED.PRODUCTION.TWILIO_EVENTS.RECORDINGSID` (also on `TWILIO_EVENTS_ARCHIVED`, `TWILIO_EVENTS_TASKROUTER_TASKS`). **Sparse** (only recording/call events carry it).
-- **Reliable customer match:** `HARMONISED.PRODUCTION.TWILIO_EVENTS_TASKROUTER_RESERVATIONS.NORMALIZED_CUSTOMERPHONENUMBER` + `EVENTTIMESTAMP` (the direct call-table phone fields were flagged unreliable — often the worker's number). Hop reservation → task/conference → the recording SID.
+- **Reliable customer match:** `HARMONISED.PRODUCTION.TWILIO_EVENTS_TASKROUTER_RESERVATIONS.NORMALIZED_CUSTOMERPHONENUMBER` + `EVENTTIMESTAMP` (the direct call-table phone fields were flagged unreliable — often the worker's number; confirmed live 2026-09-28: `HARMONISED.PRODUCTION.TWILIO_CALL` carries no recording-related column at all). Hop reservation → task/conference → the recording SID.
 - Amy (AI voice agent): `EVENTS_AMY_CALL.RECORDING_ID` / `AI_AMY_EVENTS.RECORDING_ID` — SIDs only.
 
-**Officer retrieval runbook (v1 — the human-in-the-loop step):**
+**Officer retrieval runbook (fallback, if the proxy above turns out not to be usable for SAR delivery):**
 1. Workflow surfaces, per Twilio call: `recording_sid`, call timestamp, direction, matched number.
 2. Officer opens the recording in **Twilio Flex** (Flex Insights / the Console call-recordings log). **[confirm]** exact Flex deep-link format — the July audit may have captured it; otherwise the media resource is `https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Recordings/{RecordingSid}.mp3` (auth-gated).
 3. Use Flex's **"copy link for download"** → download the audio file.
 4. **Attach the downloaded file to the Freshdesk ticket** for the SAR package. The customer receives the **file**, never the login-gated Flex/Twilio link.
-
-*(Later enhancement: an external step that calls the Twilio Recordings API with the SID + Twilio credentials to mint the file automatically — deferred; see the workflow-design doc.)*
 
 ---
 
@@ -119,4 +147,4 @@ Group by `CONVERSATION_ID`, order by `CREATED_AT`, label direction from the clas
 - [`dsr-intake-form-handoff.md`](dsr-intake-form-handoff.md) — intake form, request types, JSON payload.
 - [`dsr-privacy-request-workflow-design.md`](dsr-privacy-request-workflow-design.md) — the automation.
 
-*Reconstructed 2026-08-19 and validated against live Snowflake; merge with the original audit reference if exported.*
+*Reconstructed 2026-08-19 and validated against live Snowflake; merge with the original audit reference if exported. §4.2 updated 2026-09-28 after reconciling against the live `interaction-hub.html` / `sar-data-extract.html` dashboard queries — see `docs/dsr-go-live-readiness.md` → Reconciliation.*

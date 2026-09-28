@@ -21,8 +21,7 @@ The home for **"All Things Privacy"** at AnyVan. Two kinds of content live here:
 ### 1. DSR intake pipeline — Formstack → workflow-system → Freshdesk
 Going live for **both UK customers (public) and internal admins** on **one Formstack form**, feeding
 the existing **workflow-system → Freshdesk** (mirrors the live "Damage Claim - UK - Formstack"
-workflow). The interim internal HTML form stays until Formstack is live; the `backend/` Lambda is
-**superseded** and parked (not deployed).
+workflow). The interim internal HTML form stays until Formstack is live.
 
 | Path | What it is |
 |---|---|
@@ -35,15 +34,18 @@ workflow). The interim internal HTML form stays until Formstack is live; the `ba
 | `docs/dsr-field-mapping.md` | Single source of truth: form question → Formstack field id → Freshdesk field/tag. |
 | `docs/freshdesk-custom-fields.md` | The `cf_*` custom fields to create in Freshdesk admin (and how to confirm live keys). |
 | `dsr-intake-form.html` | Interim internal DSR form, live on AV Dashboards `operations/dsr-intake-form`. |
-| `backend/` · `docs/backend-runbook.md` | Superseded self-hosted Lambda; kept as reference/fallback, not deployed. |
 | `docs/public-hosting.md` | Hosting decision (Formstack) + the rejected self-hosted alternative. |
 | `skills/anyvan-formstack-freshdesk/` | The org-shareable skill distilled from `docs/conventions.md`. See `skills/README.md`. |
 
-**Status:** direction decided (all-Formstack, single form). Form **built** — id `6559077`, **aligned
-to the official DSRR template** (all 8 statutory rights + Marketing Opt-Out, ID verification,
-address, third-party contact, declaration). Pending: run the additive `--form 6559077` apply (fresh
-PAT) + record the new field ids; finish builder config (EU/UK region, retention, reCAPTCHA, theme,
-confirmation email); then create + promote the workflow. See `docs/go-live-guide.md`.
+**Status:** direction decided (all-Formstack, single form). Form **built** — id `6559077`, renamed
+**"AnyVan UK - Privacy Requests"**
+(https://anyvanforms.formstack.com/forms/anyvan_uk_privacy_requests). It was hand-edited in the
+Formstack builder and is **mapped as-is** — it offers 5 of the 8 statutory rights (SAR,
+Rectification, Deletion, Portability, Marketing Opt-Out); see the divergence note in
+`docs/dsr-field-mapping.md`. The workflow field/option contract and prompts have been updated to
+match. **Pending before go-live:** verify the Formstack → workflow event bridge (needs a `WF_JWT`),
+configure the Email Output, confirm the `cf_privacy_due_date` live key, then create the DRY_RUN
+workflow and promote. See `docs/go-live-guide.md`.
 
 ### 2. Privacy investigations / lookups & DSAR sweeps
 "Find X about a customer" requests — one dated record per request, plus reusable methodology.

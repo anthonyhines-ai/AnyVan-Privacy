@@ -24,9 +24,10 @@ These four custom fields go on the **ticket** object in Freshdesk. Create them i
 | Booking Reference | `cf_booking_reference` | Text (single line) | — |
 | TP Username | `cf_tp_username` | Text (single line) | — |
 
-The dropdown **values must match exactly** (case and spacing) — the backend sends these
-literal strings. If you prefer different display values, update the maps in
-`backend/handler.js` (`DSR_TYPE_LABELS`, `requesterTypeLabel`) to match.
+The dropdown **values must match exactly** (case and spacing) — the workflow prompt
+(`workflow/config_prompt.md`) emits these literal strings for `dsr_type` and `requester_type`
+(it already produces both, plus the booking reference and TP username, for the description). If
+you prefer different display values, update the option strings in that prompt to match.
 
 ## ⚠️ Confirm the live `cf_*` keys before deploying
 
@@ -43,19 +44,15 @@ curl -s -u "$FRESHDESK_API_KEY:X" \
   | jq '.[] | select(.name|test("dsr|requester|booking|tp_username")) | {label:.label, name:.name, type:.type}'
 ```
 
-If any returned `name` differs from the defaults above, set the matching environment
-variable on the Lambda so no code change is needed:
-
-| If the live key is… | set env var |
-|---|---|
-| DSR type field | `CF_DSR_TYPE` |
-| Requester type field | `CF_REQUESTER_TYPE` |
-| Booking reference field | `CF_BOOKING_REFERENCE` |
-| TP username field | `CF_TP_USERNAME` |
+Use each returned `name` (and `type`) as the field's key in the `custom_fields` block of
+`workflow/actions.json` — e.g. `"cf_dsr_type": "{dsr_type}"`, `"cf_requester_type":
+"{requester_type}"`, `"cf_booking_reference": "{booking_reference}"`, `"cf_tp_username":
+"{tp_username}"`. If Freshdesk suffixed a key (or you later change a field's type and its key
+changes), update it in `actions.json` and re-create a DRY_RUN workflow version. This is the
+same mechanism as the live `cf_privacy_due_date` field (see *Live now*, above).
 
 ## Tags (set automatically, no admin action)
 
-The backend derives tags from the payload — you do **not** create these in admin:
-`privacy`, `dsr`, `<request-type>` (e.g. `sar`), `<requester-type>` (e.g. `customer`,
-`tp`, `third-party`), `source:dsr-form`, and `account-holder-confirmed` (only when the
-requester confirmed they are the account holder).
+The workflow sets these tags on the ticket (in `workflow/actions.json`'s `tags` array) — you do
+**not** create them in admin: `privacy`, `dsr`, `<request-type>` (e.g. `sar`), `<requester-type>`
+(`customer`, `tp`, or `third-party`), and `source:dsr-form`.
