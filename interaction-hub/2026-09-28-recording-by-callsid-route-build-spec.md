@@ -39,6 +39,12 @@ It's two small pieces:
 Agents authenticate **once** to hear a recording (today a username/password prompt; recommended: make it
 the dashboard login so there's nothing to type — see §5).
 
+**Interim (today, no build needed):** the Hub already shows **🖥️ Twilio Console** and **▶️ Twilio Flex**
+buttons on an expanded call (built from the call's ID, transcript or not) — these open the call in Twilio,
+where anyone with Twilio/Flex access can play and download it. So access exists **now** for people who have
+Twilio access; make sure the people who need recordings are given that access. This backlog item is about
+removing the need to leave the Hub at all — not about restoring lost access.
+
 ---
 
 ## 1. Why the button is missing today
