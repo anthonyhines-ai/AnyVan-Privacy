@@ -13,6 +13,11 @@ these, update this file in the same PR.
   `fs_pat_` token — the Personal Access Token is a **V2025** credential.
 - **Auth:** `Authorization: Bearer fs_pat_…`. **Never commit the token** — pass it as an env var
   (`FORMSTACK_TOKEN`) only. If one is ever pasted into chat/a file, rotate it.
+- **Cross-session access:** the `FORMSTACK_TOKEN` is scoped to the AnyVan-Privacy cloud container.
+  Other sessions (e.g. Damage Claims Workbench) that need Formstack read+write access must have the
+  same token injected into their own environment — configure it under **Environment → Variables** in
+  the remote-execution settings for that session. The token covers both read (submissions, form
+  definitions) and write (create/update submissions, update form fields) — confirmed 2026-09-29.
 - **Diagnosing a 401:** almost always a base-URL mismatch (`/api/v2` instead of `/api/v2025`),
   not a bad token. Confirm the token is alive with:
   ```
