@@ -106,6 +106,10 @@ Hines (anthony.hines@anyvan.com)** unless told otherwise.
   by `dealId` only**, not WhatsApp/Live Chat.
 - **AV Dashboards:** `mcp__AV_Dashboards__*`; deploy dashboard HTML via `get_upload_token` → HTTP
   `PUT` (the `update_dashboard` MCP tool can truncate — see README).
+- **Formstack V2025 API:** call via `node -e "fetch(...)"`, not `curl` — curl gives misleading 401/404s
+  against `/api/v2025`. A 401 almost always means the wrong base URL (`/api/v2` instead of
+  `/api/v2025`), not a bad token. `GET /form/{id}` returns `{}`; use `GET /forms?search=<name>`
+  instead. See `docs/conventions.md` for the full diagnostic snippet.
 - Org skills: **`anyvan-data`** (Snowflake routing), **`workflow-editor`** / **`workflow-doctor`**
   (workflow CRUD / diagnosis), **`anyvan-hubspot-triage`** (CRM/phone duplicate diagnosis).
   Consider `/fewer-permission-prompts` to allowlist the repeat read-only calls.
