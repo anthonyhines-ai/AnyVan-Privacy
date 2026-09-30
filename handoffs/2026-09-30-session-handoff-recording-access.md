@@ -105,4 +105,3 @@ corrections plainly. Keep secrets out of git and chat.
 - PR: https://github.com/anthonyhines-ai/AnyVan-Privacy/pull/21
 - Customer identity, call log, recording SIDs, verification snippet → the `communication-lookups/…`
   record (§3, §6, §10). Command Centre artifact: `DyCBhQvjWgvyKGTGHqDbfn`.
-</content>
