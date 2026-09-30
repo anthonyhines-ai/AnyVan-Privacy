@@ -1,161 +1,309 @@
-# Call-Recording Retention Gap — Company-Wide Quantification
+# Call-recording AUDIO retention gap — connected-call quantification (refined)
 
-> ℹ️ **INTERNAL — contains no customer personal data.** Aggregate call-volume statistics only — no
-> names, numbers, addresses, account IDs or recording references. Safe to share internally.
+> ℹ️ **INTERNAL — COMMERCIAL IN CONFIDENCE. Contains no customer personal data.**
+> Aggregate volume analysis only — **no customer PII**: no names, numbers, call/recording SIDs, or
+> the Twilio Account SID (redacted as `<TWILIO_ACCOUNT_SID>` throughout — GitHub push protection
+> blocks the raw `AC…` value). Figures are counts from read-only Snowflake `PRODUCTION` queries.
+> Note that anything committed here persists in git history.
 
 | | |
 |---|---|
-| **Record type** | Retention-gap analysis / governance note |
+| **Record type** | Retention / data-loss quantification |
 | **Date created** | 2026-09-16 |
 | **Raised by** | Anthony Hines (anthony.hines@anyvan.com) |
-| **Data source** | Snowflake `PRODUCTION` (read-only) — `HARMONISED.PRODUCTION.TWILIO_CALL` |
-| **Subject** | Impact of the call-recording retention change (3-month → 12-month, effective **5 May 2026**) on audio availability |
+| **Data source** | Snowflake `PRODUCTION` (read-only) — `HARMONISED.PRODUCTION.TWILIO_CALL`, `MART_SALES_OPS.PRODUCTION.SOPHIE_CALLS_INCREMENTAL` |
+| **Subject** | Volume of call-recording **audio** purged vs retained under the 3→12-month retention change (company-wide, aggregate) |
+| **Status** | **Refined** (Snowflake dedup complete). **Twilio purge reconciliation OUTSTANDING** — needs Twilio account access (see §5) |
 
 ---
 
-## 1. Context
+## 1. Summary
 
-Call-recording **audio** retention changed from **3 months** to **12 months** on **5 May 2026**.
-Retention governs the **audio only** — call *metadata* (that a call happened, when, direction,
-duration, agent, queue) lives in the warehouse and is not deleted by this policy. This note sizes how
-much recorded-call audio is unrecoverable as a result, company-wide.
+AnyVan's call-recording **audio** retention changed from **3 months to 12 months on 5 May 2026**.
+A purge is irreversible, and a window extension only preserves recordings **still alive at the
+switch**. So audio survives only for calls on/after the **survivor boundary (~5 Feb 2026 =
+5 May − 3 months)**; everything earlier was already purged under the old 3-month rule.
 
-Prompted by a single-customer call lookup filed under `communication-lookups/` (Freshdesk ticket
-`2264362`), where that customer's 30 Jan 2026 quote calls were found already purged.
+This note quantifies the loss. Because there is **no recordings table in the warehouse** for the
+affected period (see §5), we use a **proxy**: connected Twilio call legs
+(`STATUS='completed' AND TRY_TO_NUMBER(DURATION) > 0`). The refinement below **de-duplicates**
+that proxy to a per-conversation grain and reconciles it against Twilio.
 
----
+**Headline (as at 2026-09-16):**
 
-## 2. Mechanism
+| Measure | Baseline (connected legs) | Refined (distinct conversations) | Change |
+|---|--:|--:|--:|
+| **Avoidable loss** — bucket B (a 12-month policy would still hold these) | **2,421,105** | **2,338,378** | **−82,727 (−3.4%)** |
+| **Total purged** — buckets A + B (no audio survives) | **9,551,523** | **9,344,448** | **−207,075 (−2.2%)** |
+| Retained — bucket C (audio held) | 5,152,035 | 4,928,062 | −223,973 (−4.4%) |
 
-A recording is purged once it exceeds the window in force, and **a purge cannot be undone**; extending
-the window only preserves recordings **still alive at the switch**. So:
+**So what:** parent-SID de-duplication moves the figures by only **2–4%**. The order of magnitude
+and the business conclusion are **unchanged** — roughly **2.3–2.4M avoidable recording losses** and
+**~9.3–9.5M total purged**. The dedup is small because **~70% of connected legs are single-leg
+automated `outbound-api` calls** that never over-counted; only inbound→agent calls carry the
+parent+child+transfer structure the dedup collapses. See §4.
 
-- A pre-5-May-2026 recording survives to today only if it was **< 3 months old on 5 May 2026** — i.e.
-  the call was on/after **~5 Feb 2026** (the "survivor boundary").
-- Anything earlier was already deleted under the 3-month rule before the window extended → **gone**.
-
-The **avoidable** slice — recordings a 12-month policy would still hold *today* but which are gone — is
-the window **[today − 12 months, 5 Feb 2026)**. It is **transient**: it shrinks each day and closes
-completely on **~5 Feb 2027**, once everything the 12-month policy would keep is stuff we actually
-retained.
-
----
-
-## 3. Quantification (as at 2026-09-16)
-
-**Proxy = connected Twilio call legs** (`STATUS='completed'` AND `DURATION > 0`). There is no
-recording-inventory table in the warehouse, so this stands in for "a recording existed." Twilio records
-per connected leg, so it is a reasonable **recording-file** proxy — but see caveats (§6): it **over-counts
-distinct customer conversations**.
-
-| Bucket | Connected call legs (≈ recordings) | Period |
-|---|---|---|
-| **B — avoidable loss** (12-mo policy *would still hold today*, but purged before the switch) | **~2.42M** (`2,421,105`) | 16 Sep 2025 → 4 Feb 2026 |
-| A — would have aged out under 12 months anyway | ~7.13M (`7,130,418`) | 1 Apr 2021 → 15 Sep 2025 |
-| C — retained (survived the switch) | ~5.15M (`5,152,035`) | 5 Feb 2026 → 15 Sep 2026 |
-
-- **Avoidable loss ≈ 2.4M recordings** — the cost of the switch landing on 5 May rather than a year
-  earlier.
-- **Total unrecoverable pre-survivor-boundary ≈ 9.55M** (A + B), a rolling ~5-year backlog back to
-  2021 — but ~7.1M of that (bucket A) would be gone under a 12-month policy regardless, so it is **not**
-  attributable to the policy timing.
+**Two caveats that matter more than the dedup** (§5): (a) the proxy counts *legs*, not confirmed
+*recording files* — the true file count can't be measured from the warehouse; (b) the purge itself
+is **not yet confirmed** against Twilio. Both need Twilio account access to close.
 
 ---
 
-## 4. Monthly shape (connected call legs)
+## 2. The retention mechanics & the survivor boundary
 
-~520k connected legs/month; the avoidable window spans ~4.7 months.
-
-| Month | Legs | | Month | Legs |
-|---|---|---|---|---|
-| 2025-06 | 420,036 | | 2025-12 | 469,785 |
-| 2025-07 | 483,181 | | 2026-01 | 501,658 |
-| 2025-08 | 495,034 | | 2026-02 | 532,931 |
-| 2025-09 | 539,920 | | 2026-03 | 602,928 |
-| 2025-10 | 557,450 | | 2026-04 | 596,755 |
-| 2025-11 | 535,175 | | | |
-
-*The avoidable gap (bucket B) runs from mid-Sep 2025 to early Feb 2026 — roughly Oct 2025–Jan 2026 in
-full months plus the part-months either side.*
-
----
-
-## 5. Two ways to read it
-
-| Framing | Figure | Meaning |
-|---|---|---|
-| **Avoidable loss** (policy-timing cost) | **~2.4M** | Recordings a 12-month policy would still hold today; lost to the late switch. Heals ~5 Feb 2027. |
-| **Operational blind spot** | **~9.5M** | We cannot produce audio for **any** call before ~5 Feb 2026 — a ~5-year backlog. Relevant to any historical SAR / dispute / legal-hold landing now. |
-
----
-
-## 6. Caveats
-
-- **Legs ≠ conversations.** Transfers and parent/child dial legs inflate the count; the reference
-  lookup was 36 legs ≈ 30 recordings ≈ far fewer actual conversations. Treat 2.4M / 9.5M as a
-  **recording-file upper bound** — distinct affected customers/conversations are materially lower. A
-  parent-SID dedup would give the true figure (see §8, and the queued task).
-- **Transient.** The 2.4M avoidable figure is a point-in-time snapshot; it shrinks daily and reaches
-  **zero ~5 Feb 2027**.
-- **Not reconciled against the served store.** Derived from call records, not from the actual
-  stored-recording inventory. Audio is served from AnyVan's S3 bucket `anyvan-twilio-recordings` via the
-  `twilio-recordings.anyvan.com` proxy, so the true test is that store — and it may follow a different
-  lifecycle than Twilio's own retention (see rec. 2). No live recordings client was available in-session.
-- **Proxy filter.** `completed` + `DURATION > 0` counts connected legs; it may include very short
-  connects and excludes ring-only/no-answer legs (which were never recorded anyway).
-
----
-
-## 7. SQL (reusable)
-
-```sql
--- Buckets by retention logic. Today = 2026-09-16; 12-mo lookback = 2025-09-16; survivor boundary ~2026-02-05.
-SELECT
-  CASE
-    WHEN START_TIME < '2025-09-16' THEN 'A_aged_out_anyway'
-    WHEN START_TIME < '2026-02-05' THEN 'B_avoidable_gap'
-    ELSE 'C_retained'
-  END AS bucket,
-  COUNT(*) AS connected_call_legs,
-  MIN(START_TIME)::date AS first_call, MAX(START_TIME)::date AS last_call
-FROM HARMONISED.PRODUCTION.TWILIO_CALL
-WHERE STATUS='completed' AND TRY_TO_NUMBER(DURATION) > 0
-GROUP BY 1 ORDER BY 1;
-
--- Monthly shape
-SELECT DATE_TRUNC('month', START_TIME)::date AS mth, COUNT(*) AS connected_call_legs
-FROM HARMONISED.PRODUCTION.TWILIO_CALL
-WHERE STATUS='completed' AND TRY_TO_NUMBER(DURATION) > 0
-  AND START_TIME >= '2025-06-01' AND START_TIME < '2026-05-01'
-GROUP BY 1 ORDER BY 1;
+```
+        BUCKET A                         BUCKET B                    │      BUCKET C
+  (aged out under 12mo too)         (AVOIDABLE loss)                 │   (audio retained)
+◀───────────────────────┼──────────────────────────────────────┼───┼──────────────────▶
+   … older calls      2025-09-16                            ~2026-02-05   2026-05-05   2026-09-16
+                    12-month horizon                       survivor bdry  policy switch  today
+                    (as at today)                          (switch − 3mo) (3mo → 12mo)  (analysis)
 ```
 
----
+- **5 May 2026 — policy switch.** Audio retention 3 months → 12 months. Only recordings **still
+  present** on this date gain the longer window.
+- **~5 Feb 2026 — survivor boundary.** Under the old 3-month rule, anything older than 3 months on
+  the switch date was already deleted. `5 May − 3 months ≈ 5 Feb 2026`. Calls **on/after** this date
+  survived into the new regime; **earlier calls were already gone.** (Exact day depends on the purge
+  job's cadence — treat as ~5 Feb.)
+- **Bucket split (snapshot as at 2026-09-16):**
 
-## 8. Recommendations
+| Bucket | Call date window | Meaning |
+|---|---|---|
+| **A** | before **2025-09-16** | Purged, but **would age out under the 12-month policy anyway** — unavoidable. |
+| **B** | **2025-09-16 → 2026-02-04** | Purged, but **within the 12-month window today** → a 12-month policy from the start would still hold these. **This is the avoidable loss.** |
+| **C** | **2026-02-05** onward | After the survivor boundary → **audio retained.** |
 
-1. **Refine the number with a parent-SID dedup** — collapse child dial/transfer legs to distinct
-   conversations/recording files for a true count (queued as a follow-up task).
-2. **Reconcile against the store AnyVan actually serves.** Audio is delivered from AnyVan's S3 bucket
-   `anyvan-twilio-recordings` via the `twilio-recordings.anyvan.com` proxy (the Interaction Hub / Sophie
-   QA path). Confirm **where the 3→12-month policy is enforced** — Twilio's native recording retention
-   *or* an S3 lifecycle policy on that bucket — because they can differ, and the S3 copy is what
-   determines retrievability. Verify sample RecordingSids through the proxy (302→audio = present,
-   404 = gone), not just the raw Twilio API.
-3. **SAR / legal risk.** On the current (Twilio-retention) assumption, audio for **any call before
-   ~5 Feb 2026 is unrecoverable** — but confirm against the S3 copy first (rec. 2), as its lifecycle may
-   differ. For any open dispute/SAR/legal-hold, export the retained audio now (it ages out at
-   call-date + 12 months) rather than relying on a HubSpot recording link, which persists after the file
-   is purged.
-4. **Retention-change checklist for next time.** A policy extension does not retro-rescue already-purged
-   media; if future changes need historical coverage, pair them with a one-off export *before* the
-   change. (Moot for this change — the pre-5-Feb-2026 media is already gone.)
+This is a **moving snapshot**: as time passes the 12-month horizon rolls forward, so bucket A grows
+and bucket B shrinks. The counts are fixed as at the analysis date.
 
 ---
 
-## 9. Governance notes
+## 3. The proxy and the three buckets (baseline)
 
-- All Snowflake queries were **read-only** against `PRODUCTION`.
-- This note contains **no customer personal data** — aggregate counts only.
-- Figures are a warehouse-derived estimate (connected-leg proxy), pending the §8 dedup and Twilio
-  reconciliation; treat as order-of-magnitude, not a reconciled recording ledger.
+**Proxy:** one connected call leg = one stand-in for a recording. A leg is "connected" when
+`STATUS = 'completed'` and `TRY_TO_NUMBER(DURATION) > 0`. Bucketed on `START_TIME`.
+
+| Bucket | Connected legs |
+|---|--:|
+| A — before 2025-09-16 | 7,130,418 |
+| B — 2025-09-16 → 2026-02-04 (**avoidable**) | 2,421,105 |
+| C — from 2026-02-05 (retained) | 5,152,035 |
+| **Total purged (A+B)** | **9,551,523** |
+
+These reproduce the original note's ~7.13M / ~2.42M / ~5.15M exactly, so the refinement below builds
+on the same definition.
+
+---
+
+## 4. Addendum — dedup & Twilio reconciliation (part 1: parent-SID dedup)
+
+### 4.1 Why connected legs over-count
+
+One inbound customer call fans out into several legs — the inbound parent, each dial-to-agent child,
+and each transfer — and every leg is a separate `TWILIO_CALL` row. Illustrative connected call
+(11 Feb 2026): **1 inbound parent (1,384s) + 4 `outbound-dial` children** → 5 legs, **1 conversation**.
+
+### 4.2 The dedup key
+
+`TWILIO_CALL` columns inspected via `INFORMATION_SCHEMA` (read-only). Two candidate keys:
+
+- **`PARENT_CALL_ID`** — the Twilio parent Call SID. Child legs carry it; a root leg has it `NULL`.
+  → **conversation key = `COALESCE(PARENT_CALL_ID, ID)`.** *(Used.)*
+- **`GROUP_ID`** — **empty in every bucket** (0 distinct values). Unusable. *(Rejected.)*
+
+There is **no recording-SID column** on `TWILIO_CALL`, so a *distinct-recording-file* count cannot be
+taken directly (see 4.4).
+
+### 4.3 Buckets at distinct-conversation grain
+
+`COUNT(DISTINCT COALESCE(PARENT_CALL_ID, ID))` over the connected-leg set:
+
+| Bucket | Connected legs | Distinct conversations | Δ | Δ% |
+|---|--:|--:|--:|--:|
+| A | 7,130,418 | 7,006,070 | −124,348 | −1.7% |
+| B — **avoidable** | 2,421,105 | 2,338,378 | −82,727 | **−3.4%** |
+| C — retained | 5,152,035 | 4,928,062 | −223,973 | −4.4% |
+| **Purged (A+B)** | **9,551,523** | **9,344,448** | **−207,075** | **−2.2%** |
+
+### 4.4 Why the dedup is so small — leg composition
+
+The over-count only exists on inbound→agent calls, and those are a minority of total volume. The bulk
+is single-leg automated outbound (`outbound-api`), which is already 1 leg = 1 conversation:
+
+| Bucket | Connected legs | `inbound` | `outbound-api` (single-leg) | `outbound-dial` (child) | child % |
+|---|--:|--:|--:|--:|--:|
+| A | 7,130,418 | 2,035,144 (28.5%) | 4,970,925 (**69.7%**) | 124,349 | 1.7% |
+| B | 2,421,105 | 604,732 (25.0%) | 1,733,646 (**71.6%**) | 82,727 | 3.4% |
+| C | 5,152,035 | 1,210,399 (23.5%) | 3,717,663 (**72.2%**) | 223,973 | 4.4% |
+
+`outbound-dial` (the dial-to-agent/transfer child legs) is the *only* population the parent-SID dedup
+removes — 1.7–4.4% of each bucket. Everything else is already at conversation grain.
+
+### 4.5 Distinct-recording-**file** grain — bounded, not measured
+
+The warehouse holds **no RecordingSids** for the purged period (§5), so the file count can only be
+**bounded**, not counted:
+
+- **Lower bound = distinct conversations** (one recording per conversation).
+- **Upper bound = connected legs** (every connected leg separately recorded).
+- **Central estimate ≈ conversations**, because multi-recording conversations (transfers, per-leg
+  recording) are the same small `outbound-dial` minority (1.7–4.4%).
+
+| Measure | Recording-file estimate (conversations … legs) |
+|---|---|
+| **Avoidable (B)** | **~2.34M – 2.42M** |
+| **Total purged (A+B)** | **~9.34M – 9.55M** |
+
+**Verdict on job 1:** the dedup is real but immaterial (2–4%). Report the avoidable loss as
+**~2.34–2.42M** and the total as **~9.34–9.55M**. Distinct conversations (2,338,378 / 9,344,448) is
+the best single point estimate.
+
+### 4.6 Conversation vs leg vs recording — the dedup is non-destructive
+
+Three grains are easily conflated:
+
+| Grain | What it is | Where it lives |
+|---|---|---|
+| **Call leg** | one Twilio Call SID — the customer's inbound leg, each dial-to-agent leg, each transfer leg | `TWILIO_CALL` (one row per leg); the raw proxy counts these |
+| **Conversation** | one customer contact = `COALESCE(PARENT_CALL_ID, ID)`, collapsing the inbound leg + its dial/transfer children | derived (the dedup above) |
+| **Recording file** | the audio object(s) — grain unconfirmed (one per conversation, or one per agent leg); see §5 | Twilio only (no warehouse RecordingSids for this period) |
+
+**A transferred call is one conversation across several legs** — the customer's inbound leg plus one
+leg per agent — so a genuine "Agent A → Agent B" handover is two (or three) Call SIDs but a single
+customer contact, typically on one recording. **This is real but rare:** in Aug 2026 only **2 of
+~207k** inbound conversations carried 2+ substantive agent legs (≥30s) — ~0.001%. The multi-leg
+over-count the dedup removes is overwhelmingly **short dial/ring attempts** (agent phones ringing in
+turn until one answers), not human handovers. *(Caveat: the ≥30s threshold would miss a transfer
+whose first agent leg was brief, and if transfers are modelled via conference/worker legs they may
+not appear as `outbound-dial` in `TWILIO_CALL` at all — see below.)*
+
+**The dedup deletes nothing.** `COUNT(DISTINCT conversation)` collapses legs only for the headline
+number; every leg row persists and any conversation can be expanded to its legs. **And the "which
+agents" detail is not in `TWILIO_CALL` at all** — it carries no agent identity. Agent names and the
+handover live in **`FCT_VOICE_INTERACTIONS`** (`WORKER_FULL_NAME`, grouped by `CONFERENCE_ID`), the
+surface the **Interaction Hub** already uses to show "Agent A → Agent B" per call. So **counting**
+(this note, `TWILIO_CALL`) and **displaying the transfer** (`FCT_VOICE_INTERACTIONS`) are separate
+jobs on separate tables — the retention count cannot erase the ability to show who was on the call.
+
+---
+
+## 5. Addendum (part 2: Twilio reconciliation) — **OUTSTANDING**
+
+**Goal:** confirm the purge *actually ran to policy* — i.e. audio for pre-5-Feb-2026 connected calls
+is **gone**, and audio for post-5-Feb-2026 calls **exists** — rather than inferring it from call
+records. **Metadata ≠ content:** a `TWILIO_CALL` row persisting says nothing about whether its audio
+survives (confirmed: the reference pre-boundary cohort — Freshdesk 2264362, 30 Jan 2026 — still shows
+**2 connected legs in metadata** today, with **8–9 Feb 2026** legs as the retained control; the rows
+persist regardless of the audio).
+
+### 5.1 Why it could not be completed in-session
+
+Every live-verification path was attempted and is blocked in this environment:
+
+| Path | Result |
+|---|---|
+| In-session **Twilio MCP** | **Docs/API-schema search only** — cannot execute account calls (`retrieve` returns specs, `search` returns docs). |
+| **Twilio REST API** (auth token / API key) | **No Twilio credential** present in the environment. |
+| **S3** recording store (`s3://anyvan-twilio-recordings/…`) via env AWS creds | **Blocked** — STS `InvalidClientTokenId`; `head_object` → `403`. The ambient AWS creds are not scoped to the recordings bucket. |
+| **Warehouse** RecordingSids for a pre-boundary sample | **None exist.** `SOPHIE_CALLS_INCREMENTAL` recording coverage starts **2026-06-11**; human-agent calls never carried RecordingSids in the warehouse (see `interaction-hub/2026-08-26-call-recording-playback-diagnosis.md`). No pre-boundary RecordingSid is obtainable without Twilio. |
+
+So the **pre-boundary "is it actually gone?" check is impossible without Twilio account access.**
+
+### 5.2 Runbook to close it (for whoever holds Twilio Console / API access)
+
+Account: `<TWILIO_ACCOUNT_SID>` (the single `AC…` in `TWILIO_CALL.ACCOUNT_ID`; recoverable from the
+Twilio Console / Flex Insights link — never commit the raw value).
+
+1. **Pre-boundary cohort → expect PURGED.** Resolve the connected legs for the reference cohort
+   (Freshdesk 2264362, **30 Jan 2026**; 2 legs confirmed in `TWILIO_CALL`). For each Call SID:
+   `GET /2010-04-01/Accounts/<TWILIO_ACCOUNT_SID>/Calls/{CallSid}/Recordings.json`
+   → **expect an empty list** (or the recording resource returns `404` / "deleted"). Console call log
+   → recording panel should read *deleted*.
+2. **Post-boundary cohort → expect RETAINED.** Same for the **8–9 Feb 2026** legs (2/day), **or** a
+   recent Sophie RecordingSid from `SOPHIE_CALLS_INCREMENTAL` (≥ 11 Jun 2026):
+   `GET .../Recordings/{RecordingSid}.json` → **expect `status=completed`**, media downloadable.
+3. **Storage cross-check (optional).** Recordings live at
+   `s3://anyvan-twilio-recordings/<TWILIO_ACCOUNT_SID>/{RecordingSid}`. `head-object` → pre-boundary
+   **404**, post-boundary **200 `audio/x-wav`**.
+4. **Record the AGGREGATE result here only** (e.g. "5/5 pre-boundary absent; 5/5 post-boundary
+   present"). **Do not commit** RecordingSids, Call SIDs, the customer number, or the Account SID.
+
+**Expected outcome if the purge ran to policy:** every pre-5-Feb sample **absent**, every post-5-Feb
+sample **present** — which would validate the survivor-boundary model and the bucket split above. Any
+pre-boundary sample that is *still present* would be a **finding** (purge did not run as expected).
+
+---
+
+## 6. What this means / recommended next steps
+
+1. **The dedup does not change the decision.** Avoidable loss ≈ **2.34–2.42M**, total purged ≈
+   **9.34–9.55M**. Use distinct conversations (2.34M / 9.34M) as the headline; the leg figure is a
+   ≤4% over-count.
+2. **The real unknowns are recording *coverage* and *purge confirmation*, not leg double-counting.**
+   The warehouse cannot say which legs were actually recorded, nor prove the audio is gone. Close §5
+   before treating any figure as audited.
+3. **Structural fix (removes the guesswork permanently):** land RecordingSid↔CallSid into Snowflake
+   (`HARMONISED.PRODUCTION.TWILIO_RECORDING_COMPLETED`, per the 26 Aug diagnosis). Then recording-file
+   counts and purge status become directly queryable and this proxy retires.
+
+---
+
+## 7. Governance notes
+
+- All queries were **read-only** `SELECT` against Snowflake `PRODUCTION` (`HARMONISED`,
+  `MART_SALES_OPS`, `INFORMATION_SCHEMA`). No writes; no dev/staging.
+- Contains **no customer PII** and **no secrets**. The Twilio Account SID is redacted
+  (`<TWILIO_ACCOUNT_SID>`); no RecordingSids, Call SIDs, phone numbers, or names are committed.
+- This repo captures the **analysis**; the data-protection **policy** and retention schedule live in
+  AnyVan's internal policy systems — reference them, don't restate as fact.
+- Figures are a **snapshot as at 2026-09-16** and shift as the 12-month horizon rolls forward.
+
+---
+
+## 8. Appendix — reproducible queries (read-only)
+
+```sql
+-- Baseline (connected legs) vs deduped (distinct conversations) per bucket
+WITH c AS (
+  SELECT COALESCE(PARENT_CALL_ID, ID) AS conv_key, START_TIME
+  FROM HARMONISED.PRODUCTION.TWILIO_CALL
+  WHERE STATUS = 'completed' AND TRY_TO_NUMBER(DURATION) > 0
+)
+SELECT
+  CASE WHEN START_TIME < TIMESTAMP '2025-09-16' THEN 'A_pre16Sep2025'
+       WHEN START_TIME < TIMESTAMP '2026-02-05' THEN 'B_avoidable'
+       ELSE 'C_retained' END AS bucket,
+  COUNT(*)                         AS connected_legs,
+  COUNT(DISTINCT conv_key)         AS distinct_conversations
+FROM c GROUP BY 1 ORDER BY 1;
+
+-- Leg composition (why the dedup is small): direction split + child (outbound-dial) share
+WITH c AS (
+  SELECT PARENT_CALL_ID, DIRECTION, START_TIME
+  FROM HARMONISED.PRODUCTION.TWILIO_CALL
+  WHERE STATUS = 'completed' AND TRY_TO_NUMBER(DURATION) > 0
+)
+SELECT
+  CASE WHEN START_TIME < TIMESTAMP '2025-09-16' THEN 'A'
+       WHEN START_TIME < TIMESTAMP '2026-02-05' THEN 'B' ELSE 'C' END AS bucket,
+  COUNT(*)                                                          AS connected_legs,
+  SUM(IFF(DIRECTION='inbound',1,0))                                AS inbound_legs,
+  SUM(IFF(DIRECTION='outbound-api',1,0))                           AS outbound_api_legs,
+  SUM(IFF(PARENT_CALL_ID IS NOT NULL,1,0))                         AS child_legs
+FROM c GROUP BY 1 ORDER BY 1;
+
+-- GROUP_ID is empty (returns 0), so it cannot be a dedup key:
+--   SELECT COUNT(DISTINCT GROUP_ID) FROM HARMONISED.PRODUCTION.TWILIO_CALL;  -- → 0
+
+-- Sophie recording coverage window (why no pre-boundary RecordingSid is available):
+SELECT MIN(EVENTTIMESTAMP) AS min_recsid_ts, MAX(EVENTTIMESTAMP) AS max_ts,
+       COUNT(*) AS rows_total, COUNT(CASE WHEN RECORDINGSID ILIKE 'RE%' THEN 1 END) AS with_recsid
+FROM MART_SALES_OPS.PRODUCTION.SOPHIE_CALLS_INCREMENTAL;   -- → coverage starts 2026-06-11
+```
+
+**Sources:** Snowflake `PRODUCTION` (read-only), queried 2026-09-16 —
+`HARMONISED.PRODUCTION.TWILIO_CALL`, `MART_SALES_OPS.PRODUCTION.SOPHIE_CALLS_INCREMENTAL`,
+`*.INFORMATION_SCHEMA`. Recording-storage mechanics per
+`interaction-hub/2026-08-26-call-recording-playback-diagnosis.md` and
+`docs/twilio-listing-call-lookup.md`.
