@@ -58,16 +58,17 @@ const LIVE_IDS = {
 // ---- vocab ------------------------------------------------------------------
 const REQUESTER = { CUST: 'Customer', TP: 'Transport Partner', TP3: 'Authorised Third Party' };
 const BIZ = { SOLE: 'Sole Trader', LTD: 'Limited Company or Partnership' };
-// The 8 statutory UK-GDPR rights from the official DSRR template, plus the customer-friendly
-// "Marketing Opt-Out" (a common subset of objection / withdrawal of consent).
+// The UK-GDPR data-subject rights offered on the form, plus the customer-friendly "Marketing
+// Opt-Out". Automated Decision-Making is intentionally excluded — AnyVan does not make
+// solely-automated decisions with legal/significant effect (UK GDPR Art. 22), so it is not offered.
 const REQ = {
   SAR: 'Access My Data (SAR)', DEL: 'Delete My Data', RECT: 'Correct My Data',
   RESTRICT: 'Restrict Processing', PORT: 'Data Portability', OBJECT: 'Object to Processing',
-  ADM: 'Automated Decision-Making', WITHDRAW: 'Withdraw Consent', MKT: 'Marketing Opt-Out',
+  WITHDRAW: 'Withdraw Consent', MKT: 'Marketing Opt-Out',
 };
-// Full option list for the request-type radio (order mirrors the template, marketing last).
+// Full option list for the request-type radio (marketing last).
 const REQUEST_TYPE_OPTIONS = [REQ.SAR, REQ.RECT, REQ.DEL, REQ.RESTRICT, REQ.PORT, REQ.OBJECT,
-  REQ.ADM, REQ.WITHDRAW, REQ.MKT];
+  REQ.WITHDRAW, REQ.MKT];
 // NB: "Payment & transaction records" was removed on the live form (5 categories).
 const SAR_CATS = ['Booking & account details', 'Call recordings', 'Chat transcripts',
   'Email correspondence', 'All personal data held'];
@@ -172,8 +173,8 @@ const FIELDS = [
     showIf: { any: [['request_type', REQ.PORT]] } },
 
   { key: 'additional_info', type: 'textarea', label: 'Additional information related to your request (optional)',
-    hint: 'For Restriction, Objection, Automated-Decision or Withdraw-Consent requests, give the '
-      + 'specifics here: which processing, decision or consent, and your grounds.' },
+    hint: 'For Restriction, Objection or Withdraw-Consent requests, give the specifics here: '
+      + 'which processing or consent, and your grounds.' },
 
   { key: 'sec_declaration', type: 'section', label: 'Review & Declaration', newPage: true },
   { key: 'declaration', type: 'checkbox', label: 'Declaration', required: true,

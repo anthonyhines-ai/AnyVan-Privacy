@@ -26,19 +26,22 @@ subject and description.
   phone, alt phone, requester type, business type/company/**TP username**
   where present, **booking reference** (normalised — prepend `AV` if digits only),
   account-holder confirmation, request type and its specifics (SAR categories + call/chat/all-data
-  detail, deletion scopes, rectification fields/details; for restriction/objection/automated-
-  decision/withdrawal-of-consent the free-text specifics from *Additional information*), the
+  detail, deletion scopes, rectification fields/details; for restriction/objection/withdrawal-of-
+  consent the free-text specifics from *Additional information*), the
   declaration, additional info, and for third parties / official authorities **the acting
   party's own name/email/phone**, the authorisation or legal basis + your read of the uploaded
   authorisation or signed request form. Escape user text.
   This description is the record — put everything here.
 - `dsr_type` — one of: `SAR`, `Rectification`, `Deletion`, `Restriction`, `Portability`,
-  `Objection`, `Automated Decision-Making`, `Withdrawal of Consent`, `Marketing Opt-Out`
-  (used in the subject).
+  `Objection`, `Withdrawal of Consent`, `Marketing Opt-Out` (used in the subject).
 - `requester_type` — one of: `Customer`, `TP Sole Trader`, `TP Limited`, `Third Party` (used in
   the subject; `TP Sole Trader` vs `TP Limited` is decided by the submission's business-type).
 - `request_type_tag` — lowercase tag token: `sar` | `rectification` | `deletion` | `restriction` |
-  `portability` | `objection` | `automated-decision` | `withdraw-consent` | `marketing-opt-out`.
+  `portability` | `objection` | `withdraw-consent` | `marketing-opt-out`.
+- `privacy_type` — the best-fit **Freshdesk "Privacy Type"** value (the *exact* choice string),
+  per the mapping below. Put it in the description as `Suggested Privacy Type: <value>`. The
+  `cf_dsr_type` field is not wired in the MVP, so this is advisory for the officer until it is;
+  the officer may refine it.
 - `requester_type_tag` — lowercase tag token: `customer` | `tp` | `third-party`.
 - `privacy_due_date` — the statutory response deadline as `YYYY-MM-DD`. Base date = the
   submission date; add **one calendar month** (same day-of-month next month; if that day doesn't
@@ -52,9 +55,27 @@ subject and description.
 - `Restrict Processing` → `Restriction` / `restriction`
 - `Data Portability` → `Portability` / `portability`
 - `Object to Processing` → `Objection` / `objection`
-- `Automated Decision-Making` → `Automated Decision-Making` / `automated-decision`
 - `Withdraw Consent` → `Withdrawal of Consent` / `withdraw-consent`
 - `Marketing Opt-Out` → `Marketing Opt-Out` / `marketing-opt-out`
+
+## Freshdesk Privacy Type mapping (set `privacy_type` to the EXACT choice string)
+Derive from the request type, and for SAR / Deletion from the sub-selections:
+- SAR, **only** Call recordings → `Call Recording/s`
+- SAR, **only** Chat transcripts → `Chat/s [Whatsapp/Live Chat]`
+- SAR, anything else (≥2 categories, "All personal data held", booking/account, email) → `Subject Access Request (SAR)`
+- Delete, Customer, full account → `Deletion of Customer Account`
+- Delete, Transport Partner → `Deletion of Transport Partner Account`
+- Delete, card data only → `Deletion of Card Information`
+- Delete, otherwise → `Right to Erasure Request`
+- Correct My Data → `Correct My Data [Recification]`  ⚠️ match the live choice spelling exactly (currently mis-spelt "Recification"; update here if the Freshdesk choice is corrected)
+- Data Portability → `Data Portability`
+- Object to Processing → `Object to Processing Request`
+- Restrict Processing → `Restrict Processing`
+- Withdraw Consent → `Withdraw Consent`
+- Marketing Opt-Out → `Marketing Preferences / Opt-Out Request`
+- Requester is a **Third Party acting as law enforcement / official authority** → `Law Enforcement / Official Authority` ⚠️ add this value in Freshdesk first
+- A data-handling complaint **or a breach concern** raised → `Complaint Regarding Data Handling`
+- A general query or a retention/storage question → `General Data Protection Enquiry` or `Retention Period / Data Storage Query`
 
 ## Rules
 - Do not include personal data in the `subject`.

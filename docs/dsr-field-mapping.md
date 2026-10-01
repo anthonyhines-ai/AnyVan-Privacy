@@ -63,8 +63,10 @@ Controllers (for reference): `requester_type` = `197276069`, sections = `1972760
 sections created by `--form` are appended — reorder them in the builder.
 
 ## Request type — options → `dsr_type` / `request_type_tag`
-The `request_type` radio (`197276089`) now carries all 8 statutory rights + Marketing Opt-Out.
-The workflow maps the submitted option string per `workflow/config_prompt.md`:
+The `request_type` radio (`197276089`) carries the offered rights (**Automated Decision-Making
+excluded** — AnyVan makes no solely-automated decisions with significant effect) + Marketing
+Opt-Out. The workflow maps the submitted option string per `workflow/config_prompt.md`, which also
+sets a best-fit **Freshdesk Privacy Type** (`privacy_type`, advisory until `cf_dsr_type` is wired):
 
 | Option string (Formstack) | `dsr_type` | `request_type_tag` |
 |---|---|---|
@@ -74,7 +76,6 @@ The workflow maps the submitted option string per `workflow/config_prompt.md`:
 | Restrict Processing | Restriction | `restriction` |
 | Data Portability | Portability | `portability` |
 | Object to Processing | Objection | `objection` |
-| Automated Decision-Making | Automated Decision-Making | `automated-decision` |
 | Withdraw Consent | Withdrawal of Consent | `withdraw-consent` |
 | Marketing Opt-Out | Marketing Opt-Out | `marketing-opt-out` |
 
