@@ -59,21 +59,24 @@ subject and description.
 - `Marketing Opt-Out` → `Marketing Opt-Out` / `marketing-opt-out`
 
 ## Freshdesk Privacy Type mapping (set `privacy_type` to the EXACT choice string)
+Match the **live form option strings** exactly. Data categories (`What data would you like to
+access?`): `Personal Details Held`, `Booking & Account Details`, `Call Recording/s`,
+`Chat Transcript/s`, `Email Correspondence`, `Video Survey [If Completed]`. Requester types:
+`A Customer`, `A Transport Partner`, `An Authorised Third Party`.
 Derive from the request type, and for SAR / Deletion from the sub-selections:
-- SAR, **only** Call recordings → `Call Recording/s`
-- SAR, **only** Chat transcripts → `Chat/s [Whatsapp/Live Chat]`
-- SAR, anything else (≥2 categories, "All personal data held", booking/account, email) → `Subject Access Request (SAR)`
-- Delete, Customer, full account → `Deletion of Customer Account`
-- Delete, Transport Partner → `Deletion of Transport Partner Account`
-- Delete, card data only → `Deletion of Card Information`
-- Delete, otherwise → `Right to Erasure Request`
+- SAR, only `Call Recording/s` and/or `Video Survey [If Completed]` → `Call Recording/s`
+- SAR, only `Chat Transcript/s` → `Chat/s [Whatsapp/Live Chat]`
+- SAR, anything else (≥2 categories, `Personal Details Held`, `Booking & Account Details`, `Email Correspondence`) → `Subject Access Request (SAR)`
+- Delete, requester `A Customer`, `Full Account and All Associated Data` → `Deletion of Customer Account`
+- Delete, requester `A Transport Partner` → `Deletion of Transport Partner Account`
+- Delete, otherwise → `Right to Erasure Request` (`Deletion of Card Information` has no form scope — officer-set only)
 - Correct My Data → `Correct My Data [Rectification]`
 - Data Portability → `Data Portability`
 - Object to Processing → `Object to Processing Request`
 - Restrict Processing → `Restrict Processing`
 - Withdraw Consent → `Withdraw Consent`
 - Marketing Opt-Out → `Marketing Preferences / Opt-Out Request`
-- Requester is a **Third Party acting as law enforcement / official authority** → `Law Enforcement / Official Authority`
+- Requester `An Authorised Third Party` acting as law enforcement / official authority → `Law Enforcement / Official Authority`
 - A data-handling complaint **or a breach concern** raised → `Complaint Regarding Data Handling`
 - A general query or a retention/storage question → `General Data Protection Enquiry` or `Retention Period / Data Storage Query`
 
