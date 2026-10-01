@@ -1,0 +1,15 @@
+[
+  {
+    "type": "FRESHDESK_TICKET_CREATE",
+    "config": {
+      "requester_email": "{requester_email}",
+      "subject": "{subject}",
+      "description": "{description}",
+      "status": 2,
+      "priority": 2,
+      "group_id": 159974,
+      "tags": ["privacy", "dsr", "{request_type_tag}", "{requester_type_tag}", "source:dsr-form", "env:test"],
+      "custom_fields": { "cf_privacy_due_date": "{privacy_due_date}" }
+    }
+  }
+]
