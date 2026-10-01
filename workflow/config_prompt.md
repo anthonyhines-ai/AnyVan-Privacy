@@ -67,13 +67,13 @@ Derive from the request type, and for SAR / Deletion from the sub-selections:
 - Delete, Transport Partner → `Deletion of Transport Partner Account`
 - Delete, card data only → `Deletion of Card Information`
 - Delete, otherwise → `Right to Erasure Request`
-- Correct My Data → `Correct My Data [Recification]`  ⚠️ match the live choice spelling exactly (currently mis-spelt "Recification"; update here if the Freshdesk choice is corrected)
+- Correct My Data → `Correct My Data [Rectification]`
 - Data Portability → `Data Portability`
 - Object to Processing → `Object to Processing Request`
 - Restrict Processing → `Restrict Processing`
 - Withdraw Consent → `Withdraw Consent`
 - Marketing Opt-Out → `Marketing Preferences / Opt-Out Request`
-- Requester is a **Third Party acting as law enforcement / official authority** → `Law Enforcement / Official Authority` ⚠️ add this value in Freshdesk first
+- Requester is a **Third Party acting as law enforcement / official authority** → `Law Enforcement / Official Authority`
 - A data-handling complaint **or a breach concern** raised → `Complaint Regarding Data Handling`
 - A general query or a retention/storage question → `General Data Protection Enquiry` or `Retention Period / Data Storage Query`
 
