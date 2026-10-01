@@ -6,9 +6,16 @@ The contract between the **Formstack form** and the **workflow → Freshdesk** w
 > (`AnyVan — Data Subject Request (DSR)`), created by `workflow/build-formstack-form.js`. The
 > `field_<NNN>` ids below are the live ids from that build.
 >
-> **Aligned to the official DSRR template** (`AnyVan_DSRR_Form.docx`). The fields that were
-> added by the additive updater `node workflow/build-formstack-form.js --form 6559077` were
-> **applied 2026-10-01**; their live ids are now recorded in the table below.
+> **Aligned to the official DSRR template** (`AnyVan_DSRR_Form.docx`). The additive updater
+> `node workflow/build-formstack-form.js --form 6559077` **applied 2026-10-01**.
+>
+> **Trimmed back to the DPO-approved baseline (2026-10-01):** the data-subject **Identity
+> Verification** section (`199104347/8/9`), **Title** (`199104345`), **intro note** (`199104344`),
+> **postal address** (`199104346`), **typed-signature** (`199104359`) and the four **rights-explainer
+> notes** (`199104355–358`) are **to be deleted in the builder** — they were unapproved additions and
+> are not legally required. **Kept:** the **Third Party / Official Authority** block
+> (`199104350/1/2/3`), which also carries law-enforcement requests. That kept delta + the
+> request-type scope need a **DPO re-sign-off** before public launch.
 >
 > **MVP:** everything lands in **ticket tags + the description**, plus **one date custom field**
 > `cf_privacy_due_date` (**Privacy Due Date**, already live in Freshdesk — confirm its key via
@@ -18,15 +25,10 @@ The contract between the **Formstack form** and the **workflow → Freshdesk** w
 
 | Form question | Requester types | Formstack field id | Destination (MVP) | Later `cf_*` |
 |---|---|---|---|---|
-| Intro / about-this-form note (DPM, privacy@anyvan.com, 1-month) | all | `199104344` (richtext) | — (guidance only) | — |
-| Title | all | `199104345` | description | — |
 | Full name / of data subject | all | `197276071` | description | — |
 | Email address (data subject) | all | `197276072` | **`requester_email`** (unless Third Party — see below) | — |
 | Phone number | all | `197276073` | ticket `phone` + description | — |
 | Alternative phone number | all | `197276074` | description | — |
-| Postal address | all | `199104346` | description | — |
-| Identity-verification details | Customer, TP | `199104348` | description | — |
-| Identity document (file, copy only) | Customer, TP | `199104349` | attached / noted in description | — |
 | Business type (Sole/Ltd) | TP | `197276081` | → `requester_type` (TP Sole/Ltd) | — |
 | Trading name | TP sole | `197276082` | description | — |
 | Registered company / partnership name | TP ltd | `197276083` | description | — |
@@ -35,7 +37,7 @@ The contract between the **Formstack form** and the **workflow → Freshdesk** w
 | Third party — your email | Third Party | `199104352` | **`requester_email`** (Third Party) | — |
 | Third party — your phone | Third Party | `199104353` | description | — |
 | Authorisation details | Third Party | `197276085` | description | — |
-| Proof of authorisation (file) | Third Party | `197276086` | vision-summarised into description | — |
+| Proof of authorisation / signed request form (file) | Third Party / authority | `197276086` | vision-summarised into description | — |
 | AnyVan booking reference | all | `197276080` | description (AV-prefixed) | `cf_booking_reference` |
 | Account-holder confirmation | Customer, TP | `197276087` | description + `account-holder-confirmed` tag | — |
 | Request type (9 options — see below) | all | `197276089` | `dsr_type` + `request_type_tag` + subject | `cf_dsr_type` |
@@ -51,20 +53,14 @@ The contract between the **Formstack form** and the **workflow → Freshdesk** w
 | Deletion scopes | Deletion | `197276099` | description | — |
 | Rectification fields | Rectification | `197276100` | description | — |
 | Rectification details | Rectification | `197276101` | description | — |
-| Restriction guidance note | Restrict Processing | `199104355` (richtext) | — (specifics via Additional information) | — |
-| Objection guidance note | Object to Processing | `199104356` (richtext) | — (specifics via Additional information) | — |
-| Automated decision-making note | Automated Decision-Making | `199104357` (richtext) | — (specifics via Additional information) | — |
-| Withdraw-consent note | Withdraw Consent | `199104358` (richtext) | — (specifics via Additional information) | — |
-| Additional information related to your request | all | `197276106` | description | — |
-| Full name (typed signature) | all | `199104359` | description | — |
+| Additional information related to your request (+ specifics for Restriction/Objection/ADM/Withdraw) | all | `197276106` | description | — |
 | Declaration | all | `197276108` | required to submit | — |
 | source (hidden) | admin entry | `197276151` | description ("logged by staff") | — |
 | agent (hidden) | admin entry | `197276152` | description | — |
 
 Controllers (for reference): `requester_type` = `197276069`, sections = `197276067` /
-`197276070` / `197276088` / `197276107` (+ Identity Verification `199104347` and Third Party
-`199104350`, added 2026-10-01). New sections created by `--form` are appended — reorder them in
-the builder.
+`197276070` / `197276088` / `197276107` (+ Third Party `199104350`, added 2026-10-01). New
+sections created by `--form` are appended — reorder them in the builder.
 
 ## Request type — options → `dsr_type` / `request_type_tag`
 The `request_type` radio (`197276089`) now carries all 8 statutory rights + Marketing Opt-Out.

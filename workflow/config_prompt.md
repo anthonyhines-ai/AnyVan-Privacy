@@ -22,15 +22,15 @@ subject and description.
   party's own email (`tp3_email`); otherwise it's the data subject's email. If the third party's
   own email is missing, fall back to the data-subject email and note the gap.
 - `subject` — `DSR-<submission id> — <dsr_type> (<requester_type>)`.
-- `description` — an HTML `<table>` breakdown of every captured field: **title**, name, email,
-  phone, alt phone, **postal address**, requester type, business type/company/**TP username**
+- `description` — an HTML `<table>` breakdown of every captured field: name, email,
+  phone, alt phone, requester type, business type/company/**TP username**
   where present, **booking reference** (normalised — prepend `AV` if digits only),
-  **identity-verification details and whether an ID document was uploaded (copy only)**,
   account-holder confirmation, request type and its specifics (SAR categories + call/chat/all-data
   detail, deletion scopes, rectification fields/details; for restriction/objection/automated-
   decision/withdrawal-of-consent the free-text specifics from *Additional information*), the
-  **typed-signature name** and declaration, additional info, and for third parties **the acting
-  party's own name/email/phone**, the authorisation basis + your document read. Escape user text.
+  declaration, additional info, and for third parties / official authorities **the acting
+  party's own name/email/phone**, the authorisation or legal basis + your read of the uploaded
+  authorisation or signed request form. Escape user text.
   This description is the record — put everything here.
 - `dsr_type` — one of: `SAR`, `Rectification`, `Deletion`, `Restriction`, `Portability`,
   `Objection`, `Automated Decision-Making`, `Withdrawal of Consent`, `Marketing Opt-Out`
