@@ -84,7 +84,7 @@ sets a best-fit **Freshdesk Privacy Type** (`privacy_type`, advisory until `cf_d
 |---|---|---|
 | `requester_type` | requester-type + business type | subject + `requester_type_tag` (`customer`/`tp`/`third-party`) |
 | `requester_email` | data-subject email, **or** the acting party's `tp3_email` when Third Party | ticket requester |
-| Reference | Formstack submission id | `DSR-<id>` in subject + confirmation |
+| Reference | Formstack submission id | `DSR-UK-<id>` in subject + confirmation |
 | `source` / `agent` | hidden prefill `?field197276151=admin&field197276152=<id>` | description |
 | Tags | derived | `privacy`, `dsr`, `<request_type_tag>`, `<requester_type_tag>`, `source:dsr-form` |
 

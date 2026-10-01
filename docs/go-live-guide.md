@@ -79,7 +79,7 @@ Then finish in the builder:
    `source` + `agent` (for the admin entry point).
 3. Configure: **EU/UK data region**, submission **retention** to the DSR policy minimum,
    built-in **reCAPTCHA**, AnyVan theme + WCAG pass, and a **confirmation email** quoting
-   `DSR-<submission id>` and the one-calendar-month timeline.
+   `DSR-UK-<submission id>` and the one-calendar-month timeline.
 4. Decide the repeatable-call-rows approach (the script uses a structured free-text field —
    swap for repeatable rows in the builder if your plan supports it).
 
@@ -133,7 +133,7 @@ Detail: `docs/formstack-to-freshdesk-workflow.md`. Files in `workflow/`.
    ```bash
    python3 ~/.claude/skills/workflow-doctor/workflow_doctor.py executions --env prod --jwt "$WF_JWT" | head
    ```
-   Verify: ticket created; subject `DSR-<id> — <type> (<requester>)`; **tags** landed as
+   Verify: ticket created; subject `DSR-UK-<id> — <type> (<requester>)`; **tags** landed as
    separate values; the **description** carries all fields (booking ref, TP username, request
    detail); third-party **vision read** appears in the description.
 3. Confirm the existing classifier picks it up on `FRESHDESK_TICKET_CREATED`:

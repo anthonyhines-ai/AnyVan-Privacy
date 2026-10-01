@@ -21,7 +21,7 @@ subject and description.
 - `requester_email` — the email we should reply to. For a **Third Party** this is the acting
   party's own email (`tp3_email`); otherwise it's the data subject's email. If the third party's
   own email is missing, fall back to the data-subject email and note the gap.
-- `subject` — `DSR-<submission id> — <dsr_type> (<requester_type>)`.
+- `subject` — `DSR-UK-<submission id> — <dsr_type> (<requester_type>)`.
 - `description` — an HTML `<table>` breakdown of every captured field: name, email,
   phone, alt phone, requester type, business type/company/**TP username**
   where present, **booking reference** (normalised — prepend `AV` if digits only),

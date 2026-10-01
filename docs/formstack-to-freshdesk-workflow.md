@@ -63,7 +63,7 @@ Note the returned `workflow_id` + `version`.
    ```bash
    python3 ~/.claude/skills/workflow-doctor/workflow_doctor.py executions --env prod --jwt "$WF_JWT" | head
    ```
-   Confirm: ticket created; `subject` = `DSR-<id> — <type> (<requester>)`; **tags** rendered
+   Confirm: ticket created; `subject` = `DSR-UK-<id> — <type> (<requester>)`; **tags** rendered
    correctly (verify the templated array elements landed as separate tags — if the handler
    doesn't element-render arrays, have the model emit the two type tags into the description
    or switch to a follow-up update); the **description** carries every field (booking ref, TP
