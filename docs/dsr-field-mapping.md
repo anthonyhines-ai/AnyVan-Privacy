@@ -10,8 +10,11 @@ The contract between the **Formstack form** and the **workflow → Freshdesk** w
 > added by the additive updater `node workflow/build-formstack-form.js --form 6559077`; their
 > live ids are assigned when that runs — record them here afterwards.
 >
-> **MVP:** no Freshdesk custom fields yet — everything lands in **ticket tags + the description**.
-> The `cf_*` column is the **later** mapping (add per `docs/freshdesk-custom-fields.md`).
+> **MVP:** everything lands in **ticket tags + the description**, plus **one date custom field**
+> `cf_privacy_due_date` (**Privacy Due Date**, already live in Freshdesk — confirm its key via
+> `GET /api/v2/ticket_fields`). The `cf_*` column below is the **later** dropdown/text mapping
+> (add per `docs/freshdesk-custom-fields.md`); a **Privacy Type** field (`cf_dsr_type`) now exists
+> and is the first to wire next.
 
 | Form question | Requester types | Formstack field id | Destination (MVP) | Later `cf_*` |
 |---|---|---|---|---|
@@ -87,7 +90,10 @@ The workflow maps the submitted option string per `workflow/config_prompt.md`:
 | `source` / `agent` | hidden prefill `?field197276151=admin&field197276152=<id>` | description |
 | Tags | derived | `privacy`, `dsr`, `<request_type_tag>`, `<requester_type_tag>`, `source:dsr-form` |
 
-## Later (when adding Freshdesk custom fields)
-`cf_dsr_type`, `cf_requester_type`, `cf_booking_reference`, `cf_tp_username` — see
-`docs/freshdesk-custom-fields.md`; then put `custom_fields` back into `workflow/actions.json`.
-Confirm `cf_*` live keys/types via `GET /api/v2/ticket_fields`.
+## Custom fields
+**Live now (wired in the MVP):** `cf_privacy_due_date` (**Privacy Due Date**, date) — the
+statutory deadline, set in `workflow/actions.json`.
+**Deferred (add later):** `cf_dsr_type`, `cf_requester_type`, `cf_booking_reference`,
+`cf_tp_username` — see `docs/freshdesk-custom-fields.md`; then add them to `custom_fields` in
+`workflow/actions.json`. `cf_dsr_type` (**Privacy Type**) already exists and is first to wire.
+Always confirm `cf_*` live keys/types via `GET /api/v2/ticket_fields` before relying on them.

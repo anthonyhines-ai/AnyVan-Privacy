@@ -20,15 +20,17 @@ Uses the **workflow-editor** skill (`workflow_edit.py`). Editing/creating always
 (https://workflows.anyvan.com) — the script cannot promote.
 
 ## Files in `workflow/`
-- `actions.json` — the two actions (`FRESHDESK_TICKET_CREATE`, `FORMSTACK_SUBMISSION_UPDATE`).
+- `actions.json` — a single `FRESHDESK_TICKET_CREATE` action (tags + description + the
+  `cf_privacy_due_date` date field). A `FORMSTACK_SUBMISSION_UPDATE` write-back is deferred.
 - `config_prompt.md` — the AI config/system prompt (output contract + rules).
 - `user_prompt.md` — the per-event instruction.
 - `create.sh` — the `workflow_edit.py create` invocation tying it together.
 
-> **MVP:** this workflow maps to ticket **tags + a structured HTML description** only — no
-> Freshdesk custom fields, no submission write-back. `actions.json` is a single
-> `FRESHDESK_TICKET_CREATE`. Adding `cf_*` fields later is a small edit (put `custom_fields`
-> back and re-create a version) — see `docs/freshdesk-custom-fields.md`.
+> **MVP:** this workflow maps to ticket **tags + a structured HTML description + one date custom
+> field** (`cf_privacy_due_date`, the statutory deadline). No dropdown/text custom fields and no
+> submission write-back yet. `actions.json` is a single `FRESHDESK_TICKET_CREATE`. Adding the
+> dropdown `cf_*` fields later is a small edit (extend `custom_fields` and re-create a version) —
+> see `docs/freshdesk-custom-fields.md`.
 
 ## Prerequisites
 1. **Formstack form built** (`workflow/build-formstack-form.js` or `docs/formstack-dsr-build.md`)
