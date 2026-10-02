@@ -39,7 +39,7 @@ python3 "$SK" create --env "$ENVv" --jwt "$WF_JWT" \
   --set 'subscribed_events=["FORMSTACK_FORM_SUBMITTED"]' \
   --set 'agentic_tools=["formstack_submission","formstack_upload","formstack_upload_interpret"]' \
   --set max_iterations=8 \
-  --set "event_filter=payload.formId == \"${FORMSTACK_FORM_ID}\"" \
+  --set "event_filter=payload.formId = \"${FORMSTACK_FORM_ID}\"" \
   --set config_prompt="$(cat workflow/config_prompt.md)"
 
 echo
