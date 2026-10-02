@@ -95,8 +95,8 @@ Detail: `docs/dsr-field-mapping.md`.
 1. Paste the **field-id map** the build script printed into the mapping table (or read ids from
    the builder if you built it by hand).
 2. Note the form's **FORM ID** and, from the test submission's webhook/event, the
-   **submission-id path** in the payload (the workflow uses `{event.payload.UniqueID}` as a
-   placeholder — replace with the real path).
+   **submission-id path** in the payload (the workflow-system normalises the Formstack webhook
+   to camelCase, so the confirmed path is `{event.payload.uniqueId}`).
 
 **Done when:** the mapping table has the field ids and the FORM ID + submission-id path are
 known.
@@ -107,8 +107,8 @@ known.
 Detail: `docs/formstack-to-freshdesk-workflow.md`. Files in `workflow/`.
 1. Fill the placeholders:
    - `workflow/create.sh` → `FORMSTACK_FORM_ID`.
-   - `workflow/user_prompt.md` → confirm the submission-id path (`{event.payload.UniqueID}`)
-     against a real event payload.
+   - `workflow/user_prompt.md` → submission-id path confirmed as `{event.payload.uniqueId}`
+     (camelCase — normalised from the Formstack webhook; verified against a real event payload).
    (MVP `actions.json` carries one custom field — `cf_privacy_due_date` — plus tags + description;
    no dropdown/text `cf_*` yet.)
 2. Confirm the event + tools exist (no JWT needed):
