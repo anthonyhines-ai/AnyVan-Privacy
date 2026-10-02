@@ -4,6 +4,23 @@ Turns a DSR Formstack submission into a Freshdesk ticket via the workflow-system
 existing **"Damage Claim - UK - Formstack"** workflow. The workflow only *creates* the ticket;
 the existing `FRESHDESK_TICKET_CREATED` classifier routes it.
 
+> **Gate 0 — the form must publish the event.** The workflow consumes `FORMSTACK_FORM_SUBMITTED`,
+> which only fires if the Formstack form has a **webhook** to `https://events.anyvan.com/v1/formstack/form-submitted`.
+> The Damage form (6200752) has one; the Privacy form (6559077) did **not** — so until the webhook
+> exists, no submission reaches the workflow and **zero** tickets are created, however correct the
+> workflow is. Create it with `workflow/create-webhook.mjs` (mirrors the Damage webhook; copies the
+> HMAC signing secret at runtime — never printed/committed):
+> ```bash
+> export FORMSTACK_TOKEN="<fresh fs_pat_… PAT>"
+> node workflow/create-webhook.mjs          # idempotent; aborts if one already exists
+> node workflow/create-webhook.mjs --verify # list the form's webhooks
+> ```
+> **Verify:** after the workflow is ACTIVE, send one test submission and check the executions feed.
+> An execution = `events.anyvan.com` accepted the signature. No execution = HMAC/registration issue;
+> the signing secret may be per-form, so ask the platform team (tom.michaelis@anyvan.com) to register
+> form 6559077. The webhook is form-level (prod) — the test/live split lives in the **workflow**
+> (`actions.test.json` → sandbox group `31000119185`), not the webhook.
+
 ```
 Formstack DSR submit ──FORMSTACK_FORM_SUBMITTED──► this workflow
    (AI eval: read submission, vision-check 3rd-party auth doc, map fields)
