@@ -1,6 +1,7 @@
 # DSR field mapping (single source of truth)
 
 The contract between the **Formstack form** and the **workflow → Freshdesk** wiring (`workflow/`).
+Customer-facing form copy (welcome + submission messages) lives in `docs/dsr-form-copy.md`.
 
 > **Built.** The form exists in the AnyVanforms account — **form id `6559077`**
 > (`AnyVan — Data Subject Request (DSR)`), created by `workflow/build-formstack-form.js`. The
