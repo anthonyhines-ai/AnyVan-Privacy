@@ -38,7 +38,10 @@ Uses the **workflow-editor** skill (`workflow_edit.py`). Editing/creating always
 
 ## Files in `workflow/`
 - `actions.json` — a single `FRESHDESK_TICKET_CREATE` action (tags + description + the
-  `cf_privacy_due_date` date field). A `FORMSTACK_SUBMISSION_UPDATE` write-back is deferred.
+  `cf_privacy_due_date` date field), pinned to the live **Privacy** group `31000116264` so tickets
+  land in-queue by default (the classifier can still re-route/assign). `actions.test.json` is the
+  same action pinned to the sandbox group `31000119185` + `env:test`. A `FORMSTACK_SUBMISSION_UPDATE`
+  write-back is deferred.
 - `config_prompt.md` — the AI config/system prompt (output contract + rules).
 - `user_prompt.md` — the per-event instruction.
 - `create.sh` — the `workflow_edit.py create` invocation tying it together.
