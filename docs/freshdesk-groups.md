@@ -14,6 +14,19 @@
 | Germany privacy | `Germany Privacy` | `31000119027` |
 | Data-breach intake | `Data Breach - Emails` | `31000117724` |
 
+## Ticket-creation route (A = chosen; B = fallback)
+- **Route A — workflow API (chosen).** The `[UK] Privacy Submission Workflow`'s
+  `FRESHDESK_TICKET_CREATE` action raises the ticket directly into the test sandbox group
+  `31000119185` (live: `Privacy` `31000116264`). This is the route in `workflow/actions*.json`.
+- **Route B — email-to-ticket (fallback only).** Freshdesk's incoming address for the Privacy
+  queue is **`anyvancomprivacy@anyvan.freshdesk.com`**. Mail sent there opens a ticket in the
+  bound group automatically. We keep this in reserve in case Route A has to change; it is **not**
+  wired now.
+- **Keep `privacy@anyvan.com` un-forwarded to Freshdesk** while Route A is the single ticket
+  creator — forwarding it would double-raise every DSR (one ticket from the workflow, one from the
+  email). The 5 Formstack native internal notifications to `privacy@anyvan.com` are being disabled
+  (saved as the basis for what the workflow sends); the customer-facing confirmations stay on.
+
 ## Full list (captured 2026-10-01; appears A–S, may be truncated)
 | Group | `group_id` |
 |---|---|
