@@ -121,7 +121,7 @@ mapping doc: (a) a repeatable section of {date, time, phone} if the plan support
 - **Spam/bot:** enable Formstack's built-in reCAPTCHA on the public form.
 - **Theme:** apply AnyVan branding; run an accessibility (WCAG 2.2 AA) pass on the theme.
 - **Confirmation:** enable a submitter confirmation email stating the reference
-  (`DSR-<submission id>`) and the one-calendar-month timeline; set the on-screen confirmation
+  (`DSR-UK-<submission id>`) and the one-calendar-month timeline; set the on-screen confirmation
   message likewise.
 - **ICO framing:** keep the "friction-by-design" copy as *helping us locate your data*, not as
   a deterrent to exercising rights. For the public channel, lean towards lighter friction than
