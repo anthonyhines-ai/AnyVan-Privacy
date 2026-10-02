@@ -28,7 +28,7 @@ Customer-facing form copy (welcome + submission messages) lives in `docs/dsr-for
 |---|---|---|---|---|
 | Full name / of data subject | all | `197276071` | description | — |
 | Email address (data subject) | all | `197276072` | **`requester_email`** (unless Third Party — see below) | — |
-| Phone number | all | `197276073` | ticket `phone` + description | — |
+| Phone number ⚠️ | SAR (calls/chat only) | `197276073` | ticket `phone` + description | — |
 | Alternative phone number | all | `197276074` | description | — |
 | Business type (Sole/Ltd) | TP | `197276081` | → `requester_type` (TP Sole/Ltd) | — |
 | Trading name | TP sole | `197276082` | description | — |
@@ -40,7 +40,7 @@ Customer-facing form copy (welcome + submission messages) lives in `docs/dsr-for
 | Authorisation details | Third Party | `197276085` | description | — |
 | Proof of authorisation / signed request form (file) | Third Party / authority | `197276086` | vision-summarised into description | — |
 | AnyVan booking reference | all | `197276080` | description (AV-prefixed) | `cf_booking_reference` |
-| Account-holder confirmation | Customer, TP | `197276087` | description + `account-holder-confirmed` tag | — |
+| Account-holder confirmation ❌ | Customer, TP | `197276087` | description + `account-holder-confirmed` tag | — |
 | Request type (9 options — see below) | all | `197276089` | `dsr_type` + `request_type_tag` + subject | `cf_dsr_type` |
 | SAR data categories | SAR | `197276090` | description | — |
 | Call recordings — from date | SAR (calls) | `197277114` | description | — |
@@ -58,6 +58,15 @@ Customer-facing form copy (welcome + submission messages) lives in `docs/dsr-for
 | Declaration | all | `197276108` | required to submit | — |
 | source (hidden) | admin entry | `197276151` | description ("logged by staff") | — |
 | agent (hidden) | admin entry | `197276152` | description | — |
+
+> **Live-form drift (verified 2026-10-02 against form `6559077`) — see `docs/dsr-dryrun-test-findings.md`:**
+> - ⚠️ **Phone (`197276073`) is conditional**: shown only when SAR data categories include
+>   `Call Recording/s` or `Chat Transcript/s` — not requester-type "all".
+> - ❌ **Account-holder confirmation (`197276087`) is not on the live form** — nothing populates the
+>   `account-holder-confirmed` tag.
+> - **Checkbox fields cannot be set via the V2025 submission API** (SAR categories `197276090`,
+>   Declaration `197276108`) — scalar/radio/datetime write fine; checkboxes silently store empty.
+>   API-driven submissions must use the hosted form or carry these in a free-text field.
 
 Controllers (for reference): `requester_type` = `197276069`, sections = `197276067` /
 `197276070` / `197276088` / `197276107` (+ Third Party `199104350`, added 2026-10-01). New
