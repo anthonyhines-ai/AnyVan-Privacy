@@ -7,5 +7,6 @@ A DSR Formstack form was submitted (submission id `{event.payload.uniqueId}`).
 3. Produce the output-contract fields (see the config prompt) to raise the Freshdesk ticket.
 
 Map faithfully from the submission — do not guess. Normalise the booking reference (prepend
-`AV` to a digits-only value). Compose the subject as
-`DSR-UK-{event.payload.uniqueId} — <dsr_type> (<requester_type>)`.
+`AV` to a digits-only value). Compose the `subject` and the HTML `description` **exactly** per the
+output contract and the fixed description template in the config prompt — reproduce the Formstack
+notification layout verbatim; do not invent your own structure.
