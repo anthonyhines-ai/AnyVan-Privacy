@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create the "DSR Intake - UK - Formstack" workflow in the workflow-system.
+# Create the "Privacy DSR Intake - UK - Formstack" workflow in the workflow-system.
 #
 # Prerequisites (MVP — tags + description only, no Freshdesk custom fields):
 #   - WF_JWT exported (copy "Copy token" from https://workflows.anyvan.com admin UI; ~12h).
@@ -17,10 +17,10 @@ ENVv="${ENVv:-prod}"
 
 # Overridable so the SAME script creates the test build and the live build:
 #   TEST (routes to the sandbox Freshdesk group + env:test tag):
-#     WF_NAME="DSR Intake - UK - Formstack [TEST]" ACTIONS_FILE=workflow/actions.test.json bash workflow/create.sh
+#     WF_NAME="Privacy DSR Intake - UK - Formstack [TEST]" ACTIONS_FILE=workflow/actions.test.json bash workflow/create.sh
 #   LIVE (defaults):
 #     bash workflow/create.sh
-WF_NAME="${WF_NAME:-DSR Intake - UK - Formstack}"
+WF_NAME="${WF_NAME:-Privacy DSR Intake - UK - Formstack}"
 ACTIONS_FILE="${ACTIONS_FILE:-workflow/actions.json}"
 
 # ---- placeholders you must set ------------------------------------------------
