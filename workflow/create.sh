@@ -25,7 +25,7 @@ ACTIONS_FILE="${ACTIONS_FILE:-workflow/actions.json}"
 
 # ---- placeholders you must set ------------------------------------------------
 FORMSTACK_FORM_ID="6559077"                 # DSR form id (built by build-formstack-form.js)
-# Also confirm the submission-id path used in workflow/user_prompt.md ({event.payload.UniqueID})
+# Also confirm the submission-id path used in workflow/user_prompt.md ({event.payload.uniqueId})
 # against a real FORMSTACK_FORM_SUBMITTED payload (run `python3 "$SK" catalogue --env prod`).
 # -------------------------------------------------------------------------------
 
@@ -39,7 +39,7 @@ python3 "$SK" create --env "$ENVv" --jwt "$WF_JWT" \
   --set 'subscribed_events=["FORMSTACK_FORM_SUBMITTED"]' \
   --set 'agentic_tools=["formstack_submission","formstack_upload","formstack_upload_interpret"]' \
   --set max_iterations=8 \
-  --set "event_filter=payload.FormID == \"${FORMSTACK_FORM_ID}\"" \
+  --set "event_filter=payload.formId == \"${FORMSTACK_FORM_ID}\"" \
   --set config_prompt="$(cat workflow/config_prompt.md)"
 
 echo

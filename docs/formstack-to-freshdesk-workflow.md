@@ -41,12 +41,16 @@ Uses the **workflow-editor** skill (`workflow_edit.py`). Editing/creating always
 | Placeholder | Where | What |
 |---|---|---|
 | `<FORMSTACK_FORM_ID>` | `create.sh` | the DSR form's numeric id (used in `event_filter`) |
-| `{event.payload.UniqueID}` | `user_prompt.md` | the real submission-id path in a `FORMSTACK_FORM_SUBMITTED` payload — confirm from a test event or `catalogue` |
+| `{event.payload.uniqueId}` | `user_prompt.md` | the submission-id path in a `FORMSTACK_FORM_SUBMITTED` payload — **confirmed camelCase** (the workflow-system normalises the raw Formstack webhook `UniqueID`/`FormID` to `uniqueId`/`formId`) |
 
-Confirm the event payload path and that `FORMSTACK_FORM_SUBMITTED` is live:
+Confirm `FORMSTACK_FORM_SUBMITTED` is live (lists event **names** only — it does NOT expose the payload shape):
 ```bash
 python3 "$SK" catalogue --env prod     # SK = path to workflow_edit.py; no JWT needed
 ```
+To confirm the payload **path/casing**, inspect a real event instead — either a live sibling
+workflow's config (`workflow_edit.py get <id>`, e.g. the Damage Claim UK workflow whose
+`event_filter` is `payload.formId = …`) or a real execution
+(`workflow_doctor.py exec <id> --json` → `event_payload.payload`). Verified: keys are `uniqueId` / `formId`.
 
 ## Create (lands DRY_RUN)
 ```bash
