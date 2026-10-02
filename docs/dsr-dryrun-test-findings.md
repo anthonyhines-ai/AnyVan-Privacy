@@ -11,7 +11,7 @@ Workflow [TEST]`). Submission id **`1502835200`**.
 | Form 6559077 state | **Active** (`formSettings.isActive: true`), captcha off, 0 prior submissions. The go-live caveat that the form was still in DRAFT is **stale**. |
 | Webhook wiring | Per-form webhooks are **empty on both 6559077 and the live Damage Claim form (5500224)**. Event delivery to workflow-system is therefore **account-wide, not per-form** — an empty per-form webhook list is not evidence the form is unwired. |
 | Test submission | Fired + persisted (9 fields verified via GET). |
-| Freshdesk ticket | **None, as expected** — DRY_RUN *proposes* `FRESHDESK_TICKET_CREATE`, it does not commit. A real ticket only appears after promotion to ACTIVE. |
+| Freshdesk ticket | **Depends on the workflow's state at fire time (2026-10-02 09:53:13 BST).** If still DRY_RUN → `FRESHDESK_TICKET_CREATE` is *proposed* only, no ticket. If already promoted to ACTIVE → the action *executes* and a **real ticket is created in sandbox group `31000119185`** (test build routes there, tag `env:test`) — not the main privacy queue. Promotion status at fire time is unconfirmed; settle in the local session. |
 | Execution inspection | Pending — requires the `workflow-doctor` tooling + a `WF_JWT`; not runnable from the cloud container (plugin not installed there). |
 
 ## Expected proposed ticket (verify in workflow-doctor against submission 1502835200)
