@@ -36,6 +36,26 @@ Uses the **workflow-editor** skill (`workflow_edit.py`). Editing/creating always
 **DRY_RUN** version; **promotion to ACTIVE is a manual human step in the admin UI**
 (https://workflows.anyvan.com) — the script cannot promote.
 
+## Customer reply handling — auto-merge (`freshdesk-merge-dsr-replies.mjs`)
+The customer confirmation is sent by **Formstack**, so a customer's reply has no Freshdesk ticket id
+to thread on and Freshdesk opens a **new** ticket (`Re: Your AnyVan Privacy Request: Reference
+DSR-<id>`) instead of threading onto the original. `workflow/freshdesk-merge-dsr-replies.mjs` merges
+each reply ticket back into its original.
+
+- **Match key:** the submission id — reply subject `…DSR-<id>`, original subject `… [<id>]`.
+- **Safety (PII queue):** merges only when there is **exactly one** original with that id **and the
+  requester is the same contact** (`requester_id`), within the privacy groups only. DRY-RUN by
+  default; `--apply` executes; `--once <id>` tests a single reply. Anything ambiguous is skipped for
+  a human.
+- **Deploy:** run the `--apply` form on a schedule (cron / scheduler), or import its match logic into
+  a webhook handler fed by a Freshdesk Ticket-Creation rule.
+- **Structural alternative (not taken):** sending the acknowledgement from Freshdesk instead of
+  Formstack would make replies thread natively and remove the need for this merge. Chosen path is
+  the merge; revisit if reply volume grows.
+
+> **Not runnable from the cloud session** (no Freshdesk API access there, and merge is destructive).
+> Always run the DRY-RUN first and confirm the "WOULD MERGE" lines before `--apply`.
+
 ## Files in `workflow/`
 - `actions.json` — a single `FRESHDESK_TICKET_CREATE` action (tags + description + the
   `cf_privacy_due_date` date field), pinned to the live **Privacy** group `31000116264` so tickets
