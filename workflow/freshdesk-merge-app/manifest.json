@@ -1,0 +1,15 @@
+{
+  "platform-version": "3.0",
+  "product": {
+    "freshdesk": {
+      "events": {
+        "onTicketCreate": { "handler": "onTicketCreateHandler" }
+      }
+    }
+  },
+  "whitelisted-domains": ["https://anyvan.freshdesk.com"],
+  "engines": {
+    "node": "18.17.0",
+    "fdk": "9.0.0"
+  }
+}
