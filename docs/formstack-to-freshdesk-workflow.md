@@ -4,6 +4,23 @@ Turns a DSR Formstack submission into a Freshdesk ticket via the workflow-system
 existing **"Damage Claim - UK - Formstack"** workflow. The workflow only *creates* the ticket;
 the existing `FRESHDESK_TICKET_CREATED` classifier routes it.
 
+> **Gate 0 — the form must publish the event.** The workflow consumes `FORMSTACK_FORM_SUBMITTED`,
+> which only fires if the Formstack form has a **webhook** to `https://events.anyvan.com/v1/formstack/form-submitted`.
+> The Damage form (6200752) has one; the Privacy form (6559077) did **not** — so until the webhook
+> exists, no submission reaches the workflow and **zero** tickets are created, however correct the
+> workflow is. Create it with `workflow/create-webhook.mjs` (mirrors the Damage webhook; copies the
+> HMAC signing secret at runtime — never printed/committed):
+> ```bash
+> export FORMSTACK_TOKEN="<fresh fs_pat_… PAT>"
+> node workflow/create-webhook.mjs          # idempotent; aborts if one already exists
+> node workflow/create-webhook.mjs --verify # list the form's webhooks
+> ```
+> **Verify:** after the workflow is ACTIVE, send one test submission and check the executions feed.
+> An execution = `events.anyvan.com` accepted the signature. No execution = HMAC/registration issue;
+> the signing secret may be per-form, so ask the platform team (tom.michaelis@anyvan.com) to register
+> form 6559077. The webhook is form-level (prod) — the test/live split lives in the **workflow**
+> (`actions.test.json` → sandbox group `31000119185`), not the webhook.
+
 ```
 Formstack DSR submit ──FORMSTACK_FORM_SUBMITTED──► this workflow
    (AI eval: read submission, vision-check 3rd-party auth doc, map fields)
@@ -19,16 +36,41 @@ Uses the **workflow-editor** skill (`workflow_edit.py`). Editing/creating always
 **DRY_RUN** version; **promotion to ACTIVE is a manual human step in the admin UI**
 (https://workflows.anyvan.com) — the script cannot promote.
 
+## Customer reply handling — auto-merge (`freshdesk-merge-dsr-replies.mjs`)
+The customer confirmation is sent by **Formstack**, so a customer's reply has no Freshdesk ticket id
+to thread on and Freshdesk opens a **new** ticket (`Re: Your AnyVan Privacy Request: Reference
+DSR-<id>`) instead of threading onto the original. `workflow/freshdesk-merge-dsr-replies.mjs` merges
+each reply ticket back into its original.
+
+- **Match key:** the submission id — reply subject `…DSR-<id>`, original subject `… [<id>]`.
+- **Safety (PII queue):** merges only when there is **exactly one** original with that id **and the
+  requester is the same contact** (`requester_id`), within the privacy groups only. DRY-RUN by
+  default; `--apply` executes; `--once <id>` tests a single reply. Anything ambiguous is skipped for
+  a human.
+- **Deploy:** run the `--apply` form on a schedule (cron / scheduler), or import its match logic into
+  a webhook handler fed by a Freshdesk Ticket-Creation rule.
+- **Structural alternative (not taken):** sending the acknowledgement from Freshdesk instead of
+  Formstack would make replies thread natively and remove the need for this merge. Chosen path is
+  the merge; revisit if reply volume grows.
+
+> **Not runnable from the cloud session** (no Freshdesk API access there, and merge is destructive).
+> Always run the DRY-RUN first and confirm the "WOULD MERGE" lines before `--apply`.
+
 ## Files in `workflow/`
-- `actions.json` — the two actions (`FRESHDESK_TICKET_CREATE`, `FORMSTACK_SUBMISSION_UPDATE`).
+- `actions.json` — a single `FRESHDESK_TICKET_CREATE` action (tags + description + the
+  `cf_privacy_due_date` date field), pinned to the live **Privacy** group `31000116264` so tickets
+  land in-queue by default (the classifier can still re-route/assign). `actions.test.json` is the
+  same action pinned to the sandbox group `31000119185` + `env:test`. A `FORMSTACK_SUBMISSION_UPDATE`
+  write-back is deferred.
 - `config_prompt.md` — the AI config/system prompt (output contract + rules).
 - `user_prompt.md` — the per-event instruction.
 - `create.sh` — the `workflow_edit.py create` invocation tying it together.
 
-> **MVP:** this workflow maps to ticket **tags + a structured HTML description** only — no
-> Freshdesk custom fields, no submission write-back. `actions.json` is a single
-> `FRESHDESK_TICKET_CREATE`. Adding `cf_*` fields later is a small edit (put `custom_fields`
-> back and re-create a version) — see `docs/freshdesk-custom-fields.md`.
+> **MVP:** this workflow maps to ticket **tags + a structured HTML description + one date custom
+> field** (`cf_privacy_due_date`, the statutory deadline). No dropdown/text custom fields and no
+> submission write-back yet. `actions.json` is a single `FRESHDESK_TICKET_CREATE`. Adding the
+> dropdown `cf_*` fields later is a small edit (extend `custom_fields` and re-create a version) —
+> see `docs/freshdesk-custom-fields.md`.
 
 ## Prerequisites
 1. **Formstack form built** (`workflow/build-formstack-form.js` or `docs/formstack-dsr-build.md`)
@@ -39,12 +81,16 @@ Uses the **workflow-editor** skill (`workflow_edit.py`). Editing/creating always
 | Placeholder | Where | What |
 |---|---|---|
 | `<FORMSTACK_FORM_ID>` | `create.sh` | the DSR form's numeric id (used in `event_filter`) |
-| `{event.payload.UniqueID}` | `user_prompt.md` | the real submission-id path in a `FORMSTACK_FORM_SUBMITTED` payload — confirm from a test event or `catalogue` |
+| `{event.payload.uniqueId}` | `user_prompt.md` | the submission-id path in a `FORMSTACK_FORM_SUBMITTED` payload — **confirmed camelCase** (the workflow-system normalises the raw Formstack webhook `UniqueID`/`FormID` to `uniqueId`/`formId`) |
 
-Confirm the event payload path and that `FORMSTACK_FORM_SUBMITTED` is live:
+Confirm `FORMSTACK_FORM_SUBMITTED` is live (lists event **names** only — it does NOT expose the payload shape):
 ```bash
 python3 "$SK" catalogue --env prod     # SK = path to workflow_edit.py; no JWT needed
 ```
+To confirm the payload **path/casing**, inspect a real event instead — either a live sibling
+workflow's config (`workflow_edit.py get <id>`, e.g. the Damage Claim UK workflow whose
+`event_filter` is `payload.formId = …`) or a real execution
+(`workflow_doctor.py exec <id> --json` → `event_payload.payload`). Verified: keys are `uniqueId` / `formId`.
 
 ## Create (lands DRY_RUN)
 ```bash
@@ -61,7 +107,7 @@ Note the returned `workflow_id` + `version`.
    ```bash
    python3 ~/.claude/skills/workflow-doctor/workflow_doctor.py executions --env prod --jwt "$WF_JWT" | head
    ```
-   Confirm: ticket created; `subject` = `DSR-<id> — <type> (<requester>)`; **tags** rendered
+   Confirm: ticket created; `subject` = `DSR-UK-<id> — <type> (<requester>)`; **tags** rendered
    correctly (verify the templated array elements landed as separate tags — if the handler
    doesn't element-render arrays, have the model emit the two type tags into the description
    or switch to a follow-up update); the **description** carries every field (booking ref, TP

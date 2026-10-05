@@ -4,8 +4,12 @@ One sequential runbook to take the DSR intake form live for **UK customers (publ
 **internal admins**, on Formstack → workflow-system → Freshdesk. Each stage says **who** does it,
 **what** to do, and the **checkpoint** ("done when"). Deeper detail is in the linked docs.
 
-> **MVP scope:** the initial launch uses ticket **tags + a structured description** — no
-> Freshdesk custom fields — so **Stage 1 is optional and can be skipped**; start at Stage 2.
+> **MVP scope:** the initial launch uses ticket **tags + a structured description + one date
+> custom field** (`cf_privacy_due_date` — the statutory deadline). That one field **already
+> exists** in Freshdesk (label **Privacy Due Date**), so the only Stage 1 action is to **confirm
+> its live `cf_*` key** via `GET /api/v2/ticket_fields`. The dropdown/text fields
+> (`cf_dsr_type` etc.) stay deferred — a **Privacy Type** field now also exists and can be wired
+> next once its key is confirmed. Start at Stage 2 for the form build.
 > Stage 2 can be largely automated with `workflow/build-formstack-form.js`.
 >
 > **Progress:** Stage 2 is **largely done** — the form is built in the AnyVanforms account (**id
@@ -34,14 +38,19 @@ Freshdesk fields ──► Formstack form ──► record field ids ──► c
 
 ---
 
-## Stage 1 (OPTIONAL — skip for MVP) — Freshdesk custom fields  · owner: Freshdesk admin
-Detail: `docs/freshdesk-custom-fields.md`. **Not needed for the MVP launch** (tags + description
-carry everything). Do this later for structured filtering/reporting: create `cf_dsr_type`,
-`cf_requester_type`, `cf_booking_reference`, `cf_tp_username`, confirm their live keys via
-`GET /api/v2/ticket_fields`, then add `custom_fields` back into `workflow/actions.json`.
+## Stage 1 — Freshdesk custom fields  · owner: Freshdesk admin
+Detail: `docs/freshdesk-custom-fields.md`. **One field is required for the MVP:**
+`cf_privacy_due_date` (**Privacy Due Date**, date). It **already exists** in Freshdesk — the only
+action is to **confirm its live key** via `GET /api/v2/ticket_fields` and adjust
+`workflow/actions.json` if Freshdesk suffixed it (a wrong key fails ticket-create with
+`invalid_field`).
 
-**Done when (if doing it):** the `cf_*` keys/types are confirmed from the live `ticket_fields`
-response and added to the workflow action.
+**Deferred (later, for structured filtering/reporting):** `cf_dsr_type`, `cf_requester_type`,
+`cf_booking_reference`, `cf_tp_username` — confirm live keys the same way, then add them to
+`custom_fields` in `workflow/actions.json`. A **Privacy Type** field (`cf_dsr_type`) already
+exists and is the first candidate to wire next.
+
+**Done when:** `cf_privacy_due_date`'s live key is confirmed and matches `workflow/actions.json`.
 
 ---
 
@@ -70,7 +79,7 @@ Then finish in the builder:
    `source` + `agent` (for the admin entry point).
 3. Configure: **EU/UK data region**, submission **retention** to the DSR policy minimum,
    built-in **reCAPTCHA**, AnyVan theme + WCAG pass, and a **confirmation email** quoting
-   `DSR-<submission id>` and the one-calendar-month timeline.
+   `DSR-UK-<submission id>` and the one-calendar-month timeline.
 4. Decide the repeatable-call-rows approach (the script uses a structured free-text field —
    swap for repeatable rows in the builder if your plan supports it).
 
@@ -86,8 +95,8 @@ Detail: `docs/dsr-field-mapping.md`.
 1. Paste the **field-id map** the build script printed into the mapping table (or read ids from
    the builder if you built it by hand).
 2. Note the form's **FORM ID** and, from the test submission's webhook/event, the
-   **submission-id path** in the payload (the workflow uses `{event.payload.UniqueID}` as a
-   placeholder — replace with the real path).
+   **submission-id path** in the payload (the workflow-system normalises the Formstack webhook
+   to camelCase, so the confirmed path is `{event.payload.uniqueId}`).
 
 **Done when:** the mapping table has the field ids and the FORM ID + submission-id path are
 known.
@@ -98,9 +107,10 @@ known.
 Detail: `docs/formstack-to-freshdesk-workflow.md`. Files in `workflow/`.
 1. Fill the placeholders:
    - `workflow/create.sh` → `FORMSTACK_FORM_ID`.
-   - `workflow/user_prompt.md` → confirm the submission-id path (`{event.payload.UniqueID}`)
-     against a real event payload.
-   (MVP `actions.json` has no `cf_*` placeholders — it's tags + description only.)
+   - `workflow/user_prompt.md` → submission-id path confirmed as `{event.payload.uniqueId}`
+     (camelCase — normalised from the Formstack webhook; verified against a real event payload).
+   (MVP `actions.json` carries one custom field — `cf_privacy_due_date` — plus tags + description;
+   no dropdown/text `cf_*` yet.)
 2. Confirm the event + tools exist (no JWT needed):
    ```bash
    python3 "$SK" catalogue --env prod        # SK = path to workflow_edit.py
@@ -123,7 +133,7 @@ Detail: `docs/formstack-to-freshdesk-workflow.md`. Files in `workflow/`.
    ```bash
    python3 ~/.claude/skills/workflow-doctor/workflow_doctor.py executions --env prod --jwt "$WF_JWT" | head
    ```
-   Verify: ticket created; subject `DSR-<id> — <type> (<requester>)`; **tags** landed as
+   Verify: ticket created; subject `DSR-UK-<id> — <type> (<requester>)`; **tags** landed as
    separate values; the **description** carries all fields (booking ref, TP username, request
    detail); third-party **vision read** appears in the description.
 3. Confirm the existing classifier picks it up on `FRESHDESK_TICKET_CREATED`:
@@ -176,7 +186,7 @@ actioning them; the interim form is retired or clearly marked fallback.
 ## Owner summary
 | Stage | Owner | Needs |
 |---|---|---|
-| 1 Freshdesk fields _(optional, later)_ | Freshdesk admin | Freshdesk admin + API key |
+| 1 Freshdesk fields _(confirm `cf_privacy_due_date` key; rest deferred)_ | Freshdesk admin | Freshdesk admin + API key |
 | 2 Formstack form | Formstack builder | Formstack (EU/UK, UK-PII-approved) + API token for the script |
 | 3 Field ids | form builder | — (script prints them) |
 | 4 Create workflow | workflow-system admin | `WF_JWT`, `workflow_edit.py` |

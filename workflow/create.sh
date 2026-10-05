@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create the "DSR Intake - UK - Formstack" workflow in the workflow-system.
+# Create the "[UK] Privacy Submission Workflow" workflow in the workflow-system.
 #
 # Prerequisites (MVP — tags + description only, no Freshdesk custom fields):
 #   - WF_JWT exported (copy "Copy token" from https://workflows.anyvan.com admin UI; ~12h).
@@ -15,23 +15,31 @@ set -euo pipefail
 SK="${CLAUDE_SKILL_DIR:-$HOME/.claude/skills/workflow-editor}/workflow_edit.py"
 ENVv="${ENVv:-prod}"
 
+# Overridable so the SAME script creates the test build and the live build:
+#   TEST (routes to the sandbox Freshdesk group + env:test tag):
+#     WF_NAME="[UK] Privacy Submission Workflow [TEST]" ACTIONS_FILE=workflow/actions.test.json bash workflow/create.sh
+#   LIVE (defaults):
+#     bash workflow/create.sh
+WF_NAME="${WF_NAME:-[UK] Privacy Submission Workflow}"
+ACTIONS_FILE="${ACTIONS_FILE:-workflow/actions.json}"
+
 # ---- placeholders you must set ------------------------------------------------
 FORMSTACK_FORM_ID="6559077"                 # DSR form id (built by build-formstack-form.js)
-# Also confirm the submission-id path used in workflow/user_prompt.md ({event.payload.UniqueID})
+# Also confirm the submission-id path used in workflow/user_prompt.md ({event.payload.uniqueId})
 # against a real FORMSTACK_FORM_SUBMITTED payload (run `python3 "$SK" catalogue --env prod`).
 # -------------------------------------------------------------------------------
 
 cd "$(dirname "$0")/.."   # repo root, so the file paths below resolve
 
 python3 "$SK" create --env "$ENVv" --jwt "$WF_JWT" \
-  --name "DSR Intake - UK - Formstack" \
+  --name "$WF_NAME" \
   --user-prompt-file workflow/user_prompt.md \
-  --actions-file      workflow/actions.json \
+  --actions-file      "$ACTIONS_FILE" \
   --set requires_ai_evaluation=true \
   --set 'subscribed_events=["FORMSTACK_FORM_SUBMITTED"]' \
   --set 'agentic_tools=["formstack_submission","formstack_upload","formstack_upload_interpret"]' \
   --set max_iterations=8 \
-  --set "event_filter=payload.FormID == \"${FORMSTACK_FORM_ID}\"" \
+  --set "event_filter=payload.formId = \"${FORMSTACK_FORM_ID}\"" \
   --set config_prompt="$(cat workflow/config_prompt.md)"
 
 echo
