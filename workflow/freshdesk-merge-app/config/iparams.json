@@ -1,0 +1,23 @@
+{
+  "freshdesk_domain": {
+    "display_name": "Freshdesk domain",
+    "description": "Your Freshdesk domain, e.g. anyvan.freshdesk.com",
+    "type": "text",
+    "required": true,
+    "default_value": "anyvan.freshdesk.com"
+  },
+  "freshdesk_api_key": {
+    "display_name": "Agent API key",
+    "description": "API key of an agent allowed to merge tickets. Stored securely.",
+    "type": "text",
+    "required": true,
+    "secure": true
+  },
+  "privacy_group_ids": {
+    "display_name": "Privacy group IDs",
+    "description": "Comma-separated Freshdesk group IDs to act within (live Privacy + sandbox).",
+    "type": "text",
+    "required": true,
+    "default_value": "31000116264,31000119185"
+  }
+}
