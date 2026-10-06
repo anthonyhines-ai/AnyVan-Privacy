@@ -6,7 +6,8 @@
 // original matches the submission id AND the requester is the same contact, within the privacy
 // groups. Anything ambiguous is left untouched for a human.
 //
-// Runs on Freshworks' serverless platform — nothing to host.
+// Outbound calls use the current Request Method (config/requests.json + $request.invokeTemplate);
+// the secure API key lives only in the request template, never in this code.
 
 const REPLY_RE    = /Reference\s+DSR-(\d+)/i;  // reply ticket subject -> submission id
 const ORIGINAL_RE = /\[(\d+)\]\s*$/;           // original ticket subject ends with [submission id]
@@ -24,17 +25,12 @@ exports = {
         .split(",").map((s) => s.trim()).filter(Boolean);
       if (groups.length && !groups.includes(String(t.group_id))) return; // outside privacy groups
 
-      const domain = args.iparams.freshdesk_domain;      // e.g. anyvan.freshdesk.com
-      const key = args.iparams.freshdesk_api_key;        // secure iparam
-      const headers = {
-        Authorization: "Basic " + Buffer.from(key + ":X").toString("base64"),
-        "Content-Type": "application/json",
-      };
-
-      // Candidate originals: open/pending tickets in the privacy groups.
+      // Candidate originals: open/pending tickets in the privacy groups. Query is passed via
+      // context; the platform encodes it. Do NOT URL-encode here.
       const gq = groups.length ? "(" + groups.map((g) => `group_id:${g}`).join(" OR ") + ") AND " : "";
-      const query = encodeURIComponent(`"${gq}(status:2 OR status:3)"`);
-      const res = await $request.get(`https://${domain}/api/v2/search/tickets?query=${query}`, { headers });
+      const query = `"${gq}(status:2 OR status:3)"`;
+
+      const res = await $request.invokeTemplate("searchTickets", { context: { query } });
       const results = (JSON.parse(res.response).results) || [];
 
       const originals = results.filter((x) => {
@@ -46,13 +42,15 @@ exports = {
       const orig = originals[0];
       if (orig.requester_id !== t.requester_id) return;  // different data subject -> NEVER merge
 
-      const body = {
-        primary_id: orig.id,
-        ticket_ids: [t.id],
-        convert_recepients_to_cc: true, // Freshdesk's spelling; keeps the replier on the primary
-        note_in_primary: { body: `Auto-merged customer reply ticket #${t.id} (DSR-${id}).`, private: true },
-      };
-      await $request.put(`https://${domain}/api/v2/tickets/merge`, { headers, body: JSON.stringify(body) });
+      await $request.invokeTemplate("mergeTickets", {
+        context: {},
+        body: JSON.stringify({
+          primary_id: orig.id,
+          ticket_ids: [t.id],
+          convert_recepients_to_cc: true, // Freshdesk's spelling; keeps the replier on the primary
+          note_in_primary: { body: `Auto-merged customer reply ticket #${t.id} (DSR-${id}).`, private: true },
+        }),
+      });
       console.log(`Merged reply #${t.id} -> original #${orig.id} (DSR-${id})`);
     } catch (e) {
       console.error("DSR merge handler error:", (e && e.message) ? e.message : e);
