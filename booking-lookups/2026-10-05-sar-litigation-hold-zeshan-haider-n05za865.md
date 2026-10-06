@@ -140,82 +140,141 @@ rather than a wrong number. **This number has not been searched in any reply sen
 response in the thread addresses only the primary number. It should be searched (and the recording,
 if it exists, checked) before any "we've provided everything" statement goes back to the customer.
 
-### 4.4 The retention-policy admission needs DPO/Legal sign-off before it's put in writing
-AnyVan's public privacy policy (last updated 21 Sept 2023, still showing 12 months on the live
-anyvan.ie page per the customer's own screenshot) states a 12-month retention for call recordings.
-Ant's internal account is that the **actual** retention in force between **April 2024 and 5 May
-2026** was 3 months, i.e. the published policy was wrong for that window. Two things follow:
-- Putting "our published policy was inaccurate for ~2 years" in writing to a litigant, in an active
-  court claim, where the customer has already raised UK GDPR Art. 12/13 transparency obligations
-  four times, is a materially different kind of statement than routine SAR correspondence — it's an
-  admission that could be used in the proceedings. **This should go to the DPO/Legal before being
-  sent**, not be sent on operational sign-off alone (Ant's own 25 Sept note already flags "awaiting
-  DPO" — that hasn't been resolved, it should be, before the next customer reply).
-- The exact *change* document/evidence the customer is asking for (four times now) — i.e. what
-  internal policy or system record shows the 3-month period and its effective date — has not been
-  produced in the thread. If it doesn't exist as a discrete document, that itself is an answer worth
-  giving the customer and the DPO, rather than continuing to not engage with the question.
+### 4.4 The retention-policy admission — DPO has now reviewed; one factual inconsistency to fix first
+**Update, 2026-10-06:** Ant has spoken to the DPO. Agreed line: advise the customer of the date the
+policy changed and confirm that **not updating the published privacy policy to reflect the revised
+retention period was an oversight by AnyVan.** That's a reasonable, honest position and is reflected
+in the draft at §6.
 
-### 4.5 Preservation-request timing vs. actual purge date is still unverified
-The 3-month retention window (Apr 2024–5 May 2026) would put the natural purge of 27–28 Feb 2026
-recordings at roughly **late May 2026** — which is *before* the customer's first written
-preservation request (no later than 20 Aug 2026). On the facts as currently understood, that would
-mean no spoliation occurred: the material was gone before the hold was asked for. But that depends
-entirely on (a) the 5 May 2026 policy change not having been applied retroactively to recordings
-already in the purge queue, and (b) the purge actually having run on schedule in May. **Neither has
-been confirmed against an actual system/job log** — the record so far is a verbal account, and this
-is exactly the kind of fact a court would expect to be evidenced, not asserted. Recommend getting
-this confirmed in writing from Engineering/Data before it's relied on in any response.
+One thing needs fixing before it goes out: **two different start dates for the 3-month policy have
+now been given, a year apart.**
+- 2026-10-05 (Ant, this thread): "3 months, which we were doing between **April 2024** and May 2026."
+- 2026-10-06 (Ant, this thread): "Instruction to delete recordings 3 months and older was first
+  given on **4th April 2025**."
+
+This record uses **4 April 2025** below, as the more recent and more specific of the two (a dated
+instruction vs. a remembered month/year). But a specific date is exactly the kind of fact that will
+be checked against a system record if this reaches court — **confirm which is correct against the
+actual instruction/change record before it's put in writing to the customer**, not from memory a
+second time.
+
+### 4.5 Preservation-request timing vs. actual purge date — the policy detail now resolves the
+### ambiguity, but execution still isn't evidenced
+Ant has now clarified the cutover was **not retroactive**: the move back to 12 months applied only
+"starting with recordings beginning on the 5th May 2026" — i.e. recordings created *before* that
+date (including the 27–28 Feb 2026 calls) stayed on the old 3-month timer rather than being
+regranted 12 months. That resolves the ambiguity flagged in the previous version of this section:
+on this account, the Feb 2026 recordings were scheduled to purge around **late May 2026**, which is
+*before* the customer's first written preservation request (no later than 20 Aug 2026) — so, if
+accurate, no spoliation occurred.
+
+What's still missing is **evidence that the purge actually ran on schedule**, as opposed to a
+policy that says it should have. Recommend getting the actual job/run log from Engineering/Data
+before this is relied on in a court filing — "the policy said it would be deleted" and "it was
+deleted, and here's when" are different strengths of evidence, and only the second is unanswerable.
+
+### 4.6 The "two recording systems" explanation — not yet confirmed against the call data
+Ant's explanation for the partial delivery: AnyVan runs two recording systems, one for Sales
+(12-month retention) and one for the rest of the business (3 months, in the window above); the
+"initial call" already sent to the customer is from the Sales system, and once a call is
+**transferred**, it moves to the other system — hence the supervisor-transfer continuation and
+other calls aren't retained.
+
+This is a plausible technical explanation, but **the data pulled for this record doesn't confirm
+it**: all 37 calls found for this customer — from the first contact in June 2025 through to 22 Sept
+2026, across five different AnyVan-side numbers (`+442038723050`, `+447700179827`,
+`+442038616394`, `+443309127703`, `+442038687594`) — carry the **identical** Twilio `ACCOUNT_ID`
+(`ACfe5f...`), and `TRUNK_ID`/`GROUP_ID` are blank throughout. Nothing in this table distinguishes a
+"Sales system" call from any other. That doesn't mean the explanation is wrong — the split could
+sit at a layer this table doesn't capture (e.g. which recording/storage pipeline a Flex task routes
+to, independent of the Twilio account) — but it means **this record can't verify it, and neither
+can a WeTransfer link**. Before this explanation goes to the customer (and possibly a court),
+**get Telephony/Engineering to confirm, by call SID, which of the 27–28 Feb calls sat on which
+system** — ideally naming the specific call(s) already delivered as "the Sales one(s)" so the claim
+is checkable, not a general category statement.
+
+### 4.7 Still open, and not addressed by the DPO conversation
+Two gaps from the original investigation (§4.1, §4.3) haven't been mentioned as checked:
+- **28 Feb calls** — six calls, including two of 19–24 minutes, on the **delivery** date. Nothing
+  in the DPO conversation or Ant's note addresses these; "all calls on 27th are not available" was
+  never extended to the 28th.
+- **The wife's number** — confirmed in Snowflake as `+447423356056` (one digit different from the
+  `074233565056` the customer typed): **one call**, 27 Feb 15:48:01–15:49:32 (91 seconds), same
+  Twilio account as everything else. This has not been searched or mentioned in any reply sent to
+  the customer so far.
+
+**"We can confirm we've provided you with everything we still retain" is only true once these two
+are actually checked** (same system/recording-store check as the main set — if they sit in the
+"3-month" system they'll likely be gone too, but that still needs confirming rather than assuming,
+precisely because of §4.6).
 
 ---
 
-## 5. Recommended next steps (not yet actioned)
+## 5. Recommended next steps
 
-1. Search `TWILIO_CALL` (and the Flex recording store directly) for `+447423356056` across the full
-   history, not just 27–28 Feb — confirm with the customer whether this is in fact his wife's
-   number.
-2. Check Twilio Flex directly for recording availability against the 24 call SIDs on 27–28 Feb
-   above (not inferred from this metadata) — especially the three calls over 15 minutes.
-3. Get the DPO's actual response (requested by Ant on 25 Sept, still outstanding) before sending
-   anything that states or implies the published privacy policy was inaccurate.
-4. Ask Engineering/Data for the actual retention-job record for this listing's recordings (not a
-   verbal recollection) — does it show a purge date, and was the 5 May 2026 policy change applied
-   retroactively to recordings already past 3 months at that point?
-5. Only once 1–4 are done, send a substantive reply — see the draft in §6, which is deliberately
-   **not** a final "we've given you everything" statement, because on the facts above that isn't
-   yet established.
+**Done:**
+1. ~~Get the DPO's response on the retention-policy wording.~~ Done, 2026-10-06 — see §4.4.
+
+**Still open, recommended before the next customer reply:**
+2. Confirm which start date is correct for the 3-month instruction — **April 2024** or
+   **4 April 2025** (§4.4) — against the actual instruction/change record, not from memory.
+3. Get Telephony/Engineering to confirm the "two recording systems" explanation **by call SID**
+   (§4.6) — which system the already-delivered call sits on, and that the 27–28 Feb calls not yet
+   delivered genuinely sit on the 3-month system.
+4. Check recording availability for the **28 Feb calls** and for the call from **`+447423356056`**
+   (§4.7) on whichever system(s) they turn out to sit on, before telling the customer "everything
+   we still retain" has been provided.
+5. Get the actual purge-job log from Engineering/Data confirming the Feb 2026 recordings were
+   deleted on schedule (§4.5) — useful corroboration to hold in reserve given the litigation, even
+   though it doesn't change what goes to the customer now.
+
+Steps 2–4 are quick checks, not a reason to delay the customer reply indefinitely — the policy
+explanation (§6) is ready to send now; it's specifically the closing "we've provided everything"
+line that should wait on 3–4.
 
 ---
 
-## 6. Draft customer response — **FOR ANT'S REVIEW ONLY; DO NOT SEND without DPO/Legal sign-off**
+## 6. Draft customer response — **FOR ANT'S REVIEW; the policy paragraph is DPO-approved, the
+## completeness paragraph needs §5 steps 3–4 done first (or a conscious decision to send without them)**
 
-This draft intentionally does **not** adopt the "nothing more exists" framing from the internal
-note, for the reasons in §4. It commits to concrete follow-up instead of closing the question.
+**Update, 2026-10-06:** the DPO has agreed the retention-policy explanation below. I've kept the
+"two recording systems" wording Ant proposed, but labelled it as an explanation that should be
+confirmed by call SID first (§4.6) — it's a specific, checkable technical claim, not a form answer,
+and a litigant's solicitor can ask AnyVan to substantiate it. I've held back the "we've provided
+everything we still retain" line until the 28 Feb calls and the wife's number are actually checked
+(§4.7) — not because I doubt the retention story, but because that specific sentence is a factual
+representation in an active claim, and right now it hasn't been tested against two leads this
+record found that weren't in any reply sent so far. If Ant wants to send the full version
+(including that line) now, that's his call to make knowingly — flagging it is mine.
 
 > Dear Mr Haider,
 >
-> Thank you for your patience, and for the further detail in your recent emails.
+> Thank you for your patience while we looked into this further.
 >
-> We want to address two separate points you've raised, clearly and in writing.
+> **On the retention period:** our Privacy Policy, last updated 21 September 2023, stated that call
+> recordings are retained for 12 months. On 4 April 2025, AnyVan's internal instruction changed this
+> to 3 months; this reverted back to 12 months for recordings made on or after 5 May 2026. We should
+> have updated our published Privacy Policy to reflect the 3-month period at the time, and did not —
+> that was an oversight on our part, and we apologise for it.
 >
-> **On the completeness of the recordings already sent:** we are re-checking our systems against
-> the specific calls you've described — including the call that was transferred to a supervisor,
-> the call concerning accommodation arrangements, and any calls associated with the second number
-> you provided for your wife. We are not yet in a position to confirm this is complete, and we would
-> rather tell you that honestly than close this down prematurely. We will come back to you with a
-> substantive answer by [date — recommend no more than 5–7 working days].
+> **On the recordings themselves:** AnyVan operates two separate call-recording systems — one for
+> our Sales team, which retains recordings for 12 months, and one for the rest of the business,
+> which was subject to the 3-month period above at the time of your move. The initial call we
+> provided to you sits on the Sales system. Once a call is transferred to another part of the
+> business — as happened during your move — it is recorded and retained separately, under the
+> shorter period that was in force at the time. [We are completing a final check of our systems for
+> any further recordings linked to your booking, including calls on 28 February and any from the
+> second number you provided, and will confirm the position to you by [date].]
 >
-> **On the retention-period question:** we understand you've asked several times for documentary
-> evidence of when and why our stated retention period changed, and we recognise this hasn't been
-> answered yet. We are treating this properly rather than giving you a partial answer, and our Data
-> Protection Officer is reviewing it. We will respond to this specific point directly, in writing,
-> separately from the recordings question above.
->
-> We confirm again that we have logged your request to preserve all recordings, call logs,
-> transcripts and related notes while your claim is ongoing, and that request remains in place.
+> We confirm again that your request to preserve all relevant recordings, call logs, transcripts and
+> related notes remains logged and in place.
 >
 > Kind regards,
 > AnyVan Privacy Team
+
+The bracketed sentence is the piece that depends on §5 steps 3–4. If those checks come back clean
+(nothing further on the 3-month system, as expected), replace it with a plain "we have provided you
+with everything we still retain" — at that point it will actually be true, not just asserted.
 
 ---
 
