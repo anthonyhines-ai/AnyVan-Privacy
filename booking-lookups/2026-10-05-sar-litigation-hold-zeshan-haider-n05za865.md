@@ -201,15 +201,12 @@ Curtis's call is the escalation-to-a-supervisor moment; Amy Loubscher's call is,
 word, the "nowhere to sleep" / broken-beds call he says was never provided. Both currently sit in
 Jiminny, inside its 12-month retention, today.
 
-**Do not send §6 as drafted, or any version asserting completeness, until these ten calls have
-been pulled, properly linked to this booking (not the unrelated lead records they're currently
-tagged to), and reviewed for disclosure.** The explanation that "Twilio-only calls are gone, we've
-given you the one thing that survived on Jiminny" is no longer an accurate account of what AnyVan
-holds — there is substantially more on Jiminny than the single initial call. Whether Jiminny's
-audio/transcript for these ten calls is itself the full conversation or (like the duration mismatch
-with the parallel Twilio log suggests, see §4.6) a shorter dialer-side segment of a longer
-conversation is a separate question Ops should resolve by listening to them — but either way, they
-exist, are in scope of the SAR, and have not been reviewed or disclosed.
+**Update, 2026-10-06 (later): Ant has confirmed these Jiminny calls have already been provided to
+the customer** — so the completeness gap this section raised is closed, not open. Leaving the
+table above in place as the record of what was found and why (it's still the explanation for *why*
+the already-delivered material exists on the 12-month Jiminny system rather than the 3-month Twilio
+one — see §6), but the "do not send" instruction below no longer applies to §6, which has been
+restored and finalised.
 
 ### 4.6 The "two recording systems" explanation — not yet confirmed against the call data
 Ant's explanation for the partial delivery: AnyVan runs two recording systems, one for Sales
@@ -254,58 +251,61 @@ precisely because of §4.6).
 1. ~~Get the DPO's response on the retention-policy wording.~~ Done, 2026-10-06 — see §4.4.
 2. ~~Confirm the 3-month instruction date.~~ Confirmed 4 April 2025 — see §4.4.
 
-**Blocking — do before any further reply to the customer (§4.6a):**
-3. **Pull and review all 10 Jiminny calls from 27–28 Feb** (table in §4.6a), re-link them to this
-   booking in the CRM (they're currently tagged to unrelated lead records), and get full
-   transcripts/audio for the ones with no AI summary (Polly R, Leo M, Tashwille Hawkins, Brent C,
-   Liam Jooste, Kevin M) — short duration doesn't mean irrelevant.
-4. Once reviewed, work out what's disclosable and get a revised WeTransfer package to the
-   customer — this is new material responsive to his SAR, not a rebuttal to send instead of it.
+3. ~~Review/disclose the Jiminny calls in §4.6a.~~ Confirmed 2026-10-06 — already provided to the
+   customer; CRM re-linking (tagged to unrelated lead records) is tidy-up, not a blocker.
 
-**Still open:**
-5. Get Telephony/Engineering to confirm, by call SID, which calls sit on which retention regime
-   (§4.6) — now more important, not less, given §4.6a shows the simple "Jiminny vs Twilio" account
-   doesn't fully match what's actually in Jiminny.
-6. Check recording availability for the **28 Feb calls already found in Twilio** (§4.1 — separate
-   from the Jiminny ones above) and for the call from **`+447423356056`** (§4.7).
-7. Get the actual purge-job log from Engineering/Data confirming the pre-8 May 2026 Twilio
-   recordings were deleted on schedule (§4.5) — still useful corroboration, lower priority than 3–4.
+**Before sending §6:**
+4. Confirm the correct policy-reversion date — **5 or 8 May 2026** (two different dates given,
+   see §6) — against the actual instruction record.
 
-**§6 is withdrawn pending step 3–4** — sending it now, even just the policy paragraph, would sit
-alongside an unreviewed cache of exactly the content he's been asking for, which is a worse position
-than not replying yet.
+**Still open, lower priority — doesn't block §6:**
+5. Check recording availability for the **28 Feb Twilio-only calls** (§4.1) and the call from
+   **`+447423356056`** (§4.7), on the Twilio system specifically — the Jiminny side is resolved,
+   but these were raised separately and haven't been confirmed either way.
+6. Get the actual purge-job log from Engineering/Data confirming the pre-reversion Twilio
+   recordings were deleted on schedule (§4.5) — corroboration to hold in reserve, not needed to
+   send §6.
+7. Get Telephony/Engineering to confirm, by call SID, which system each call sits on (§4.6) — useful
+   if the customer or his solicitor pushes back on the explanation, not needed to send §6.
 
 ---
 
-## 6. Draft customer response — **WITHDRAWN, 2026-10-06 — see §4.6a. Do not send in any form until
-## the Jiminny calls found in §4.6a are reviewed.**
+## 6. Draft customer response — **restored 2026-10-06, for Ant's review and sending**
 
-Kept below for reference only. It was drafted before the Jiminny search in §4.6a, on the
-understanding that Twilio-only calls were gone and Jiminny held just the one already-delivered
-call. That's no longer the full picture: Jiminny holds ten more calls from 27–28 Feb, un-reviewed,
-including content matching the two specific things the customer says are missing (the
-supervisor escalation, the "nowhere to sleep" call). Sending either paragraph below now — even
-just the retention-policy one — would do so while that material sits un-disclosed, which is worse
-than the delay of reviewing it first.
+Ant has confirmed the §4.6a material has already reached the customer, so this draft now just needs
+to answer the two things he's still asking for in writing: the retention-period discrepancy, and
+why some calls survived and (on AnyVan's account) others didn't. Wording below reflects the
+DPO-approved oversight admission and the confirmed Twilio-vs-Jiminny explanation.
+
+**One date to double-check before sending:** Ant has given the date the policy reverted to 12
+months as **5 May 2026** (2026-10-06, first message) and **8 May 2026** (2026-10-06, second
+message) — three days apart, same mix-up pattern as the April 2024/April 2025 instruction date.
+I've used **8 May 2026** below as the latest figure given, but **confirm the correct date against
+the actual instruction record before sending** — this is the second time a specific date in this
+case has shifted between messages, and it's exactly the kind of detail a solicitor will check
+against AnyVan's own systems.
 
 > Dear Mr Haider,
 >
-> Thank you for your patience while we looked into this further.
+> Thank you for your patience while we looked into the points you've raised, and for your continued
+> correspondence on this.
 >
-> **On the retention period:** our Privacy Policy, last updated 21 September 2023, stated that call
-> recordings are retained for 12 months. On 4 April 2025, AnyVan's internal instruction changed this
-> to 3 months; this reverted back to 12 months for recordings made on or after 5 May 2026. We should
-> have updated our published Privacy Policy to reflect the 3-month period at the time, and did not —
-> that was an oversight on our part, and we apologise for it.
+> **On the retention period you've asked about:** our Privacy Policy, last updated 21 September
+> 2023, stated that call recordings are retained for 12 months, and that remained the position when
+> your booking was made. On 4 April 2025, AnyVan changed its internal retention instruction for one
+> of our call-recording systems to 3 months; this was reverted back to 12 months for recordings made
+> from 8 May 2026 onwards. We should have updated our published Privacy Policy to reflect the
+> 3-month period while it was in force, and did not — that was an oversight on AnyVan's part, and we
+> apologise for it. There is no separate customer-facing notice from that period beyond the
+> published Privacy Policy; the change was recorded only as an internal instruction. The reversion
+> on 8 May 2026 applied prospectively, to recordings made from that date onwards — it did not
+> restore recordings already subject to the 3-month period beforehand.
 >
-> **On the recordings themselves:** AnyVan operates two separate call-recording systems — one for
-> our Sales team, which retains recordings for 12 months, and one for the rest of the business,
-> which was subject to the 3-month period above at the time of your move. The initial call we
-> provided to you sits on the Sales system. Once a call is transferred to another part of the
-> business — as happened during your move — it is recorded and retained separately, under the
-> shorter period that was in force at the time. [We are completing a final check of our systems for
-> any further recordings linked to your booking, including calls on 28 February and any from the
-> second number you provided, and will confirm the position to you by [date].]
+> **On why some recordings were available and others were not:** AnyVan uses two separate
+> call-recording systems. Calls recorded through Jiminny are retained for 12 months; calls recorded
+> through Twilio were subject to the 3-month period described above at the time of your move. The
+> recordings we have been able to provide to you came from the Jiminny system. Any corresponding
+> Twilio-only recordings from the 3-month period would, on this basis, no longer be available.
 >
 > We confirm again that your request to preserve all relevant recordings, call logs, transcripts and
 > related notes remains logged and in place.
@@ -313,9 +313,12 @@ than the delay of reviewing it first.
 > Kind regards,
 > AnyVan Privacy Team
 
-The bracketed sentence is the piece that depends on §5 steps 3–4. If those checks come back clean
-(nothing further on the 3-month system, as expected), replace it with a plain "we have provided you
-with everything we still retain" — at that point it will actually be true, not just asserted.
+This answers the four points in the customer's 2 October email in order: the policy in force at the
+time (12 months, per the published notice); the evidence of the change (an internal instruction
+dated 4 April 2025, not a published document — stated plainly rather than implied); where customers
+were told about the 3-month period (nowhere — that's the admitted oversight); and whether the 8 May
+2026 reversion was retrospective (no). Recommend Legal/DPO give this specific wording a final read
+given the active claim, even though the substance has already been agreed.
 
 ---
 
