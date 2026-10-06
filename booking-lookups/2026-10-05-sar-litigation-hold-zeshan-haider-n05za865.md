@@ -173,6 +173,44 @@ policy that says it should have. Recommend getting the actual job/run log from E
 before this is relied on in a court filing — "the policy said it would be deleted" and "it was
 deleted, and here's when" are different strengths of evidence, and only the second is unanswerable.
 
+### 4.6a **STOP — do not send the planned reply. Jiminny holds un-reviewed recordings that match the
+### missing content, still within its 12-month retention.**
+**Update, 2026-10-06, following Ant's clarification that the delivered call was from Jiminny
+(12-month retention) and Twilio-only calls were 3-month:** that distinction was checked directly
+against Jiminny. Searching Jiminny for this contact across 27–28 Feb 2026 returns **18 calls**, not
+1. Ten of them fall on 27–28 Feb itself. They are logged oddly — routed through the Sales team's
+HubSpot Dialer (hosts shown as "Sales Rep", tagged to unrelated "Pinlocal Lead" / "Removals –
+25718241 Prospecting" lead records rather than this customer's actual booking) — which is almost
+certainly why nobody thought to look for them there. But their content is unambiguous:
+
+| Time (UTC) | Host | Duration | AI summary |
+|---|---|---|---|
+| 27 Feb 15:23:24 | Mo Isaacs | 1m 09s | Customer reports transport team refused items (van "full", false mold claim), fridge removed incorrectly, wrong sofa size taken. Escalated. |
+| 27 Feb 15:43:41 | Polly R | 14s | No AI summary (too short to transcribe) |
+| 27 Feb 15:50:38 | Joash Brown | 57s | Customer reports transport refused half the items, rude staff, items broken, substitute items taken without consent, team hadn't arrived after 14 min wait, needs to hand over keys next day. Escalated. |
+| 27 Feb 16:37:48 | Leo M | 6s | No AI summary (too short) |
+| 27 Feb 16:40:13 | Tashwille Hawkins | 29s | No AI summary (too short) |
+| 27 Feb 16:17:12 | Curtis | 1m 04s | Customer reports a subcontractor being rude, **throwing items on the floor**, refusing to complete the job, claiming to be a third party. **"The call was escalated to a supervisor for further assistance."** |
+| 27 Feb 18:47:19 | Brent C | 12s | No AI summary (too short) |
+| 28 Feb 08:25:11 | Liam Jooste | 11s | No AI summary (too short) |
+| 28 Feb 09:26:36 | Kevin M | 48s | No AI summary (too short to transcribe — worth listening to directly) |
+| 28 Feb 12:03:52 | Amy Loubscher | 49s | Customer reports the team left items unassembled and **broke multiple beds**; needs a bed disassembled/reassembled urgently **"as they have nowhere to sleep"**; already filed a complaint about the broken items. |
+
+**This is, in substance, the content the customer has been asking for since 17 September**:
+Curtis's call is the escalation-to-a-supervisor moment; Amy Loubscher's call is, almost word for
+word, the "nowhere to sleep" / broken-beds call he says was never provided. Both currently sit in
+Jiminny, inside its 12-month retention, today.
+
+**Do not send §6 as drafted, or any version asserting completeness, until these ten calls have
+been pulled, properly linked to this booking (not the unrelated lead records they're currently
+tagged to), and reviewed for disclosure.** The explanation that "Twilio-only calls are gone, we've
+given you the one thing that survived on Jiminny" is no longer an accurate account of what AnyVan
+holds — there is substantially more on Jiminny than the single initial call. Whether Jiminny's
+audio/transcript for these ten calls is itself the full conversation or (like the duration mismatch
+with the parallel Twilio log suggests, see §4.6) a shorter dialer-side segment of a longer
+conversation is a separate question Ops should resolve by listening to them — but either way, they
+exist, are in scope of the SAR, and have not been reviewed or disclosed.
+
 ### 4.6 The "two recording systems" explanation — not yet confirmed against the call data
 Ant's explanation for the partial delivery: AnyVan runs two recording systems, one for Sales
 (12-month retention) and one for the rest of the business (3 months, in the window above); the
@@ -214,38 +252,41 @@ precisely because of §4.6).
 
 **Done:**
 1. ~~Get the DPO's response on the retention-policy wording.~~ Done, 2026-10-06 — see §4.4.
+2. ~~Confirm the 3-month instruction date.~~ Confirmed 4 April 2025 — see §4.4.
 
-**Still open, recommended before the next customer reply:**
-2. Confirm which start date is correct for the 3-month instruction — **April 2024** or
-   **4 April 2025** (§4.4) — against the actual instruction/change record, not from memory.
-3. Get Telephony/Engineering to confirm the "two recording systems" explanation **by call SID**
-   (§4.6) — which system the already-delivered call sits on, and that the 27–28 Feb calls not yet
-   delivered genuinely sit on the 3-month system.
-4. Check recording availability for the **28 Feb calls** and for the call from **`+447423356056`**
-   (§4.7) on whichever system(s) they turn out to sit on, before telling the customer "everything
-   we still retain" has been provided.
-5. Get the actual purge-job log from Engineering/Data confirming the Feb 2026 recordings were
-   deleted on schedule (§4.5) — useful corroboration to hold in reserve given the litigation, even
-   though it doesn't change what goes to the customer now.
+**Blocking — do before any further reply to the customer (§4.6a):**
+3. **Pull and review all 10 Jiminny calls from 27–28 Feb** (table in §4.6a), re-link them to this
+   booking in the CRM (they're currently tagged to unrelated lead records), and get full
+   transcripts/audio for the ones with no AI summary (Polly R, Leo M, Tashwille Hawkins, Brent C,
+   Liam Jooste, Kevin M) — short duration doesn't mean irrelevant.
+4. Once reviewed, work out what's disclosable and get a revised WeTransfer package to the
+   customer — this is new material responsive to his SAR, not a rebuttal to send instead of it.
 
-Steps 2–4 are quick checks, not a reason to delay the customer reply indefinitely — the policy
-explanation (§6) is ready to send now; it's specifically the closing "we've provided everything"
-line that should wait on 3–4.
+**Still open:**
+5. Get Telephony/Engineering to confirm, by call SID, which calls sit on which retention regime
+   (§4.6) — now more important, not less, given §4.6a shows the simple "Jiminny vs Twilio" account
+   doesn't fully match what's actually in Jiminny.
+6. Check recording availability for the **28 Feb calls already found in Twilio** (§4.1 — separate
+   from the Jiminny ones above) and for the call from **`+447423356056`** (§4.7).
+7. Get the actual purge-job log from Engineering/Data confirming the pre-8 May 2026 Twilio
+   recordings were deleted on schedule (§4.5) — still useful corroboration, lower priority than 3–4.
+
+**§6 is withdrawn pending step 3–4** — sending it now, even just the policy paragraph, would sit
+alongside an unreviewed cache of exactly the content he's been asking for, which is a worse position
+than not replying yet.
 
 ---
 
-## 6. Draft customer response — **FOR ANT'S REVIEW; the policy paragraph is DPO-approved, the
-## completeness paragraph needs §5 steps 3–4 done first (or a conscious decision to send without them)**
+## 6. Draft customer response — **WITHDRAWN, 2026-10-06 — see §4.6a. Do not send in any form until
+## the Jiminny calls found in §4.6a are reviewed.**
 
-**Update, 2026-10-06:** the DPO has agreed the retention-policy explanation below. I've kept the
-"two recording systems" wording Ant proposed, but labelled it as an explanation that should be
-confirmed by call SID first (§4.6) — it's a specific, checkable technical claim, not a form answer,
-and a litigant's solicitor can ask AnyVan to substantiate it. I've held back the "we've provided
-everything we still retain" line until the 28 Feb calls and the wife's number are actually checked
-(§4.7) — not because I doubt the retention story, but because that specific sentence is a factual
-representation in an active claim, and right now it hasn't been tested against two leads this
-record found that weren't in any reply sent so far. If Ant wants to send the full version
-(including that line) now, that's his call to make knowingly — flagging it is mine.
+Kept below for reference only. It was drafted before the Jiminny search in §4.6a, on the
+understanding that Twilio-only calls were gone and Jiminny held just the one already-delivered
+call. That's no longer the full picture: Jiminny holds ten more calls from 27–28 Feb, un-reviewed,
+including content matching the two specific things the customer says are missing (the
+supervisor escalation, the "nowhere to sleep" call). Sending either paragraph below now — even
+just the retention-policy one — would do so while that material sits un-disclosed, which is worse
+than the delay of reviewing it first.
 
 > Dear Mr Haider,
 >
