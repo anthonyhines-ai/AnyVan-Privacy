@@ -278,34 +278,35 @@ why some calls survived and (on AnyVan's account) others didn't. Wording below r
 DPO-approved oversight admission and the confirmed Twilio-vs-Jiminny explanation.
 
 **One date to double-check before sending:** Ant has given the date the policy reverted to 12
-months as **5 May 2026** (2026-10-06, first message) and **8 May 2026** (2026-10-06, second
-message) — three days apart, same mix-up pattern as the April 2024/April 2025 instruction date.
-I've used **8 May 2026** below as the latest figure given, but **confirm the correct date against
-the actual instruction record before sending** — this is the second time a specific date in this
-case has shifted between messages, and it's exactly the kind of detail a solicitor will check
-against AnyVan's own systems.
+months as 5 May 2026 (2026-10-06, first message) and 8 May 2026 (2026-10-06, second message),
+three days apart, the same mix-up pattern as the April 2024/April 2025 instruction date. I've used
+8 May 2026 below as the latest figure given, but confirm the correct date against the actual
+instruction record before sending. This is the second time a specific date in this case has
+shifted between messages, and it's exactly the kind of detail a solicitor will check against
+AnyVan's own systems.
 
 > Dear Mr Haider,
 >
-> Thank you for your patience while we looked into the points you've raised, and for your continued
-> correspondence on this.
+> Thank you for your patience, and please accept our apologies for the delay in responding to the
+> points you raised. We have been investigating this matter internally with our engineering team
+> and were waiting on their response before we could give you a complete and accurate answer.
 >
-> **On the retention period you've asked about:** our Privacy Policy, last updated 21 September
-> 2023, stated that call recordings are retained for 12 months, and that remained the position when
-> your booking was made. On 4 April 2025, AnyVan changed its internal retention instruction for one
-> of our call-recording systems to 3 months; this was reverted back to 12 months for recordings made
+> On the retention period you've asked about, our Privacy Policy, last updated 21 September 2023,
+> stated that call recordings are retained for 12 months, and that remained the position when your
+> booking was made. On 4 April 2025, AnyVan changed its internal retention instruction for one of
+> our call recording systems to 3 months. This was reverted back to 12 months for recordings made
 > from 8 May 2026 onwards. We should have updated our published Privacy Policy to reflect the
-> 3-month period while it was in force, and did not — that was an oversight on AnyVan's part, and we
-> apologise for it. There is no separate customer-facing notice from that period beyond the
+> 3 month period while it was in force, and did not. That was an oversight on AnyVan's part, and we
+> apologise for it. There is no separate customer facing notice from that period beyond the
 > published Privacy Policy; the change was recorded only as an internal instruction. The reversion
-> on 8 May 2026 applied prospectively, to recordings made from that date onwards — it did not
-> restore recordings already subject to the 3-month period beforehand.
+> on 8 May 2026 applied prospectively, to recordings made from that date onwards. It did not restore
+> recordings already subject to the 3 month period beforehand.
 >
-> **On why some recordings were available and others were not:** AnyVan uses two separate
-> call-recording systems. Calls recorded through Jiminny are retained for 12 months; calls recorded
-> through Twilio were subject to the 3-month period described above at the time of your move. The
+> On why some recordings were available and others were not, AnyVan uses two separate call
+> recording systems. Calls recorded through Jiminny are retained for 12 months. Calls recorded
+> through Twilio were subject to the 3 month period described above at the time of your move. The
 > recordings we have been able to provide to you came from the Jiminny system. Any corresponding
-> Twilio-only recordings from the 3-month period would, on this basis, no longer be available.
+> Twilio only recordings from the 3 month period would, on this basis, no longer be available.
 >
 > We confirm again that your request to preserve all relevant recordings, call logs, transcripts and
 > related notes remains logged and in place.
@@ -314,11 +315,13 @@ against AnyVan's own systems.
 > AnyVan Privacy Team
 
 This answers the four points in the customer's 2 October email in order: the policy in force at the
-time (12 months, per the published notice); the evidence of the change (an internal instruction
-dated 4 April 2025, not a published document — stated plainly rather than implied); where customers
-were told about the 3-month period (nowhere — that's the admitted oversight); and whether the 8 May
-2026 reversion was retrospective (no). Recommend Legal/DPO give this specific wording a final read
-given the active claim, even though the substance has already been agreed.
+time (12 months, per the published notice), the evidence of the change (an internal instruction
+dated 4 April 2025, not a published document, stated plainly rather than implied), where customers
+were told about the 3 month period (nowhere, that's the admitted oversight), and whether the 8 May
+2026 reversion was retrospective (no). The opening apology gives a reason for the delay since
+17 September without going into the internal detail of what engineering was asked and why.
+Recommend Legal/DPO give this specific wording a final read given the active claim, even though the
+substance has already been agreed.
 
 ---
 
