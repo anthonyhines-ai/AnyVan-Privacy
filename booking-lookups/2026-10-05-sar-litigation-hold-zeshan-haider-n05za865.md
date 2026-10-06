@@ -158,6 +158,37 @@ be checked against a system record if this reaches court — **confirm which is 
 actual instruction/change record before it's put in writing to the customer**, not from memory a
 second time.
 
+### 4.4b Wrong domain was being used, and the correct one gives better, sourced evidence
+**Update, 2026-10-06:** the customer's own evidence (his screenshot, "Last updated: 21st September,
+2023", quoting a 12-month figure) is from **anyvan.ie** — AnyVan's **Ireland** site. His booking is
+a UK booking (territory `en-gb` in Snowflake, §2). The policy that actually applies to his booking
+is published at **anyvan.com**, and the earlier draft's "last updated 21 September 2023" line was
+carried over from the wrong document — it should never have gone in the letter.
+
+Checked properly, via Wayback Machine snapshots (Ant's research, archived at
+[this artifact](https://claude.ai/artifact/PYrEs1sZDA9w9fnjP4xZF4?sk=410ImVAa8syVpZ1h6siTYA)) and
+independently re-confirmed live today:
+
+| Date checked | Source | Finding |
+|---|---|---|
+| 2026-02-07 15:31 UTC | Wayback snapshot, anyvan.com/privacy-policy | "Call recordings will be securely stored for 12 months after the call was made..." |
+| 2026-02-17 06:20 UTC | Wayback snapshot, anyvan.com/privacy-policy | Same wording, unchanged |
+| 2026-05-04 19:01 UTC | Wayback snapshot, anyvan.com/privacy-policy | Same wording, unchanged (identical to a 13 May CMS backup) |
+| 2026-05-15 09:54 UTC onward | Wayback snapshot → still live today | Page rewritten, "Last updated: 15th May 2026" — **same 12-month sentence retained**, word for word |
+| 2026-10-06 (today) | Live fetch, anyvan.com/privacy-policy | Confirms "Last updated: 15th May 2026" and the same 12-month sentence are still live now |
+
+**This is good news for AnyVan's position, stated accurately:** the public notice that actually
+applies to this booking has said 12 months for call recordings, unchanged, through every captured
+version from 7 Feb 2026 to today, including across the 5/8 May 2026 internal reversion date — it
+was never edited to say 3 months, and wasn't edited at all on 5 May 2026 specifically (nearest
+edits 17 Feb before, 15 May after, neither of which touched this figure). The oversight is
+unchanged in substance: AnyVan's **internal** retention instruction diverged from this unchanged
+**public** figure for the period in §4.4, and nobody updated the public notice to flag that
+divergence. But the letter should no longer cite anyvan.ie or a 2023 "last updated" date — it
+should point the customer to the correct site and rest on the unchanged-figure finding above, which
+is now independently sourced and verifiable rather than copied from his own (wrong-domain)
+screenshot.
+
 ### 4.5 Preservation-request timing vs. actual purge date — the policy detail now resolves the
 ### ambiguity, but execution still isn't evidenced
 Ant has now clarified the cutover was **not retroactive**: the move back to 12 months applied only
@@ -279,11 +310,15 @@ DPO-approved oversight admission and the confirmed Twilio-vs-Jiminny explanation
 
 **One date to double-check before sending:** Ant has given the date the policy reverted to 12
 months as 5 May 2026 (2026-10-06, first message) and 8 May 2026 (2026-10-06, second message),
-three days apart, the same mix-up pattern as the April 2024/April 2025 instruction date. I've used
-8 May 2026 below as the latest figure given, but confirm the correct date against the actual
-instruction record before sending. This is the second time a specific date in this case has
-shifted between messages, and it's exactly the kind of detail a solicitor will check against
-AnyVan's own systems.
+three days apart, the same mix-up pattern as the April 2024/April 2025 instruction date. This
+record no longer needs to state that exact date to the customer (see below), but confirm it
+internally against the actual instruction record regardless, since it may come up again.
+
+**Domain correction, 2026-10-06 (§4.4b):** the earlier draft repeated the customer's own
+"last updated 21 September 2023" claim, which is from anyvan.ie, AnyVan's Ireland site, not the
+policy that applies to his UK booking. Rewritten below to point to the correct document
+(anyvan.com) and rest on the unchanged-12-months finding, which is independently sourced
+(§4.4b) rather than copied from his screenshot.
 
 > Dear Mr Haider,
 >
@@ -291,16 +326,17 @@ AnyVan's own systems.
 > points you raised. We have been investigating this matter internally with our engineering team
 > and were waiting on their response before we could give you a complete and accurate answer.
 >
-> On the retention period you've asked about, our Privacy Policy, last updated 21 September 2023,
-> stated that call recordings are retained for 12 months, and that remained the position when your
-> booking was made. On 4 April 2025, AnyVan changed its internal retention instruction for one of
-> our call recording systems to 3 months. This was reverted back to 12 months for recordings made
-> from 8 May 2026 onwards. We should have updated our published Privacy Policy to reflect the
-> 3 month period while it was in force, and did not. That was an oversight on AnyVan's part, and we
-> apologise for it. There is no separate customer facing notice from that period beyond the
-> published Privacy Policy; the change was recorded only as an internal instruction. The reversion
-> on 8 May 2026 applied prospectively, to recordings made from that date onwards. It did not restore
-> recordings already subject to the 3 month period beforehand.
+> On the retention period you've asked about, we note that the privacy policy you referred to is
+> published on anyvan.ie, which is AnyVan's Ireland site. As your booking was made in the United
+> Kingdom, the privacy policy that applies to it is the one published at anyvan.com. That policy has
+> stated, without change, that call recordings are retained for 12 months, including throughout the
+> period of your move and up to today. Separately, AnyVan's internal retention instruction for one
+> of our call recording systems was set to 3 months for a period that covered your move, before
+> being reverted. We should have reflected that internal instruction in our published privacy
+> policy while it was in force, and did not. That was an oversight on AnyVan's part, and we
+> apologise for it. There is no separate customer facing notice of that internal instruction; it was
+> recorded only internally. The reversion applied prospectively, to recordings made from that point
+> onwards. It did not restore recordings already subject to the 3 month period beforehand.
 >
 > On why some recordings were available and others were not, AnyVan uses two separate call
 > recording systems. Calls recorded through Jiminny are retained for 12 months. Calls recorded
@@ -315,13 +351,15 @@ AnyVan's own systems.
 > AnyVan Privacy Team
 
 This answers the four points in the customer's 2 October email in order: the policy in force at the
-time (12 months, per the published notice), the evidence of the change (an internal instruction
-dated 4 April 2025, not a published document, stated plainly rather than implied), where customers
-were told about the 3 month period (nowhere, that's the admitted oversight), and whether the 8 May
-2026 reversion was retrospective (no). The opening apology gives a reason for the delay since
-17 September without going into the internal detail of what engineering was asked and why.
-Recommend Legal/DPO give this specific wording a final read given the active claim, even though the
-substance has already been agreed.
+time (12 months, on the correct document for a UK booking, anyvan.com, not the Ireland site he
+quoted), the evidence of the change (an internal instruction, not a published document, stated
+plainly rather than implied), where customers were told about the 3 month period (nowhere, that's
+the admitted oversight), and whether the reversion was retrospective (no). It deliberately avoids
+restating a specific "last updated" date or the 5/8 May reversion date, since neither is needed to
+answer his questions accurately and both have shifted once already in this investigation. The
+opening apology gives a reason for the delay since 17 September without going into the internal
+detail of what engineering was asked and why. Recommend Legal/DPO give this specific wording a
+final read given the active claim, even though the substance has already been agreed.
 
 ---
 
@@ -339,6 +377,12 @@ substance has already been agreed.
 - Correspondence summary is drawn from the Freshdesk/complaints thread supplied for this
   investigation; full verbatim correspondence is **not** reproduced here per the PII-minimisation
   rule — refer to the live Freshdesk ticket for the complete exchange.
+- Jiminny: `search_calls` (customer email/phone, date range 2026-02-01 to 2026-03-05,
+  `with_crm_records: true`) plus `get_call` on each result for AI summaries (§4.6a).
+- Privacy policy history (§4.4b): Wayback Machine snapshots of `anyvan.com/privacy-policy` (Ant's
+  research, archived at
+  https://claude.ai/artifact/PYrEs1sZDA9w9fnjP4xZF4?sk=410ImVAa8syVpZ1h6siTYA), cross-checked
+  2026-10-06 against the live page at the same URL.
 
 ---
 
