@@ -301,18 +301,31 @@ precisely because of §4.6).
 
 ---
 
-## 6. Draft customer response — **restored 2026-10-06, for Ant's review and sending**
+## 6. Draft customer response — **restored 2026-10-07, for Ant's review and sending**
 
 Ant has confirmed the §4.6a material has already reached the customer, so this draft now just needs
 to answer the two things he's still asking for in writing: the retention-period discrepancy, and
 why some calls survived and (on AnyVan's account) others didn't. Wording below reflects the
 DPO-approved oversight admission and the confirmed Twilio-vs-Jiminny explanation.
 
-**One date to double-check before sending:** Ant has given the date the policy reverted to 12
-months as 5 May 2026 (2026-10-06, first message) and 8 May 2026 (2026-10-06, second message),
-three days apart, the same mix-up pattern as the April 2024/April 2025 instruction date. This
-record no longer needs to state that exact date to the customer (see below), but confirm it
-internally against the actual instruction record regardless, since it may come up again.
+**Update, 2026-10-07:** Ant asked for the specific dates to go back in, to make explicit that the
+missing recordings were not deleted in response to the customer's request, or at any point after
+it, but automatically, under a standing instruction that predates his first contact by well over a
+year. That is a reasonable, and stronger, point to make, and the draft below now makes it directly
+rather than leaving the reader to infer it.
+
+**The 5/8 May date still needs confirming before sending.** This letter now uses that date to carry
+real evidential weight (it is part of the "deleted before, not because of, your request" argument),
+which raises the cost of it being wrong. Ant has given 5 May 2026 and 8 May 2026 in two consecutive
+messages; I've used 8 May below as the more recent figure, but this is exactly the date a solicitor
+would ask AnyVan to produce the underlying instruction for, so please confirm it against the actual
+record rather than carrying the uncertainty into a letter that now leans on it.
+
+**One evidential gap this still rests on (§4.5):** the claim "this happened automatically, before
+your request" is a policy-based inference, not yet a confirmed fact. The actual purge-job log for
+these recordings hasn't been pulled. It's a reasonable claim to make on what's known today, but if
+it's challenged, "the policy said it would happen" is weaker than "and here is the log showing it
+did." Worth getting that log in hand in parallel, even if it isn't needed to send this letter.
 
 **Domain correction, 2026-10-06 (§4.4b):** the earlier draft repeated the customer's own
 "last updated 21 September 2023" claim, which is from anyvan.ie, AnyVan's Ireland site, not the
@@ -330,13 +343,21 @@ policy that applies to his UK booking. Rewritten below to point to the correct d
 > published on anyvan.ie, which is AnyVan's Ireland site. As your booking was made in the United
 > Kingdom, the privacy policy that applies to it is the one published at anyvan.com. That policy has
 > stated, without change, that call recordings are retained for 12 months, including throughout the
-> period of your move and up to today. Separately, AnyVan's internal retention instruction for one
-> of our call recording systems was set to 3 months for a period that covered your move, before
-> being reverted. We should have reflected that internal instruction in our published privacy
-> policy while it was in force, and did not. That was an oversight on AnyVan's part, and we
-> apologise for it. There is no separate customer facing notice of that internal instruction; it was
-> recorded only internally. The reversion applied prospectively, to recordings made from that point
-> onwards. It did not restore recordings already subject to the 3 month period beforehand.
+> period of your move and up to today.
+>
+> Separately, on 4 April 2025, AnyVan set the retention period for one of our call recording systems
+> to 3 months. This was a standing instruction, in place well over a year before your move and
+> before you first contacted us. On 8 May 2026, this was reverted to 12 months for recordings made
+> from that date onwards; it did not apply retroactively to recordings already subject to the
+> 3 month period. The calls from your move on 27 and 28 February 2026 fell within that 3 month
+> period, and would have reached the end of it by around the end of May 2026, before you first asked
+> us, no later than 20 August 2026, to preserve all relevant recordings. We want to be clear that
+> nothing was deleted in response to your request, or after it. Any deletion of these particular
+> recordings happened automatically, under a standing instruction, before your request was made.
+>
+> We should have reflected the 3 month period in our published privacy policy while it was in
+> force, and did not. That was an oversight on AnyVan's part, and we apologise for it. There is no
+> separate customer facing notice of that internal instruction; it was recorded only internally.
 >
 > On why some recordings were available and others were not, AnyVan uses two separate call
 > recording systems. Calls recorded through Jiminny are retained for 12 months. Calls recorded
@@ -352,14 +373,16 @@ policy that applies to his UK booking. Rewritten below to point to the correct d
 
 This answers the four points in the customer's 2 October email in order: the policy in force at the
 time (12 months, on the correct document for a UK booking, anyvan.com, not the Ireland site he
-quoted), the evidence of the change (an internal instruction, not a published document, stated
-plainly rather than implied), where customers were told about the 3 month period (nowhere, that's
-the admitted oversight), and whether the reversion was retrospective (no). It deliberately avoids
-restating a specific "last updated" date or the 5/8 May reversion date, since neither is needed to
-answer his questions accurately and both have shifted once already in this investigation. The
-opening apology gives a reason for the delay since 17 September without going into the internal
-detail of what engineering was asked and why. Recommend Legal/DPO give this specific wording a
-final read given the active claim, even though the substance has already been agreed.
+quoted), the evidence of the change (an internal instruction dated 4 April 2025, not a published
+document, stated plainly rather than implied), where customers were told about the 3 month period
+(nowhere, that's the admitted oversight), and whether the reversion was retrospective (no). It also
+now makes, directly rather than by implication, the point Ant asked for: the recordings were not
+deleted because of the request or after it, but automatically, under a standing instruction in
+place well over a year before the customer first made contact. The opening apology gives a reason
+for the delay since 17 September without going into the internal detail of what engineering was
+asked and why. Recommend Legal/DPO give this specific wording a final read given the active claim,
+particularly the 8 May date and the non-retroactivity point, both load-bearing for the timing
+argument.
 
 ---
 
