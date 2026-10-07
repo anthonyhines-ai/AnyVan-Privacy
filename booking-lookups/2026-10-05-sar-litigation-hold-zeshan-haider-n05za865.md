@@ -284,18 +284,15 @@ precisely because of §4.6).
 
 3. ~~Review/disclose the Jiminny calls in §4.6a.~~ Confirmed 2026-10-06 — already provided to the
    customer; CRM re-linking (tagged to unrelated lead records) is tidy-up, not a blocker.
-
-**Before sending §6:**
-4. Confirm the correct policy-reversion date — **5 or 8 May 2026** (two different dates given,
-   see §6) — against the actual instruction record.
+4. ~~Confirm the policy-reversion date.~~ Confirmed 8 May 2026, 2026-10-07 — see §6.
 
 **Still open, lower priority — doesn't block §6:**
 5. Check recording availability for the **28 Feb Twilio-only calls** (§4.1) and the call from
    **`+447423356056`** (§4.7), on the Twilio system specifically — the Jiminny side is resolved,
    but these were raised separately and haven't been confirmed either way.
 6. Get the actual purge-job log from Engineering/Data confirming the pre-reversion Twilio
-   recordings were deleted on schedule (§4.5) — corroboration to hold in reserve, not needed to
-   send §6.
+   recordings were deleted on schedule (§4.5) — the letter now states this as fact (§6), so this
+   corroboration matters more than before, even though it's not needed to send.
 7. Get Telephony/Engineering to confirm, by call SID, which system each call sits on (§4.6) — useful
    if the customer or his solicitor pushes back on the explanation, not needed to send §6.
 
@@ -314,12 +311,7 @@ it, but automatically, under a standing instruction that predates his first cont
 year. That is a reasonable, and stronger, point to make, and the draft below now makes it directly
 rather than leaving the reader to infer it.
 
-**The 5/8 May date still needs confirming before sending.** This letter now uses that date to carry
-real evidential weight (it is part of the "deleted before, not because of, your request" argument),
-which raises the cost of it being wrong. Ant has given 5 May 2026 and 8 May 2026 in two consecutive
-messages; I've used 8 May below as the more recent figure, but this is exactly the date a solicitor
-would ask AnyVan to produce the underlying instruction for, so please confirm it against the actual
-record rather than carrying the uncertainty into a letter that now leans on it.
+**8 May 2026 confirmed by Ant, 2026-10-07.** The letter below uses that date throughout.
 
 **One evidential gap this still rests on (§4.5):** the claim "this happened automatically, before
 your request" is a policy-based inference, not yet a confirmed fact. The actual purge-job log for
@@ -380,9 +372,9 @@ now makes, directly rather than by implication, the point Ant asked for: the rec
 deleted because of the request or after it, but automatically, under a standing instruction in
 place well over a year before the customer first made contact. The opening apology gives a reason
 for the delay since 17 September without going into the internal detail of what engineering was
-asked and why. Recommend Legal/DPO give this specific wording a final read given the active claim,
-particularly the 8 May date and the non-retroactivity point, both load-bearing for the timing
-argument.
+asked and why. 8 May 2026 is confirmed (§6). Recommend Legal/DPO still give this specific wording a
+final read given the active claim, particularly the non-retroactivity point and the timing
+argument, which would be stronger with the purge-job log in §4.5/§5 step 6 in hand.
 
 ---
 
