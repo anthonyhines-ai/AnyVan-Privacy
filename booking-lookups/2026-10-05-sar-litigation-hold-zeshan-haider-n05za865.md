@@ -409,4 +409,87 @@ argument, which would be stronger with the purge-job log in §4.5/§5 step 6 in 
   then redact/dispose per policy.
 - **This record does not constitute Legal or DPO advice** and the draft in §6 is not an approved
   customer communication — both require sign-off before any reply is sent, given the active court
-  claim.
+  claim. §9 raises the bar on this further.
+
+---
+
+## 9. Customer's response to §6, 2026-10-09: escalation, now a legal/regulatory matter, not just an
+## operational SAR reply
+
+The customer replied to the §6 letter rejecting the "oversight" framing outright. Summary of what
+he's raised, not reproduced verbatim per the PII-minimisation rule (full text is in the Freshdesk
+thread):
+
+1. **Detrimental reliance.** He says he checked the published policy after the incident, read 12
+   months, and decided not to request recordings immediately on that basis. He now says that if he'd
+   known it was 3 months, he would have asked straight away, and that AnyVan's own admission may
+   mean he has lost evidence because of it. This reframes the oversight as something with a direct,
+   stated causal consequence for him, not just a transparency gap in the abstract.
+2. **Formal UK GDPR citations.** Articles 5(1)(a), 12(1), 13(2)(a), 5(2). He's asking what legal
+   basis AnyVan had to operate 3 months while publishing 12, and whether AnyVan has assessed this
+   for UK GDPR non-compliance. He's also raised it as a potential wider issue (other customers who
+   may have relied on the same published figure).
+3. **Incomplete recordings, pressed further.** He's explicitly asking whether calls were "split
+   between systems, interrupted, partially recorded, or otherwise affected," and whether further
+   recordings, transcripts, call logs or metadata exist. This is a fair, specific question and one
+   this investigation has a real lead on, not yet followed up: §4.6 found that durations recorded in
+   Jiminny for several 27–28 Feb calls are much shorter than the overlapping Twilio call-log entries
+   for what looks like the same conversation (e.g. a Jiminny call starting 19 seconds after a
+   55-minute Twilio call ends). That's a plausible mechanical explanation for "partial" recordings,
+   and it has not been confirmed with Telephony/Engineering. It should be now, because it's a direct
+   answer to a direct question.
+4. **Seven-day deadline, stated for a court evidence file**, a repeated preservation request, and an
+   express reservation of rights to the ICO.
+
+**This is no longer a wording question.** The customer is citing AnyVan's own written admission back
+at AnyVan, in the context of active court proceedings, with GDPR articles and an ICO threat attached.
+The "legal basis" and "does AnyVan accept this caused you to lose evidence" questions are not ones to
+answer from this record, or from DPO sign-off alone, the way §6 was handled. They need actual legal
+input (external solicitor, not just internal Legal/DPO review of wording) before any substantive
+answer goes out. Answering them badly now is worse than answering a few days late.
+
+**Recommended split response:**
+- **Operational, answerable now:** get Telephony/Engineering to resolve the Jiminny/Twilio duration
+  question in point 3 and give him a real, specific mechanical answer, re-confirm the preservation
+  request is in place (again), and confirm receipt of this letter.
+- **Legal/regulatory, needs solicitor input before answering:** the "on what legal basis" question,
+  whether this has been assessed for UK GDPR non-compliance, and whether AnyVan accepts his
+  reliance/evidence-loss argument. These should not be answered on the same timeline as the
+  operational points just because he's asked them together.
+- A short holding reply inside his 7-day window, acknowledging receipt, re-confirming preservation,
+  and saying a substantive response is being prepared with legal input, is standard practice here
+  and is not the same as ignoring the deadline.
+
+### 9.1 Draft holding reply, for sending inside the 7-day window
+
+This does not answer the GDPR or evidence-reliance questions. It buys the time for a solicitor to
+do that properly.
+
+> Dear Mr Haider,
+>
+> Thank you for your email. We take the points you have raised seriously, including the legal basis
+> questions you have asked under UK GDPR, and we do not think they should be answered without proper
+> legal review given how significant they are and the proceedings you have referred to.
+>
+> We confirm again that your request to preserve all relevant recordings, call logs, transcripts and
+> related notes remains logged and in place, and that nothing has been deleted since you first asked
+> us to preserve it.
+>
+> We are also looking further into your question about why some recordings appear incomplete, and we
+> will come back to you with a specific answer on that point.
+>
+> We will respond substantively to the remaining points in your email, including the legal basis
+> question, within [X] working days.
+>
+> Kind regards,
+> AnyVan Privacy Team
+
+Leave [X] for Ant/DPO to set once they know the solicitor's availability, rather than committing to
+a number here.
+
+This record flagged, before §6 was sent, that the oversight admission was a material statement in
+active litigation and recommended Legal/DPO sign-off before sending it (§4.4, §6). That risk has now
+materialised: the admission is being cited back. That's not a reason to have withheld it (the
+underlying fact was true and the customer already had strong circumstantial evidence from his own,
+albeit wrong-domain, screenshot), but it is the reason the next reply needs a higher bar of review
+than the last one got.
