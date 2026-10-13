@@ -493,3 +493,92 @@ materialised: the admission is being cited back. That's not a reason to have wit
 underlying fact was true and the customer already had strong circumstantial evidence from his own,
 albeit wrong-domain, screenshot), but it is the reason the next reply needs a higher bar of review
 than the last one got.
+
+### 9.2 Legal assessment received, 2026-10-13, and the incomplete-recordings mechanism confirmed
+
+Ant supplied a structured legal analysis of the four escalation points (source not yet stated in
+this record; get attribution, internal/DPO drafting vs. the litigation solicitor, so this can be
+cited properly). It is sound on the key point this record had flagged: Article 13 UK GDPR requires
+accurate information about retention periods, but does not require individual notice of every
+internal amendment to that policy. That is a more precise answer than "no obligation to notify"
+on its own, and it is reflected in the reply below.
+
+The analysis's own recommended checks (§5 in Ant's note) include whether a complaint or dispute
+existed before the recordings were deleted. This record already has a partial answer, and it is
+worth being clear-eyed about it: the Jiminny calls in §4.6a show an active complaint in progress
+from the day of the move itself (27 February), including the line "Amy filed a complaint regarding
+the broken items", well before the recordings would have reached the end of the 3-month period
+(around late May 2026) and months before the written preservation request (no later than 20 August
+2026). A customer-service complaint is not the same as litigation being reasonably in contemplation,
+and the Article 15 defence in the reply below does not depend on resolving that distinction. But it
+is the fact the whole "deleted through ordinary records management" position rests on, and it would
+be worth the litigation solicitor on `N05ZA865` confirming when that line was crossed, separately
+from this reply going out.
+
+**Mechanism for the incomplete recordings, confirmed by Ant, 2026-10-13:** calls were first answered
+by AnyVan's sales team and recorded on Jiminny; where a call was then transferred to the operations
+team, that portion was recorded separately on Twilio. The recordings already provided to the
+customer are the Jiminny portions; the Twilio portions (the operations-team continuation, which is
+where the supervisor escalation and the "nowhere to sleep" follow-up would sit) were subject to the
+3-month retention period in force at the time and have been deleted. This matches the pattern found
+in §4.6a (several Jiminny entries start seconds after a much longer overlapping Twilio call-log
+entry ends) and directly answers the one specific, fair question in the customer's escalation (§9
+point 3) that this investigation had a real, unresolved lead on. Noted as Ant's account, not
+independently confirmed against a telephony queue/system log, same basis as the other facts taken
+under advisement in this record.
+
+### 9.3 Final reply, incorporating the legal assessment and the confirmed mechanism
+
+Ant's preferred draft covers the retention-policy and notification points well and is used
+unchanged below. It did not address the incomplete-recordings question, one of the customer's four
+explicit points, and the one this investigation can now answer properly, so a paragraph using the
+confirmed mechanism in §9.2 has been added. A line reconfirming the preservation request has also
+been restored, since the customer explicitly asked for that reconfirmation in his escalation and
+every prior reply has included it.
+
+Left deliberately unanswered, as a choice, not an oversight: whether this has been "assessed for
+potential UK GDPR non-compliance" and the detrimental-reliance/lost-evidence argument. The reply
+below states AnyVan's position on notification and retention without directly conceding or
+disputing those two specific claims. Worth confirming that is the intended approach rather than an
+accidental gap, since he asked both directly and may follow up again if neither is addressed.
+
+> Dear Mr Haider,
+>
+> Thank you for your further correspondence.
+>
+> I acknowledge your comments regarding the changes to AnyVan's telephone recording retention policy
+> and your concerns about not having been individually notified of these changes.
+>
+> As a business, AnyVan periodically reviews its internal policies and procedures to ensure they
+> remain appropriate for its operational requirements and comply with applicable data protection
+> legislation. Following such a review, amendments were made to the period for which telephone
+> recordings are retained.
+>
+> Under the UK General Data Protection Regulation (UK GDPR), organisations are responsible for
+> establishing appropriate retention periods for personal data, taking into consideration the
+> purposes for which that information is collected and processed. While AnyVan is required to
+> maintain appropriate transparency regarding its processing and retention of personal information,
+> there is no general requirement to individually notify every customer of each amendment to an
+> internal retention policy.
+>
+> On the recordings you received appearing incomplete, when you called AnyVan your call was first
+> handled by our sales team, and that part of the call was recorded on our Jiminny system. Where a
+> call was then transferred to our operations team, that part of the call was recorded separately,
+> on our Twilio system. The recordings already provided to you are the Jiminny recordings. The
+> Twilio recordings of the operations-team part of these calls were deleted in accordance with the
+> retention arrangements described above, which is why we are unable to provide them.
+>
+> For clarity, the recordings relating to your booking in February 2026 were no longer held by
+> AnyVan when your request was received in August 2026, having been deleted in accordance with the
+> applicable retention arrangements. Consequently, we are unable to provide copies of these
+> recordings.
+>
+> We confirm again that your request to preserve all relevant recordings, call logs, transcripts and
+> related notes remains logged and in place.
+>
+> I appreciate that this may not be the outcome you were hoping for. However, I trust the above
+> clarifies AnyVan's position regarding the retention of telephone recordings and the changes to its
+> internal policy.
+>
+> Kind regards,
+> AnyVan Privacy Team
