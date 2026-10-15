@@ -582,3 +582,50 @@ accidental gap, since he asked both directly and may follow up again if neither 
 >
 > Kind regards,
 > AnyVan Privacy Team
+
+### 9.4 Customer's follow-up, 2026-10-15, and the decision to close rather than keep answering
+
+The customer replied to §9.3 again, now asking for AnyVan to cite the specific legal provisions
+relied upon, asking "who is responsible for this misinformation," and reframing it as a concern
+affecting all customers, not just him.
+
+Checked ICO's live guidance pages on storage limitation and the right of access before drafting
+anything grounded in "the ICO's position": both returned unusable content on a direct fetch (one
+404, one an empty contents page), consistent with CLAUDE.md's existing note that the ICO site
+blocks automated access. The substance below reflects well-established, generally understood ICO
+guidance on these points (organisations set their own retention periods based on purpose, there is
+no duty to retain data indefinitely for a future request, no duty to recreate what has already been
+legitimately deleted, no general duty to individually notify of a routine retention-policy review),
+not a verified quote. Whoever sends this should get the live ICO wording confirmed first, since the
+customer is the kind of recipient who will check it against the source himself.
+
+**Decision, 2026-10-15:** rather than continue answering each further specificity he asks for, Ant
+has chosen to close this line of correspondence: state the explanation already given stands, and
+point him to the ICO directly if he remains dissatisfied. This is a legitimate, standard complaints-
+handling move (equivalent to a final-response letter), not a concession, provided it comes after a
+position has actually been substantively given, which it has (§6, §9.3). The letter below
+deliberately still doesn't answer "who is responsible" or the detrimental-reliance argument,
+consistent with the choice already logged in §9.3, now made explicit as a closing position rather
+than a placeholder.
+
+> Dear Mr Haider,
+>
+> Thank you for your further correspondence.
+>
+> We have set out our position and the reasons for it in our previous emails, including on the
+> retention of call recordings, why some recordings are no longer available, and the recordings
+> already provided to you. We do not have anything further to add to that explanation.
+>
+> If you remain dissatisfied with our response, you have the right to raise this matter with the
+> Information Commissioner's Office (ICO), the UK's data protection regulator.
+>
+> We confirm that your request to preserve all relevant recordings, call logs, transcripts and
+> related notes remains logged and in place.
+>
+> Kind regards,
+> AnyVan Privacy Team
+
+Worth a conscious decision rather than a default: whether to add an explicit line such as "This is
+our final response on this specific matter," which would remove any ambiguity that AnyVan considers
+the correspondence on this point closed. Not included above since it raises the formality of the
+letter a notch and should be a deliberate choice, not an automatic addition.
