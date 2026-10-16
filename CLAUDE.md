@@ -41,6 +41,13 @@ history even if later deleted.**
   one on the account — resolve identity from email + every phone and cross-confirm.
 - **Metadata ≠ content.** `FACT_WHATSAPP_ACTIVITY` / `FACT_VOICE_ACTIVITY` say a contact happened;
   the transcript/body lives elsewhere (`HARMONISED.PRODUCTION.TWILIO_CONVERSATION_MESSAGE`, etc.).
+- **Comms: two data subjects + a lifecycle.** `HARMONISED.PRODUCTION.LISTING_COMMUNICATION` is the
+  per-booking send log (email/sms/whats-app); `RECIPIENT_ID` = the recipient's `USER_ID` —
+  **customer** (`DIM_USER_CUSTOMER`) or **transport partner** (`DIM_USER_TRANSPORTPROVIDER`) per
+  `TARGET`. Both can raise a DSR. Classify **by booking lifecycle, not sending platform**: in a live
+  window (listing created→completed) = Transactional (incl. agent-generated HubSpot, e.g.
+  day-of-move); pre-listing or post-completion = Marketing; customer inbound = Operational. Full
+  rule: `customer-communications-mapping.md` §3.1–3.2.
 - **Draft PR into `main`; there is NO CI** — a "pending" combined status with 0 checks is normal,
   **not** a failure. Validation is human review, so self-check before pushing.
 - **Snowflake quirks:** `LISTING_TERRORITY` is an intentional schema typo (use as-is); `"FROM"` /
@@ -77,7 +84,9 @@ Add a new topic subfolder when a genuinely new genre of record appears; one Mark
    `booking-lookups/2026-08-18-phone-number-lookup-07497-700277.md` (phone/postcode+date) and
    `booking-lookups/METHODOLOGY-communication-history.md` (all comms channels → tables).
    *Identity resolution order:* HubSpot CONTACT by email → its DEALs → Snowflake
-   `DIM_USER_CUSTOMER` by email+phone → `USER_ID`; then listings.
+   `DIM_USER_CUSTOMER` by email+phone → `USER_ID`; then listings. *For a **transport-partner**
+   subject:* resolve via `CONFORMED.PRODUCTION.DIM_USER_TRANSPORTPROVIDER` (id/name/phone/email) →
+   `USER_ID`, then `LISTING_COMMUNICATION` where `TARGET='provider' AND RECIPIENT_ID = USER_ID`.
 3. **SAR/DSAR comms-automation design.** `dsr-privacy-request-workflow-design.md` +
    `customer-communications-mapping.md` + `SAR-Comms-Lookup-Reference.md` — the blueprint for
    automating SAR/portability (Formstack → workflow assembles comms → Freshdesk → officer sign-off).
@@ -86,6 +95,13 @@ Add a new topic subfolder when a genuinely new genre of record appears; one Mark
    `runQuery` binds params **only** under `options.parameters`; phone-number storage differs per
    Snowflake table (use the last-10 suffix match); the Twilio recording proxy is Flex-scoped
    (open recordings in a new tab, never inline `<audio>`, never hardcode Basic-auth creds).
+   The Interaction Hub **Emails tab** is lifecycle-classified (see the comms golden rule) with a
+   **Customer / Transport Partner** toggle incl. a TP-subject search (`interaction_hub_emails` v3,
+   `interaction_hub_tp_emails`). **Change a live saved query safely:** temp private query →
+   `execute_query` with real params → verify → `update_query` (pin `dashboard_id`) → delete temp —
+   never edit the live query blind. And **`get_dashboard_html`-diff the live page before *and* after
+   every `PUT`** (a stale-repo publish once silently reverted ~15 live-only iterations — treat live
+   as source of truth and re-sync the repo from it).
 5. **Secure delivery of call recordings (SAR/DSAR).** `call-recording-delivery/…` +
    `templates/options-appraisal.md` — GDPR/ICO criteria for moving off WeTransfer Free.
 

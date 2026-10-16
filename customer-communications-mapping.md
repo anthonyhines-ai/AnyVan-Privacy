@@ -52,8 +52,8 @@ WHERE ml.LISTING_ID = :listing_id;
 ## 3. The comms spine — `LISTING_COMMUNICATION`
 
 - **Grain:** one row per message send. PK `LISTING_COMMUNICATION_ID`.
-- **Keys:** `LISTING_ID` (booking) · `RECIPIENT_ID` (numeric FK to the user — **not** an email/phone; resolve downstream). *(WhatsApp rows sometimes have empty `RECIPIENT_ID` — join on `LISTING_ID`.)*
-- **`TARGET`** ∈ `customer` / `provider` / `address` → **filter `= 'customer'`** for SAR.
+- **Keys:** `LISTING_ID` (booking) · `RECIPIENT_ID` (numeric FK — the recipient's **USER_ID**; which directory it resolves against depends on `TARGET` — see §3.1). *(WhatsApp rows sometimes have empty `RECIPIENT_ID` — join on `LISTING_ID`.)*
+- **`TARGET`** ∈ `customer` / `provider` / `address` → filter `= 'customer'` for a **customer** SAR; `provider` rows are the **transport partner's** data — a second data subject who can also raise a DSR (see §3.1).
 - **`CHANNEL`** ∈ `email` / `sms` / `whats-app` / `call`.
 - **⚠️ Always filter `DELETED_ROW = FALSE`** (soft-delete column — verified present).
 - **`TYPE`** = template key (the "email name"). Common values → friendly labels:
@@ -85,6 +85,33 @@ ORDER BY CREATED_AT;
 ```
 
 > **✅ Verified 2026-08-19:** all ten referenced columns exist (`LISTING_COMMUNICATION_ID`, `LISTING_ID`, `RECIPIENT_ID`, `TARGET`, `CHANNEL`, `TYPE`, `TOKENS`, `STATUS`, `CREATED_AT`, `DELETED_ROW`).
+
+### 3.1 `RECIPIENT_ID` → two data subjects (customer **and** transport partner)
+
+`RECIPIENT_ID` is the recipient's **USER_ID**; which directory it resolves against depends on `TARGET`:
+
+| `TARGET` | Recipient dimension | Data subject |
+|---|---|---|
+| `customer` | `CONFORMED.PRODUCTION.DIM_USER_CUSTOMER` (`USER_ID`) | the customer |
+| `provider` | `CONFORMED.PRODUCTION.DIM_USER_TRANSPORTPROVIDER` (`USER_ID`) | the **transport partner** |
+
+**Both parties can raise a data-subject request**, so a complete comms picture is not customer-only. Attribution is **exact**, not allocation-window guesswork: one booking can involve several TPs over its life (deallocations, `route-match` offers to multiple drivers, a final assignment) and `RECIPIENT_ID` keeps each provider comm tied to the driver that actually received it. (Verified 2026-09-18: on one Sep booking, six distinct drivers each resolved cleanly.)
+
+Resolve a TP from a search term against `DIM_USER_TRANSPORTPROVIDER`: `USER_ID` / `ID` (text) · `FULL_NAME` / `NICKNAME` · `PRIMARY`/`SECONDARY_PHONE_NUMBER` (last-10) · `EMAIL_ADDRESS`; then `LISTING_COMMUNICATION WHERE TARGET='provider' AND RECIPIENT_ID = :tp_user_id`. (`FCT_ALLOCATIONS` / `WORK_OFFERS` link a TP to listings, but you don't need them for comms attribution — `RECIPIENT_ID` is exact.)
+
+### 3.2 Classify each comm by **booking lifecycle**, not sending platform
+
+Category is decided by *where the send sits in the journey*, **not** which system sent it — an agent-generated HubSpot email can be transactional:
+
+| Party | Class | Rule |
+|---|---|---|
+| Customer | **Transactional** | sent while a booking is live — `send_ts` between `MASTER_LISTING.LISTING_CREATED_DATE` and `COALESCE(LISTING_COMPLETED_DATE, CURRENT_TIMESTAMP())` (NULL completed = still live). Includes agent-generated HubSpot sends that land in-window (e.g. day-of-move). |
+| Customer | **Marketing** | sent **outside** any live booking — pre-listing quote nurture, or post-completion win-back. |
+| Customer | **Operational** | inbound — the customer contacting us (Freshdesk). |
+| TP | **TP-Marketing** | job **offers** — `route-match` / `route-match-back` (pre-allocation). |
+| TP | **TP-Transactional** | servicing an allocated job — `driver-assigned` / `-reminder`, `job-changed`, `job-completed`, `driver-deallocated`. |
+
+Live implementation on the Interaction Hub Emails tab: `interaction_hub_emails` (customer, lifecycle-classified, dashboard SQL v3) and `interaction_hub_tp_emails` (TP-subject search). The rule reproduced a hand-categorised 30-row export **30/30**; TP attribution validated at **133 emails / 102 jobs** for one partner. Full write-up: `interaction-hub/2026-09-15-call-transcript-matching-and-coverage.md` §8c–8d.
 
 ---
 
@@ -153,7 +180,7 @@ WHERE LOWER(HS_EMAIL_EVENT_EMAIL_RECIPIENT) = :email
 ORDER BY HS_EMAIL_EVENT_EMAIL_SENT_DATE;
 ```
 
-- **Journey scoping:** split **pre-booking** vs **as-part-of-this-booking** by comparing `_SENT_DATE` (UTC) to `MASTER_LISTING.LISTING_CREATED_DATE`. (A customer often has an earlier quote/nurture cycle months before — exclude for a booking-scoped view.)
+- **Journey scoping = the §3.2 lifecycle rule:** a HubSpot send is **Marketing** when it sits outside any live booking (pre-listing nurture, or post-completion win-back) and **Transactional** when it lands inside a booking window (`LISTING_CREATED_DATE` → `COALESCE(LISTING_COMPLETED_DATE, now)`) — so an agent-generated day-of-move email counts as transactional. Compare `_SENT_DATE` (UTC) to the window, not just to `LISTING_CREATED_DATE`.
 - **⚠ Limitation:** the **rendered HTML/body of marketing emails is not extractable** — `MARKETING_EMAIL` read is permission-locked in HubSpot and no body exists in Snowflake. You get subject + name + open status. To get full rendered emails: unlock `MARKETING_EMAIL` read, or capture the "view in browser" URLs.
 - HubSpot holds **no native SMS/WhatsApp** (a Sakari integration writes last-SMS-only contact fields — not a history).
 
@@ -249,4 +276,4 @@ Input: email and/or listing_id (and/or Freshdesk ticket → SAR-Comms-Lookup-Ref
 - [`dsr-intake-form-handoff.md`](dsr-intake-form-handoff.md) — DSR intake form, request types, JSON payload convention, Freshdesk custom fields.
 - [`dsr-privacy-request-workflow-design.md`](dsr-privacy-request-workflow-design.md) — the end-to-end workflow-system automation that consumes this backbone.
 
-*Compiled 2026-08-13 from the UK Home Removal Customer-Journey communications audit; schema re-verified against live Snowflake 2026-08-19.*
+*Compiled 2026-08-13 from the UK Home Removal Customer-Journey communications audit; schema re-verified against live Snowflake 2026-08-19; extended 2026-09-18 with the lifecycle classification rule and the transport-partner data-subject path (§3.1–3.2), from the Interaction Hub Emails build.*
