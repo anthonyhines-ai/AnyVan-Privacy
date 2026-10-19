@@ -629,3 +629,33 @@ Worth a conscious decision rather than a default: whether to add an explicit lin
 our final response on this specific matter," which would remove any ambiguity that AnyVan considers
 the correspondence on this point closed. Not included above since it raises the formality of the
 letter a notch and should be a deliberate choice, not an automatic addition.
+
+### 9.5 Customer pressed again, 2026-10-19: triage reply, hand off to formal complaints
+
+The customer replied twice more: once repeating the "which specific law" question and asking for
+the complaints procedure, then a further message accusing AnyVan of discourtesy for not answering
+and repeating both asks. Ant's decision, 2026-10-19: stop answering from this thread and hand it to
+AnyVan's formal complaints department, with a short reply rather than a further substantive one.
+
+This is a reasonable way to de-escalate a thread that was not going to be resolved by another
+paragraph, and it's honest, since a formal complaint is in fact what the customer has asked for.
+One thing this doesn't do, and shouldn't be mistaken for doing: it does not answer the retention
+question he has now asked four times. That's fine as a handover decision, but it means the actual
+answer is now the complaints department's to give, not something this thread has resolved. Whoever
+picks up the complaint will need the full record in §4 to §9 to do that, not just this final email.
+
+> Dear Mr Haider,
+>
+> Thank you for your email.
+>
+> This matter has been passed to AnyVan's formal complaints department, who will respond to you in
+> due course.
+>
+> We confirm that your request to preserve all relevant recordings, call logs, transcripts and
+> related notes remains logged and in place.
+>
+> Kind regards,
+> AnyVan Privacy Team
+
+The preservation line is kept since it has closed that specific ask in every reply so far and costs
+nothing to repeat; drop it if the complaints handover is meant to be the only content.
