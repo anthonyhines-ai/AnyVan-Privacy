@@ -693,3 +693,47 @@ procedure it doesn't have confirmed details for.
 This supersedes the §9.5 draft; use this version if nothing has been sent yet. Whoever in the
 complaints team picks this up still needs the full record in §4 to §9.5, not just this email, since
 this reply still doesn't resolve the underlying question, it only stops restating it as unanswered.
+
+### 9.7 Revised again, 2026-10-20: firmer wording, three points from Ant incorporated
+
+Ant asked for three changes to §9.6: state plainly that there is no requirement to individually
+notify existing customers of an internal retention-policy change; push back on the customer's
+"continuing to publish misleading information" framing, since the policy wasn't actively republished
+with the wrong figure, it simply wasn't updated; and close more firmly, an explanation has been
+given, dissatisfaction with it doesn't entitle him to more from this thread, and doesn't affect his
+right to go to the ICO or raise it in his proceedings.
+
+All three are consistent with the position already built up in this record (§4.4, §9.2's legal
+assessment, §9.3) rather than new ground. One thing worth having DPO/Legal sign off on specifically,
+since it's an assertion about AnyVan's state of mind, not just a fact: "not a decision to continue
+publishing information we knew to be inaccurate" is a claim that nobody at AnyVan was aware of the
+mismatch while the published policy still said 12 months. That has been the working assumption
+throughout this record, and is consistent with "administrative oversight", but it's the kind of
+statement that should be ones AnyVan can actually stand behind if tested, not an assumption carried
+through a chain of drafts.
+
+> Dear Mr Haider,
+>
+> Thank you for your email.
+>
+> To address your question directly: there is no requirement for AnyVan to individually notify each
+> existing customer when an internal retention period is reviewed and amended. Separately, as we
+> have already explained, our published privacy policy was not updated to reflect the change in
+> practice during that period. That was an administrative oversight, not a decision to continue
+> publishing information we knew to be inaccurate, and we have apologised for it.
+>
+> We have provided our explanation for this and do not have anything further to add. If you remain
+> unhappy with that explanation, this does not affect your right to raise the matter with the
+> Information Commissioner's Office or in your ongoing proceedings.
+>
+> Your request to raise this as a formal complaint has been passed to AnyVan's formal complaints
+> team, who will contact you directly to confirm the complaints procedure and respond to you in due
+> course.
+>
+> We confirm again that your request to preserve all relevant recordings, call logs, transcripts and
+> related notes remains logged and in place.
+>
+> Kind regards,
+> AnyVan Privacy Team
+
+Supersedes §9.6.
