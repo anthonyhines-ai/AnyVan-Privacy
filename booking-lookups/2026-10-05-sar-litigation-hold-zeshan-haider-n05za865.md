@@ -659,3 +659,37 @@ picks up the complaint will need the full record in §4 to §9 to do that, not j
 
 The preservation line is kept since it has closed that specific ask in every reply so far and costs
 nothing to repeat; drop it if the complaints handover is meant to be the only content.
+
+### 9.6 Revised, 2026-10-20: answer briefly, then hand over
+
+Ant reconsidered the pure-handover approach in §9.5 and asked whether to answer before passing to
+the complaints team. Recommended yes: a handover with no answer, sent in response to an email that
+accuses AnyVan of refusing to answer, repeats the accusation rather than defusing it. The fix is not
+a new legal argument, it's restating the one answer already given consistently since §6 (internal
+administrative error, not a deliberate withholding) so it's visibly present rather than visibly
+absent, then handing the complaint itself to the complaints team. The complaints-procedure question
+is answered by saying that team will confirm it directly, rather than this record stating a
+procedure it doesn't have confirmed details for.
+
+> Dear Mr Haider,
+>
+> Thank you for your email.
+>
+> On the question you've asked again: the reason our published privacy policy was not updated to
+> reflect the change in retention period was an internal administrative error, not a decision to
+> withhold information from customers or the public. We have already explained this and apologise
+> for it again.
+>
+> Your request to raise this as a formal complaint has been passed to AnyVan's formal complaints
+> team, who will contact you directly to confirm the complaints procedure and respond to you in due
+> course.
+>
+> We confirm again that your request to preserve all relevant recordings, call logs, transcripts and
+> related notes remains logged and in place.
+>
+> Kind regards,
+> AnyVan Privacy Team
+
+This supersedes the §9.5 draft; use this version if nothing has been sent yet. Whoever in the
+complaints team picks this up still needs the full record in §4 to §9.5, not just this email, since
+this reply still doesn't resolve the underlying question, it only stops restating it as unanswered.
