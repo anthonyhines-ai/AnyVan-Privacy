@@ -1,3 +1,6 @@
+**CONFIDENTIAL — CONTAINS CUSTOMER PERSONAL DATA (PII).** Access restricted to authorised AnyVan
+Privacy / Operations staff only. See Governance & Retention below.
+
 # Task Execution Log — Monika J Bagińska SAR Operations
 ## Booking #9454215 · #9555113 | Date: 2026-09-03 | Deadline: 2026-09-14
 
