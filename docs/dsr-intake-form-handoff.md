@@ -6,40 +6,23 @@ A multi-step Data Subject Request intake form for AnyVan, deployed to AV Dashboa
 
 **Live URL:** `https://dashboards.anyvan.com/operations/dsr-intake-form`
 **Dashboard path:** `operations/dsr-intake-form`
-**Status:** Deployed, internal test mode. Submissions display structured JSON payload — not yet wired to Freshdesk.
+**Status:** Deployed, **interim internal tool only** — per `docs/public-hosting.md`, the direction
+decided for both customers and staff is **one Formstack form** (id `6559077`, see root
+`dsr-intake-form-handoff.md` and `docs/formstack-dsr-build.md`), which recreates this same
+question logic. This form stays live internally as the staff tool until the Formstack form is
+live and adopted, then it's retired (or kept as an internal fallback) — it is not being built out
+further. Submissions still only display a structured JSON test payload — not wired to Freshdesk.
 
 ---
 
-## Known Bug To Fix
+## Known Bug — FIXED, confirmed deployed (2026-11-11)
 
-The account holder confirmation checkbox doesn't work in the deployed HTML version. Root cause: missing space between `checked` attribute and `style` attribute in the template literal, producing `checkedstyle=` as one invalid attribute.
-
-**Fix location:** In `renderStep2()`, the confirm-box checkbox line. Change:
-
-```javascript
-${chk?'checked':''}style="margin-top:3px;
-```
-
-To:
-
-```javascript
-${chk?'checked ':''}style="margin-top:3px;
-```
-
-Also add a fallback click handler on the wrapper div in `bindEvents()`:
-
-```javascript
-const cbw = document.getElementById('confirm-box-wrap');
-if (cbw && ah) cbw.onclick = (e) => {
-  if (e.target === ah) return;
-  S.accountHolder = !S.accountHolder;
-  render();
-};
-```
-
-The fix is already applied in the local file at `/home/claude/dsr-form.html` but was not pushed to AV Dashboards because MCP tools were evicted during the long session.
-
-**Priority:** Push this fix first before any other changes.
+The account holder confirmation checkbox previously didn't work in the deployed HTML version
+(missing space between `checked` and `style` in the template literal, producing invalid
+`checkedstyle=`). **Confirmed fixed and live** — `renderStep2()` now emits
+`${chk?'checked ':''}style="margin-top:3px;...`, and `bindEvents()` has the wrapper-div fallback
+click handler (using `e.target.closest('label')` to avoid double-toggling, slightly more robust
+than the originally proposed `e.target === ah` check). No action needed.
 
 ---
 
@@ -165,37 +148,27 @@ All-data SAR adds: `all_data_request` with `date_from`, `date_to`, `reason`
 
 ---
 
-## What Needs Building Next
+## What Was Planned Next — SUPERSEDED (2026-11-11), kept for history only
 
-### 1. Push the checkbox bugfix
-Update `operations/dsr-intake-form` on AV Dashboards. Use `get_upload_token` → `PUT` to the upload API with the fixed HTML.
+The four items originally listed here (push the checkbox bugfix; create Freshdesk custom fields;
+build a Lambda backend to receive this form's JSON payload and create tickets directly; host
+externally on S3 + CloudFront) are **no longer the plan**. Item 1 is done (above). Items 2–4 were
+superseded by the decision in `docs/public-hosting.md`: AnyVan is **not** building out this form's
+own backend or external hosting — instead a single **Formstack** form (id `6559077`) serves both
+customers and staff, feeding the existing **workflow-system → Freshdesk** pipeline (mirroring the
+live "Damage Claim - UK - Formstack" workflow). See:
+- `docs/public-hosting.md` — the hosting decision and why self-hosting (this section's old plan)
+  was rejected.
+- `docs/formstack-dsr-build.md` — the Formstack form build spec (recreates this form's question
+  logic).
+- `docs/dsr-field-mapping.md` — single source of truth for the live Formstack field ids and the
+  actual Freshdesk `cf_*` MVP (tags + description + one date field; more `cf_*` fields are later
+  work, tracked there — not the 4-field list originally drafted here).
+- Root `dsr-intake-form-handoff.md` — the Formstack form's own handoff doc (request-type taxonomy,
+  JSON payload convention, identity-verification gate).
 
-### 2. Freshdesk custom fields
-Create in Freshdesk admin before wiring the backend:
-- `cf_dsr_type` — dropdown: SAR, Deletion, Rectification, Marketing Opt-Out, Portability
-- `cf_requester_type` — dropdown: Customer, TP Sole Trader, TP Limited, Third Party
-- `cf_booking_reference` — text
-- `cf_tp_username` — text
-
-### 3. Lambda backend (Node.js, AWS Lambda-compatible)
-Receives the JSON payload from the form, then:
-- Creates a Freshdesk ticket with custom fields, tags, and a structured private note
-- Attaches uploaded files to the ticket (base64 pass-through from form → Freshdesk attachment API)
-- Fires the existing webhook classifier
-- Returns the DSR reference to the form
-
-Freshdesk API patterns (from existing SAR automation):
-- Basic auth: API key as username, `"X"` as password (base64 encoded)
-- Create ticket: `POST /api/v2/tickets` with `{subject, description, email, phone, custom_fields, tags}`
-- Add private note: `POST /api/v2/tickets/{id}/notes` with `{body: html, private: true}`
-- Rate limit: sleep 1.5–2s between calls; on HTTP 429, read `Retry-After` header
-
-### 4. S3 + CloudFront hosting
-For external (customer/TP-facing) deployment:
-- Static site on S3 behind CloudFront
-- Subdomain e.g. `privacy.anyvan.com` or path on main site
-- Remove the test banner and AV Dashboards auth
-- Wire form submission to the Lambda via API Gateway
+The `backend/` Lambda referenced in the old item 3 still exists in-repo as a reference
+implementation / fallback, but is explicitly parked and not deployed — see `backend/README.md`.
 
 ---
 

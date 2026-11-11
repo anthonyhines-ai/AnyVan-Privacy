@@ -74,6 +74,10 @@ systems changed).
 | `sar-data-extract.html` | GDPR SAR extract dashboard — pulls a customer's data across 12 Snowflake sources; JSON (Art. 20) + CSV export. |
 | `interaction-hub.html` | Interaction Hub dashboard (phone-lookup fix: client normalisation + server suffix match). |
 | `interaction-hub/2026-08-26-call-recording-playback-diagnosis.md` | Diagnosis + fix design for call-recording playback/download in the hub. |
+| `interaction-hub/2026-09-28-recording-by-callsid-route-build-spec.md` | Build spec for a recording-by-CallSid route. |
+| `sql/listing_calls_with_twilio_links.sql` | Standalone reusable query: listing calls with Twilio recording links. |
+| `handoffs/2026-09-30-session-handoff-recording-access.md` | Session handoff note on call-recording access work. |
+| `retention/2026-09-16-call-recording-retention-gap.md` | Dated finding on a call-recording retention gap. |
 
 ### 5. Secure delivery of call recordings (SAR/DSAR)
 | Path | What it is |

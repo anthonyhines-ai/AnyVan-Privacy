@@ -61,6 +61,9 @@ booking-lookups/            # dated PII investigation records + reusable methodo
 communication-lookups/      # dated "locate all comms to X" records
 call-recording-delivery/    # secure-delivery options appraisals (SAR/DSAR)
 interaction-hub/            # Interaction Hub diagnosis notes
+sql/                        # standalone reusable queries not tied to a dashboard (listing_calls_with_twilio_links.sql)
+handoffs/                   # dated session-handoff notes for in-progress technical work
+retention/                  # dated retention-gap findings (e.g. call-recording retention)
 *.html                      # AV Dashboards pages (dsr-intake-form, interaction-hub, sar-data-extract)
 customer-communications-mapping.md · SAR-Comms-Lookup-Reference.md · dsr-privacy-request-workflow-design.md
                             # the SAR/DSAR comms-automation design package (work-stream 3)
@@ -129,12 +132,21 @@ Hines (anthony.hines@anyvan.com)** unless told otherwise.
 - **Single source of truth.** `docs/conventions.md` is canonical for work-stream 1; `CLAUDE.md`,
   `ONBOARDING.md`, and the skills restate it — change all in the **same PR** so they don't drift.
 
-## Known overlaps to reconcile (don't let these drift)
-- **Two DSR handoff docs:** `docs/dsr-intake-form-handoff.md` (work-stream 1's original) and
-  `dsr-intake-form-handoff.md` at root (part of work-stream 3's design package). They describe the
-  same Formstack form from different angles — reconcile into one when work-streams 1 and 3 next
-  meet, and keep the `cf_*` decision consistent (work-stream 1 launched MVP = tags + description; 3
-  specifies a `cf_` mapping for later).
+## Known overlaps (reconciled 2026-11-11 — keep this note current, not the docs it points at)
+- **Two DSR handoff docs — NOT duplicates of the same form.** `docs/dsr-intake-form-handoff.md`
+  documents the **interim, bespoke AV-Dashboards HTML wizard** (`dsr-intake-form.html`, live at
+  `operations/dsr-intake-form`) — it predates the Formstack decision and doesn't mention Formstack
+  at all. Root `dsr-intake-form-handoff.md` documents the **Formstack form** (id `6559077`) that
+  **recreates** that same question logic per `docs/formstack-dsr-build.md` — the long-term
+  replacement, per the explicit decision in `docs/public-hosting.md`. Both docs are now corrected
+  to say this and cross-link each other; don't let either drift back into implying they're
+  describing the same artefact. `docs/dsr-field-mapping.md` is the single source of truth for live
+  Formstack field ids and the actual `cf_*` decision (MVP = tags + description + one date field,
+  `cf_privacy_due_date`; a fuller `cf_*` mapping is later work, tracked there) — root
+  `dsr-intake-form-handoff.md`'s own field-id table is a superseded pre-build draft, not current.
 - **SAR appears in three places:** the DSR form (1), the comms-automation design (3), and the
   self-service `sar-data-extract.html` dashboard (4). They're complementary, but state which is the
-  operational path when you touch any of them.
+  operational path when you touch any of them. Current operational path for SAR/access requests:
+  the Formstack form → workflow-system → Freshdesk (work-stream 1); the comms-automation design (3)
+  is the blueprint for assembling the actual export once a ticket lands; `sar-data-extract.html` (4)
+  is a separate self-service extract tool, not part of the Formstack pipeline.
