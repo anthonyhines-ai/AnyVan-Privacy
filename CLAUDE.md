@@ -61,7 +61,9 @@ booking-lookups/            # dated PII investigation records + reusable methodo
 communication-lookups/      # dated "locate all comms to X" records
 call-recording-delivery/    # secure-delivery options appraisals (SAR/DSAR)
 interaction-hub/            # Interaction Hub diagnosis notes
-sql/                        # standalone reusable queries not tied to a dashboard (listing_calls_with_twilio_links.sql)
+sql/                        # standalone reusable queries (listing_calls_with_twilio_links.sql) and
+                            # version-controlled copies of live dashboard queries missing a repo file
+                            # (interaction_hub_phone_lookup.sql — backs interaction-hub.html)
 handoffs/                   # dated session-handoff notes for in-progress technical work
 retention/                  # dated retention-gap findings (e.g. call-recording retention)
 scripts/                    # check_consistency.py — static repo/doc-drift check, see Change discipline
