@@ -61,9 +61,16 @@ booking-lookups/            # dated PII investigation records + reusable methodo
 communication-lookups/      # dated "locate all comms to X" records
 call-recording-delivery/    # secure-delivery options appraisals (SAR/DSAR)
 interaction-hub/            # Interaction Hub diagnosis notes
+sql/                        # standalone reusable queries (listing_calls_with_twilio_links.sql) and
+                            # version-controlled copies of live dashboard queries missing a repo file
+                            # (interaction_hub_phone_lookup.sql — backs interaction-hub.html)
+handoffs/                   # dated session-handoff notes for in-progress technical work
+retention/                  # dated retention-gap findings (e.g. call-recording retention)
+scripts/                    # check_consistency.py — static repo/doc-drift check, see Change discipline
 *.html                      # AV Dashboards pages (dsr-intake-form, interaction-hub, sar-data-extract)
 customer-communications-mapping.md · SAR-Comms-Lookup-Reference.md · dsr-privacy-request-workflow-design.md
                             # the SAR/DSAR comms-automation design package (work-stream 3)
+dsr-intake-form-handoff.md  # Formstack DSR form (id 6559077) spec — see "Known overlaps" below
 ```
 Add a new topic subfolder when a genuinely new genre of record appears; one Markdown file per record.
 
@@ -129,12 +136,52 @@ Hines (anthony.hines@anyvan.com)** unless told otherwise.
 - **Single source of truth.** `docs/conventions.md` is canonical for work-stream 1; `CLAUDE.md`,
   `ONBOARDING.md`, and the skills restate it — change all in the **same PR** so they don't drift.
 
-## Known overlaps to reconcile (don't let these drift)
-- **Two DSR handoff docs:** `docs/dsr-intake-form-handoff.md` (work-stream 1's original) and
-  `dsr-intake-form-handoff.md` at root (part of work-stream 3's design package). They describe the
-  same Formstack form from different angles — reconcile into one when work-streams 1 and 3 next
-  meet, and keep the `cf_*` decision consistent (work-stream 1 launched MVP = tags + description; 3
-  specifies a `cf_` mapping for later).
+## Change discipline (added 2026-11-12, after a full project sweep found repo drift — and a
+sibling incident on the AntxClaudexAnyVan repo's Payment Management dashboard)
+
+Every drift bug found in that sweep was a rule someone had already written down, not enforced —
+this section exists to make the rules hard to skip, not just to restate them.
+
+- **A query *name* on AV Dashboards can have several saved versions, and a dashboard is pinned to
+  one specific version of it — never assume `execute_query`/`get_query` called WITHOUT
+  `dashboard_id` shows you what a dashboard actually runs.** Called bare, it can return a different
+  (older, unpinned) saved version of the same name. This bit a sibling repo hard: a sweep diagnosed
+  a live query as broken from a bare-name call, "fixed" it, and deployed a regression that wiped out
+  real, already-live features. **Always pass `dashboard_id`** when inspecting or diagnosing any of
+  this repo's three dashboards (`dsr-intake-form`, `interaction-hub`, `sar-data-extract`).
+- **Before redeploying a dashboard's HTML from the repo copy, diff the repo file against the
+  actual live HTML first** (`get_dashboard_html`) — a repo copy that's silently fallen behind real,
+  already-shipped features will regress the dashboard the moment you redeploy it.
+- **Docs and the thing they describe change in the same commit.** A new top-level folder, a
+  retired/superseded doc, a status change (e.g. "DSR form built and live," not "placeholder IDs") —
+  update `CLAUDE.md`'s Layout block and the relevant doc in the same commit, not "later." Run
+  `python3 scripts/check_consistency.py` before committing anything that touches a dashboard, a
+  query, `CLAUDE.md` itself, or a record under a PII-bearing folder — it catches layout drift, a
+  dashboard referencing a query with no repo file, a missing PII banner, and committed secrets,
+  mechanically.
+- **Don't write "reconcile later" with no owner or date.** That's how the two DSR handoff docs sat
+  apparently-overlapping for weeks before this sweep found they were never actually duplicates.
+  Either fix it now, or give it an owner and a date.
+- For a broader check than the static script catches (e.g. "does this doc still match what's
+  actually live on the platform or in the workflow-system, not just what's in this repo"), use the
+  `session-alignment-check` skill (`.claude/skills/session-alignment-check/`) at the end of a
+  session that touched any of the above.
+
+## Known overlaps (reconciled 2026-11-11 — keep this note current, not the docs it points at)
+- **Two DSR handoff docs — NOT duplicates of the same form.** `docs/dsr-intake-form-handoff.md`
+  documents the **interim, bespoke AV-Dashboards HTML wizard** (`dsr-intake-form.html`, live at
+  `operations/dsr-intake-form`) — it predates the Formstack decision and doesn't mention Formstack
+  at all. Root `dsr-intake-form-handoff.md` documents the **Formstack form** (id `6559077`) that
+  **recreates** that same question logic per `docs/formstack-dsr-build.md` — the long-term
+  replacement, per the explicit decision in `docs/public-hosting.md`. Both docs are now corrected
+  to say this and cross-link each other; don't let either drift back into implying they're
+  describing the same artefact. `docs/dsr-field-mapping.md` is the single source of truth for live
+  Formstack field ids and the actual `cf_*` decision (MVP = tags + description + one date field,
+  `cf_privacy_due_date`; a fuller `cf_*` mapping is later work, tracked there) — root
+  `dsr-intake-form-handoff.md`'s own field-id table is a superseded pre-build draft, not current.
 - **SAR appears in three places:** the DSR form (1), the comms-automation design (3), and the
   self-service `sar-data-extract.html` dashboard (4). They're complementary, but state which is the
-  operational path when you touch any of them.
+  operational path when you touch any of them. Current operational path for SAR/access requests:
+  the Formstack form → workflow-system → Freshdesk (work-stream 1); the comms-automation design (3)
+  is the blueprint for assembling the actual export once a ticket lands; `sar-data-extract.html` (4)
+  is a separate self-service extract tool, not part of the Formstack pipeline.
