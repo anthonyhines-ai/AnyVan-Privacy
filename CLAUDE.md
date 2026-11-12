@@ -64,9 +64,11 @@ interaction-hub/            # Interaction Hub diagnosis notes
 sql/                        # standalone reusable queries not tied to a dashboard (listing_calls_with_twilio_links.sql)
 handoffs/                   # dated session-handoff notes for in-progress technical work
 retention/                  # dated retention-gap findings (e.g. call-recording retention)
+scripts/                    # check_consistency.py — static repo/doc-drift check, see Change discipline
 *.html                      # AV Dashboards pages (dsr-intake-form, interaction-hub, sar-data-extract)
 customer-communications-mapping.md · SAR-Comms-Lookup-Reference.md · dsr-privacy-request-workflow-design.md
                             # the SAR/DSAR comms-automation design package (work-stream 3)
+dsr-intake-form-handoff.md  # Formstack DSR form (id 6559077) spec — see "Known overlaps" below
 ```
 Add a new topic subfolder when a genuinely new genre of record appears; one Markdown file per record.
 
@@ -131,6 +133,37 @@ Hines (anthony.hines@anyvan.com)** unless told otherwise.
   apply live changes with a fresh one.
 - **Single source of truth.** `docs/conventions.md` is canonical for work-stream 1; `CLAUDE.md`,
   `ONBOARDING.md`, and the skills restate it — change all in the **same PR** so they don't drift.
+
+## Change discipline (added 2026-11-12, after a full project sweep found repo drift — and a
+sibling incident on the AntxClaudexAnyVan repo's Payment Management dashboard)
+
+Every drift bug found in that sweep was a rule someone had already written down, not enforced —
+this section exists to make the rules hard to skip, not just to restate them.
+
+- **A query *name* on AV Dashboards can have several saved versions, and a dashboard is pinned to
+  one specific version of it — never assume `execute_query`/`get_query` called WITHOUT
+  `dashboard_id` shows you what a dashboard actually runs.** Called bare, it can return a different
+  (older, unpinned) saved version of the same name. This bit a sibling repo hard: a sweep diagnosed
+  a live query as broken from a bare-name call, "fixed" it, and deployed a regression that wiped out
+  real, already-live features. **Always pass `dashboard_id`** when inspecting or diagnosing any of
+  this repo's three dashboards (`dsr-intake-form`, `interaction-hub`, `sar-data-extract`).
+- **Before redeploying a dashboard's HTML from the repo copy, diff the repo file against the
+  actual live HTML first** (`get_dashboard_html`) — a repo copy that's silently fallen behind real,
+  already-shipped features will regress the dashboard the moment you redeploy it.
+- **Docs and the thing they describe change in the same commit.** A new top-level folder, a
+  retired/superseded doc, a status change (e.g. "DSR form built and live," not "placeholder IDs") —
+  update `CLAUDE.md`'s Layout block and the relevant doc in the same commit, not "later." Run
+  `python3 scripts/check_consistency.py` before committing anything that touches a dashboard, a
+  query, `CLAUDE.md` itself, or a record under a PII-bearing folder — it catches layout drift, a
+  dashboard referencing a query with no repo file, a missing PII banner, and committed secrets,
+  mechanically.
+- **Don't write "reconcile later" with no owner or date.** That's how the two DSR handoff docs sat
+  apparently-overlapping for weeks before this sweep found they were never actually duplicates.
+  Either fix it now, or give it an owner and a date.
+- For a broader check than the static script catches (e.g. "does this doc still match what's
+  actually live on the platform or in the workflow-system, not just what's in this repo"), use the
+  `session-alignment-check` skill (`.claude/skills/session-alignment-check/`) at the end of a
+  session that touched any of the above.
 
 ## Known overlaps (reconciled 2026-11-11 — keep this note current, not the docs it points at)
 - **Two DSR handoff docs — NOT duplicates of the same form.** `docs/dsr-intake-form-handoff.md`
