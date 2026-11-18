@@ -34,6 +34,9 @@ Ant's follow-up questions for this record:
 1. Can we validate whether Paula actually called, and when?
 2. How did this number get added to AnyVan's systems in the first place?
 3. Who were the two listings tied to this number actually booked for?
+4. Was Alison logged into her account when the second listing was created — i.e. is the
+   account's contact number only ever updated when the customer is authenticated, which would
+   explain why the correct number she gave on the second booking never overwrote the 2023 one?
 
 ---
 
@@ -130,14 +133,49 @@ query, etc.). **Alison genuinely communicates on `07940491389`.** Paula's number
 been used to call, be called, or message AnyVan — it only receives the transactional SMS AnyVan's
 system fires from the stale account-level contact field.
 
+### 2.6 Was the second listing created while logged in? — No; it started as an anonymous quote
+
+This is the key mechanism, not just a contributing detail. The pre-listing that became listing
+`9580942` is `PRE_LISTING_ID 27477247`:
+
+| Field | Value |
+|---|---|
+| Created | **2026-05-15 13:28:01** — three months before the listing itself (14 Aug) |
+| `USER_ID` | **blank — not logged in / no account attached at creation** |
+| Identified by | Email only (`alisonlread@yahoo.co.uk`) |
+| Quote progress | `STAGE_LAST = STAGE_MAX = 6` (reached the final quote stage) |
+| Phone captured on this quote | `+447940491389` — her correct, current number — entered by Admin `5562494`, 2026-05-15 13:34:35 |
+
+So the correct number *was* captured, at source, for this job. But the quote was anonymous —
+there was no authenticated session to attach it to the account at that point. It sat
+unconverted for three months, then became a live listing on 14 Aug 2026, at which point it was
+**reconciled to Alison's existing 2023 account by matching the email address**, not by her
+logging in. An email-match reconciliation updates which account a booking belongs to; it does
+not — and, per this investigation, evidently did not — write back to that account's own
+`USER_PHONE_NUMBER` / primary-contact record. That field only changes through an authenticated
+account/profile action, and none occurred here: the quote was anonymous, the conversion was an
+automated email match, and every edit after that (see 2.5, and the one genuine customer
+self-edit on 11 Sep 2026, `IS_CUSTOMER = 1` in `FCT_LISTING_EDITS_ALL`) touched listing details
+(volume, dates, special instructions), not account contact settings — there is no contact-number
+field anywhere in that edit surface to begin with.
+
+This is the direct answer to "how did the account end up contacting Paula about the 2026 job
+specifically": the booking's own correct number never had a path back to the account record,
+because the booking was never created inside an authenticated session for that account.
+
 ---
 
 ## 3. Observations
 
-- **Root cause:** a data-entry/field-selection error from the original 24 April 2023 enquiry —
-  the wrong one of two numbers captured that day was flagged as the account's primary SMS
-  contact — compounded by that field never being refreshed even though the account's own booking
-  records (address contacts) have carried the *correct* number since at least 2026.
+- **Root cause, two parts.** (1) A data-entry/field-selection error from the original 24 April
+  2023 enquiry — the wrong one of two numbers captured that day was flagged as the account's
+  primary SMS contact. (2) A genuine product gap that let it persist: the second booking (2026)
+  started as an **anonymous quote**, reached and gave a correct, current number, and was only
+  reconciled to the 2023 account **by email match at conversion**, not by an authenticated
+  session — and an email-match reconciliation does not update the account's own contact-number
+  field. There is no self-service path in the data that ever touches that field once an account
+  exists; it only gets set once, at account creation, from whatever the first — possibly
+  anonymous, possibly erroneous — contact capture happened to be.
 - **Not a cross-account bug.** There is only one customer account behind this number. Paula's
   framing ("other customers' data") is understandable from her side — she has no way of knowing
   it's the same person each time — but the underlying mechanism is a single stale field, not a
@@ -180,6 +218,12 @@ For a "my number is getting someone else's texts" complaint, don't stop at
 6. To check a specific alleged call: search `FCT_VOICE_INTERACTIONS` on the number with no date
    filter first. Zero rows ever (not just zero in the period asked about) is a materially
    different, stronger finding than "none in the last 3 months" — say which one you found.
+7. To test "was the booking that's actually causing the disclosure made while logged in,"
+   don't check whether the customer *ever* logged in during the account's life (they likely did,
+   for something else) — find the specific `PRE_LISTING` row tied to that `LISTING_ID` and check
+   its `USER_ID` **at that pre-listing's own creation**. A blank `USER_ID` there, even if the
+   listing now sits under a populated account, means it started anonymous and was reconciled by
+   email later — which is the step that explains a stale account-level contact field.
 
 ---
 
