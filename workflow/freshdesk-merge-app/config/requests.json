@@ -1,0 +1,25 @@
+{
+  "searchTickets": {
+    "schema": {
+      "method": "GET",
+      "host": "<%= iparam.freshdesk_domain %>",
+      "path": "/api/v2/search/tickets",
+      "query": { "query": "<%= context.query %>" },
+      "headers": {
+        "Authorization": "Basic <%= encode(iparam.freshdesk_api_key + ':X') %>",
+        "Content-Type": "application/json"
+      }
+    }
+  },
+  "mergeTickets": {
+    "schema": {
+      "method": "PUT",
+      "host": "<%= iparam.freshdesk_domain %>",
+      "path": "/api/v2/tickets/merge",
+      "headers": {
+        "Authorization": "Basic <%= encode(iparam.freshdesk_api_key + ':X') %>",
+        "Content-Type": "application/json"
+      }
+    }
+  }
+}

@@ -47,8 +47,10 @@ each reply ticket back into its original.
   requester is the same contact** (`requester_id`), within the privacy groups only. DRY-RUN by
   default; `--apply` executes; `--once <id>` tests a single reply. Anything ambiguous is skipped for
   a human.
-- **Deploy:** run the `--apply` form on a schedule (cron / scheduler), or import its match logic into
-  a webhook handler fed by a Freshdesk Ticket-Creation rule.
+- **Deploy:** run the `--apply` form on a schedule (cron / scheduler), **or** deploy the same logic as
+  a Freshworks serverless app that runs on ticket creation — see `workflow/freshdesk-merge-app/`
+  (the "built on Freshdesk" option; Freshdesk has no native merge action, so it's a custom app, not a
+  rule). Use one, not both.
 - **Structural alternative (not taken):** sending the acknowledgement from Freshdesk instead of
   Formstack would make replies thread natively and remove the need for this merge. Chosen path is
   the merge; revisit if reply volume grows.
