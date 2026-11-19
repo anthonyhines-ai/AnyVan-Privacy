@@ -39,6 +39,14 @@ history even if later deleted.**
   jobs become a *listing* in `MASTER_LISTING` / `HARMONISED.PRODUCTION.LISTING`.
 - **One customer can have several phone numbers**, and the number a requester gives may not be the
   one on the account — resolve identity from email + every phone and cross-confirm.
+- **A number complaining it's "getting someone else's texts" is usually one account with a stale
+  number, not two accounts colliding** — `DIM_USER_CUSTOMER` can't tell you which, since it only
+  shows the *current* snapshot. Join `USER_PHONE_NUMBER` on `PHONE_NUMBER_ID` to see every account
+  a number has ever been linked to, and check the specific booking's own `PRE_LISTING.USER_ID` at
+  *its* creation (not just whether the customer ever logged in generally) — a blank `USER_ID` there
+  means it started as an anonymous quote later reconciled to the account by email match, which
+  explains a stale account-level contact field even when the booking itself carries the correct
+  number. Full method: `booking-lookups/METHODOLOGY-phone-number-provenance.md`.
 - **Metadata ≠ content.** `FACT_WHATSAPP_ACTIVITY` / `FACT_VOICE_ACTIVITY` say a contact happened;
   the transcript/body lives elsewhere (`HARMONISED.PRODUCTION.TWILIO_CONVERSATION_MESSAGE`, etc.).
 - **Draft PR into `main`; there is NO CI** — a "pending" combined status with 0 checks is normal,
@@ -81,8 +89,10 @@ Add a new topic subfolder when a genuinely new genre of record appears; one Mark
    Live Formstack form is `6559077` — prefer the builder's additive `--form` mode over a rebuild.
 2. **Privacy investigations / lookups & DSAR sweeps.** Produce one dated record in the house style
    (below); the **`privacy-records`** skill operationalises it. Reusable data maps:
-   `booking-lookups/2026-08-18-phone-number-lookup-07497-700277.md` (phone/postcode+date) and
-   `booking-lookups/METHODOLOGY-communication-history.md` (all comms channels → tables).
+   `booking-lookups/2026-08-18-phone-number-lookup-07497-700277.md` (phone/postcode+date),
+   `booking-lookups/METHODOLOGY-communication-history.md` (all comms channels → tables), and
+   `booking-lookups/METHODOLOGY-phone-number-provenance.md` (diagnosing *how* a number ended up
+   on the wrong account — one-account-stale-number vs genuine cross-account collision).
    *Identity resolution order:* HubSpot CONTACT by email → its DEALs → Snowflake
    `DIM_USER_CUSTOMER` by email+phone → `USER_ID`; then listings.
 3. **SAR/DSAR comms-automation design.** `dsr-privacy-request-workflow-design.md` +
