@@ -1,15 +1,68 @@
 [
   {
-    "type": "FRESHDESK_TICKET_CREATE",
     "config": {
-      "requester_email": "{requester_email}",
-      "subject": "{subject}",
+      "custom_fields": {
+        "cf_privacy_due_date": "{privacy_due_date}",
+        "cf_privacy_request_type": "{privacy_type}"
+      },
       "description": "{description}",
-      "status": 2,
-      "priority": 2,
       "group_id": 31000119185,
-      "tags": ["privacy", "dsr", "{request_type_tag}", "{requester_type_tag}", "source:dsr-form", "env:test"],
-      "custom_fields": { "cf_privacy_due_date": "{privacy_due_date}" }
-    }
+      "priority": 2,
+      "requester_email": "{requester_email}",
+      "status": 2,
+      "subject": "{subject}",
+      "tags": [
+        "privacy",
+        "{request_type_tag}",
+        "{requester_type_tag}"
+      ]
+    },
+    "type": "FRESHDESK_TICKET_CREATE"
+  },
+  {
+    "config": {
+      "attachments": {
+        "fields": [
+          {
+            "field_label": "Proof of authorisation [PDF/JPG/PNG]"
+          }
+        ],
+        "max": 10,
+        "submission_id": "{event.payload.uniqueId}"
+      },
+      "body": "{update_note_html}",
+      "comment_type": "note",
+      "private": true,
+      "ticket_id": "{steps[0].ticket_id}"
+    },
+    "type": "FRESHDESK_TICKET_COMMENT"
+  },
+  {
+    "config": {
+      "fields": {
+        "form_id": "{event.payload.formId}",
+        "identity_result": "{audit_identity}",
+        "key_callout": "{audit_callout}",
+        "privacy_type": "{privacy_type}",
+        "request_type": "{request_type_tag}",
+        "requester_type": "{requester_type_tag}",
+        "scope": "{audit_scope}",
+        "submission_id": "{event.payload.uniqueId}",
+        "ticket_id": "{steps[0].ticket_id}"
+      }
+    },
+    "type": "EVENTBUS_EVENT_PUBLISH"
+  },
+  {
+    "config": {
+      "field_map": {
+        "field_199789402": {
+          "source": "{steps[0].ticket_id}",
+          "value_type": "text"
+        }
+      },
+      "submission_id": "{event.payload.uniqueId}"
+    },
+    "type": "FORMSTACK_SUBMISSION_UPDATE"
   }
 ]

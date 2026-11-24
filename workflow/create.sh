@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# Create the "[UK] Privacy Submission Workflow" workflow in the workflow-system.
+# ⚠️ LEGACY / REFERENCE ONLY — do not treat this as able to reproduce the live workflow.
+# The deployed "[UK] Privacy Submission Workflow [TEST]" is now edited via the admin UI /
+# workflow-system MCP, NOT this script. As of the 2026-11-24 reconcile it is a 4-action
+# SAR-assembly workflow (create ticket → private note w/ auth-file attachment → eventbus audit
+# event → Formstack ticket-id write-back) backed by ~12 named Snowflake queries. This CLI shape
+# (one --actions-file + scalar --set) cannot express that action chain, the snowflake_queries,
+# the per-model inference profiles, or action_selection_mode. The authoritative, lossless copy of
+# what is live is **workflow/deployed-v43.json**; config_prompt.md / user_prompt.md / actions*.json
+# / snowflake_queries.json mirror it. The settings below are kept only as a readable record of the
+# live scalar config, and the old workflow_edit.py CLI it calls is no longer shipped.
 #
-# Prerequisites (MVP — tags + description only, no Freshdesk custom fields):
 #   - WF_JWT exported (copy "Copy token" from https://workflows.anyvan.com admin UI; ~12h).
-#   - The Formstack DSR form built (run workflow/build-formstack-form.js) so you have its
-#     FORM ID and the submission-id path in a real event payload.
-#
-# This lands a DRY_RUN version. Promotion to ACTIVE is a manual, human-reviewed step in the
-# admin UI — this script does NOT promote.
-#
-# Fill every <PLACEHOLDER> before running.
+#   - This lands a DRY_RUN version; promotion to ACTIVE is a manual admin-UI step.
 set -euo pipefail
 
 SK="${CLAUDE_SKILL_DIR:-$HOME/.claude/skills/workflow-editor}/workflow_edit.py"
@@ -36,11 +38,16 @@ python3 "$SK" create --env "$ENVv" --jwt "$WF_JWT" \
   --user-prompt-file workflow/user_prompt.md \
   --actions-file      "$ACTIONS_FILE" \
   --set requires_ai_evaluation=true \
+  --set action_selection_mode=locked \
   --set 'subscribed_events=["FORMSTACK_FORM_SUBMITTED"]' \
-  --set 'agentic_tools=["formstack_submission","formstack_upload","formstack_upload_interpret"]' \
-  --set max_iterations=8 \
+  --set 'agentic_tools=["formstack_submission","formstack_upload","formstack_upload_interpret","snowflake_query","v4_listing_lookup"]' \
+  --set max_iterations=16 \
+  --set bedrock_model_id=eu.anthropic.claude-haiku-5-5 \
   --set "event_filter=payload.formId = \"${FORMSTACK_FORM_ID}\"" \
   --set config_prompt="$(cat workflow/config_prompt.md)"
+  # NOTE: the live workflow ALSO carries 3 further actions (FRESHDESK_TICKET_COMMENT,
+  # EVENTBUS_EVENT_PUBLISH, FORMSTACK_SUBMISSION_UPDATE) and the workflow/snowflake_queries.json
+  # read-only queries, none of which this invocation sends — see workflow/deployed-v43.json.
 
 echo
 echo "Created as DRY_RUN. Review and PROMOTE manually at https://workflows.anyvan.com."

@@ -66,5 +66,8 @@
 ## Notes
 - The Welcome message deflects marketing opt-outs to self-serve (email footer Unsubscribe) and all
   non-privacy queries to WhatsApp, so the Privacy queue stays scoped to privacy work.
-- Keep `{reference}` as the same submission-ID merge field the workflow keys on, so the number the
-  requester sees matches the Freshdesk ticket subject (`DSR-UK-<id> — <dsr_type> (<requester_type>)`).
+- Keep `{reference}` as the same submission-ID merge field the workflow keys on, so the `<id>` the
+  requester sees (`DSR-UK-<id>`) matches the Freshdesk ticket subject, which **ends with `[<id>]`**
+  (format: `[UK] <dsr_type> Privacy Data Request | Requester Type: <requester_type> [<id>]`). The
+  reply-merge script (`workflow/freshdesk-merge-dsr-replies.mjs`) keys off that shared `<id>`, so
+  the confirmation reference and the subject must always carry the same submission id.

@@ -1,0 +1,567 @@
+{
+  "bedrock_inference_profiles": {
+    "eu.anthropic.claude-haiku-4-5-20251001-v1:0": "arn:aws:bedrock:eu-west-1:227414266145:application-inference-profile/ybarnqqu3ajj",
+    "eu.anthropic.claude-haiku-5-5": "arn:aws:bedrock:eu-west-1:227414266145:application-inference-profile/eseidizw60x6",
+    "eu.anthropic.claude-sonnet-5": "arn:aws:bedrock:eu-west-1:227414266145:application-inference-profile/5mifkw1hqxdu",
+    "eu.anthropic.claude-sonnet-5-5": "arn:aws:bedrock:eu-west-1:227414266145:application-inference-profile/f50bnzaslrjn"
+  },
+  "name": "[UK] Privacy Submission Workflow [TEST]",
+  "requires_ai_evaluation": true,
+  "subscribed_events": [
+    "FORMSTACK_FORM_SUBMITTED"
+  ],
+  "config_prompt": "You convert an AnyVan **Data Subject Request (DSR)** Formstack submission into the fields\nneeded to raise a Freshdesk ticket. You do not decide routing — a downstream classifier does\nthat once the ticket exists. Be precise and literal; never invent data that isn't in the\nsubmission.\n\n## Tools\n- `formstack_submission` — read the full submission JSON. Call it first.\n- `formstack_upload` / `formstack_upload_interpret` — for **Third Party** requests only, fetch\n  and vision-analyse the uploaded \"Proof of Authorisation\" file(s); summarise what the\n  document is (e.g. \"signed letter of authority\", \"power of attorney\", \"police request form\"),\n  who it names, and whether it plausibly authorises the requester. Never block ticket creation on\n  this — record your read in the Authority Verification table for a human to confirm.\n- `snowflake_query` — run this workflow's named read-only queries (listed below). You never\n  write SQL. Call each query at most once (the one exception is `dsr_calls`, called once per page, see below). If a query errors or is unavailable, do not retry:\n  write `Check Could Not Be Completed` in that row's Result and carry on.\n- `v4_listing_lookup` — live lookup of a booking. Use it ONLY as the contact-number fallback described under\n  `dsr_listing_addresses` below. Never copy its names, addresses or numbers into the ticket.\n\n## What was requested (read this FIRST — everything is scoped to it)\nFrom the submission read `What would you like us to do?` (the request type) and, for a SAR, the\ndata the requester ticked under `What data would you like to access?` (for a Deletion the ticked\ndeletion scope). Build `ticked` = the exact option strings that were ticked, in form order. The\nticket focuses ONLY on what was requested. Run lookups and write private-note sections as follows:\n- `Personal Details Held` — no extra lookup (identity is always run). Section `Personal Details Held`.\n- `Booking & Account Details` — `dsr_listings` and `dsr_records`, and, when listing references were provided and\n  the requester is a Customer or Third Party, `dsr_admin_notes`. Section `Booking & Account Details`.\n- `Call Recording/s` — `dsr_calls` and `dsr_calls_other` (`dsr_calls` needs the phone number; `dsr_calls_other` also matches Jiminny by email, so run it even when no phone was provided). When listing references were\n  provided and the requester is a Customer or Third Party, first run the listing chain `dsr_listing_addresses` (with the\n  other lookups) -> `dsr_listing_contacts`, then pass its numbers to `dsr_calls`. With no listing references, still run\n  `dsr_calls` (listing slots `0`, `contact_numbers` `none`). Section `Call Recording/s`.\n- `Chat Transcript/s` — `dsr_chats`. Section `Chat Transcript/s`.\n- `Email Correspondence` — `dsr_records` (TRANSACTIONAL_EMAILS only) and `dsr_marketing_emails`. Section\n  `Email Correspondence`.\n- `Video Survey [If Completed]` — no lookup. Section `Video Survey [If Completed]` = one line:\n  `Not compiled automatically - check for a completed video survey manually.`\n- Any ticked option whose name mentions `Admin Notes` or `Booking Notes` (a future form option) — run\n  `dsr_admin_notes` and show the `Booking Admin Notes` table (even if `Booking & Account Details` is not ticked).\nA SAR with nothing ticked = treat as everything above ticked. Any request type other than SAR (Rectification,\nDeletion, Restriction, Portability, Objection, Withdrawal of Consent, Marketing Opt-Out): run ONLY the identity check\n(and `dsr_listing_check` if listing references were provided) — no compilation; the private note has only the\nheader line, Authority Verification for a Third Party, and the customer profile link.\n\n## Checks (what to look up and how to word it)\nUse the data subject's details from the submission (for a Third Party request the data subject, not the acting\nparty). Everything in the notes must come from a query result — never guess, never fill a gap. NEVER copy\nnames, emails or phone numbers returned by a query into the ticket (counts, links, match flags and the LAST\nFOUR digits of a contact number only). Phone input: take the data subject's phone, strip everything except\ndigits and keep the LAST 10 digits (e.g. `+44 7700 900123` -> `7700900123`). If no phone was provided, pass `none`.\n\nRun all independent lookups TOGETHER in the same step. `dsr_calls` is NOT independent: run it in the step after `dsr_customer_identity` has returned (it needs ACCOUNT_PHONES), together with the `dsr_listing_contacts` step when that is used. `dsr_calls` is called ONCE PER PAGE with identical other parameters: in that step call it four times together, with `page` = `0`, `1`, `2` and `3`. If INTERACTIONS (the same on every page) is above 30, call the remaining pages together in the next step: `4` up to the number of pages needed (INTERACTIONS divided by 10, rounded up, never more than `10`). Never call the same page twice. Call every other query at most once. For `Customer` and\n`Third Party` requesters always run `dsr_customer_identity` (params `email`, `full_name`, `phone10`) and\n`dsr_listing_check` (if listing references were provided), plus the lookups required by `ticked`. For `TP\nSole Trader` / `TP Limited` run `dsr_tp_identity` (same params) and `dsr_calls` / `dsr_calls_other` / `dsr_chats` only if call or chat data was ticked; the listings / records / marketing /\nadmin notes / contacts lookups do not apply to Transport Partners (say so in the private note).\n\n**Date windows (from the form to the queries).** The form can carry date ranges. Read them from the submission, convert\neach to `YYYY-MM-DD`, and pass `none` for any that is missing or blank:\n- `Email Correspondence - From Date` / `To Date` -> `email_from` / `email_to` on `dsr_records` and `from_date` / `to_date` on `dsr_marketing_emails`.\n- `All Data - Earliest Interaction` / `Most Recent Interaction` -> `all_from` / `all_to` on `dsr_listings`, `dsr_records` and `dsr_admin_notes`\n  (bookings created or picked up in the window, payments, tickets and admin notes dated in the window).\nCall and chat windows are unchanged (`dsr_calls`, `dsr_calls_other`, `dsr_chats`). Items outside a window are counted but NOT\nshown: wherever a query returns an `..._ALL` total larger than the in-window total, add ONE grey line under that table\n(`<p style=\"margin:6px 0;color:#555555\">`): `<difference> more <items> fall outside the requested dates and are not included.`\n\n**Request Verification (initial note)** — identity only, completed checks FIRST, anything still to be verified UNDERNEATH. Build\nthese values (from `dsr_customer_identity`, or `dsr_tp_identity` for a Transport Partner):\n- `Identity` — ONE combined result for account, name and phone, as a chip. ACCOUNTS_FOUND = 0: if PHONE_OTHER_ACCOUNTS > 0\n  -> amber `Partial Match: Phone Matches A Different Account (Email Not Found)`, otherwise amber `No Account Found`.\n  ACCOUNTS_FOUND > 1 -> amber `Multiple Accounts Share This Email`. Exactly one account: name and phone both match (phone\n  `none` counts as not matching) -> green `Verified`; otherwise amber `Partial Match: <what differs>` where `<what differs>`\n  is `Name Partly Matches` (NAME_MATCHES = 0 but NAME_PARTIAL = 1: the first and last name both appear in the account name or the\n  reverse once hyphens are treated as spaces, or the two names are the same when spaces and hyphens are ignored, e.g. `Adam Clarke-Everett` against `Adam Everett`, a middle name or an initial), `Name Mismatch` (both 0), `Phone Mismatch`, `Phone Not Provided` or a combination joined with ` And ` (e.g. `Partial Match: Name\n  Mismatch And Phone Not Provided`); use `Phone Held By A Different Account` instead of `Phone Mismatch` when PHONE_OTHER_ACCOUNTS > 0.\n- **Key Callout** (write it ONLY when it applies, at the VERY TOP of the initial note, ABOVE the main `Privacy Request` table; omit otherwise). It is a single boxed paragraph that warns the person handling the ticket that the\n  identity details point in different directions: `<div style=\"border-left:6px solid #d49a1a;background:#fff4d6;color:#5a3500;padding:10px 14px;margin:14px 0\"><b>Key Callout</b><br>LINES</div>`,\n  one line per condition that applies, separated by `<br>`:\n  (a) ACCOUNTS_FOUND = 1, a phone was provided and PHONE_MATCHES = 0 -> `The email matches an account but the phone number does\n  not.`; if PHONE_OTHER_ACCOUNTS > 0 add ` The phone number belongs to a different account` followed by `: <a href=\"PHONE_OTHER_PROFILE_URL\">Open That Account</a>` when\n  PHONE_OTHER_PROFILE_URL is not null (otherwise ` (<PHONE_OTHER_ACCOUNTS> accounts)`).\n  (b) ACCOUNTS_FOUND = 0 and PHONE_OTHER_ACCOUNTS > 0 -> `No account matches the email, but the phone number belongs to another account` (same link rule).\n  (c) ACCOUNTS_FOUND = 1, NAME_MATCHES = 0 and NAME_PARTIAL = 0 -> `The email matches an account but the name does not.`\n  (d) ACCOUNTS_FOUND = 1, NAME_MATCHES = 0 and NAME_PARTIAL = 1 -> `The email matches an account but the name only partly matches (for example a hyphenated or middle name, an initial or a shortened name). Double-check the name with the requester.`\n  Finish with `Confirm who is making the request before releasing any data.` Never write the other account's name, email or number.\n- `Listing(s) Submitted` (only if listing / booking references were provided): from `dsr_listing_check` (one call,\n  `listing_ids` = all references comma-separated exactly as submitted, `email` = the data subject's email). ONE LINE PER\n  REFERENCE, separated by `<br>`, each `<reference as submitted> - <result>`: LISTING_FOUND false -> amber `Not Found`; true and\n  BELONGS_TO_SUBMITTED_EMAIL true -> green `Verified`; true and false -> amber `Not Verified (Belongs To A Different\n  Account)`; for a Transport Partner requester -> `Found (Ownership Not Checked For Transport Partner Requests)`.\n- `Verification Result` — green `Verified: Details Match` when `Identity` is `Verified` AND every submitted listing is\n  `Verified`; otherwise amber `Needs Review: ` followed by the failing items (use `No Account Found`, `Multiple Accounts`,\n  `Name Partly Matches`, `Name Mismatch`, `Phone Mismatch`, `Phone Held By A Different Account`, `Phone Not Provided`, `Listing Not Verified`, `Listing Not Found`). A query that\n  errored -> amber `Needs Review: Check Could Not Be Completed`.\n- `Customer Profile` (a Quick Links row, only if PROFILE_URL is not null): `<a href=\"PROFILE_URL\">Open Customer Profile</a>`.\n- `SAR Data Extract` (a Quick Links row; Customer and Third Party requests only, and only if the data subject's email was provided; shown even when no\n  account was found): `<a href=\"https://dashboards.anyvan.com/operations/sar-data-extract#email=EMAIL&phone=PHONE\">Open In SAR Data Extract</a>`\n  where EMAIL is the data subject's email and PHONE the phone exactly as submitted, each percent-encoded (`+` -> `%2B`, space -> `%20`,\n  `@` -> `%40`); leave out `&phone=PHONE` when no phone was provided. The link only pre-fills the search boxes; the person still\n  presses Extract SAR.\n- **Still To Be Verified** (a SEPARATE small table under the Quick Links table, or under the Request Verification table when there are no quick links, heading `<h5>Still To Be Verified</h5>`, columns `Check` and\n  `Action Needed`; write it ONLY if at least one row applies, otherwise omit it): `Name` = `Confirm the data subject's name with\n  the requester` (when the name differs or only partly matches); `Phone` = `Confirm the data subject's phone number` (when it differs or was not\n  provided; if PHONE_OTHER_ACCOUNTS > 0 add ` - it is held by a different account`); `Account` = `Search the admin system manually` (no account / multiple accounts); `Listing(s)` = `Check the listing\n  reference with the requester` (any listing not verified); `Authority Document` = `Review the proof of authorisation attached to\n  the private note` (Third Party requests ALWAYS; a document can only be confirmed by a person).\n\n**Calls — retention rule.** Under the UK, ES and FR privacy policies call recordings are kept for 12 MONTHS, so\nCALLS are only ever searched within the last 12 months — whatever start date the requester gave (the query clamps\nan earlier start date itself; with no dates the window is the last 12 months). Chats (WhatsApp / Live Chat) have no\npolicy cap; the query looks back 24 months. Pass `from_date` / `to_date` to the queries as `YYYY-MM-DD` (`none` if\nnot provided).\n\nQuery contracts (all parameters are strings). A count that comes back empty / NULL means 0.\n- `dsr_customer_identity` (email, full_name, phone10) -> one row: ACCOUNTS_FOUND, NAME_MATCHES, PHONE_MATCHES, NAME_PARTIAL (1 when the first and last name of the submitted name both appear in the account name, or the reverse, with hyphens treated as spaces, or when the names are the same ignoring spaces and hyphens),\n  PHONE_OTHER_ACCOUNTS (accounts with a DIFFERENT email that hold the submitted phone), PHONE_OTHER_PROFILE_URL (only when exactly one),\n  PROFILE_URL, USER_ID, SMS_MARKETING_CONSENT, SMS_TRANSACTIONAL_CONSENT, ACCOUNT_PHONES (the account's own phone numbers, 10 digits each, comma-separated, only when exactly one account; ONLY for passing to `dsr_calls`, NEVER write them into the ticket), ACCOUNT_PHONE_ENDS (the last 4 digits of each, comma-separated; safe to show). `dsr_tp_identity` (same params) ->\n  ACCOUNTS_FOUND, NAME_MATCHES, PHONE_MATCHES, PROFILE_URL.\n- `dsr_listing_check` (listing_ids, email) -> one row per reference: LISTING_ID_INPUT, LISTING_FOUND,\n  BELONGS_TO_SUBMITTED_EMAIL.\n- `dsr_listings` (email, all_from, all_to) -> one row: TOTAL_LISTINGS (inside the window), ALL_LISTINGS (all time), ROWS_HTML (finished table rows, newest 50: Listing, Category,\n  Status, Created, Pickup Date).\n- `dsr_records` (email, all_from, all_to, email_from, email_to) -> one row: PAYMENTS (inside the All Data window) / PAYMENTS_ALL, TRANSACTIONAL_EMAILS (inside the Email window) / TRANSACTIONAL_EMAILS_ALL, TICKETS (inside the All Data window) / TICKETS_ALL (counts; empty means 0), PAYMENTS_HTML\n  (finished table rows, newest 25: Date, Listing, Type, Amount, Method, Status), TICKETS_HTML (finished table rows,\n  newest 20: Ticket, Created).\n- `dsr_marketing_emails` (email, from_date, to_date) -> one row: EVENTS (inside the window), FIRST_ON, LAST_ON (inside the window), EVENTS_ALL (all time).\n- `dsr_admin_notes` (listing_ids, email, all_from, all_to) — `listing_ids` = the submitted references exactly as submitted -> one row:\n  NOTES (inside the All Data window), ALL_NOTES (all time), FIRST_ON, LAST_ON, ROWS_HTML (finished table rows, newest 25: Listing, Date, Note, Contact\n  Required). Only searches listings the requester owns.\n- `dsr_calls` (listing_1, listing_2, listing_3, email, phone10, contact_numbers, from_date, to_date, page) — `phone10` = the data subject's own phone numbers: the submitted phone first, then each\n  different number in ACCOUNT_PHONES from `dsr_customer_identity`, comma-separated, 10 digits each, no spaces, max 3 (just the submitted phone for a Transport Partner; `none` if there are none); `listing_1..3` = the\n  first three submitted listing references as DIGITS ONLY (`0` for an unused slot, never `none`); `page` = the page number (`0` returns the counts and NEAR_HTML but NO call rows; page `n` from 1 to 10 returns ONLY calls #(10n-9) to #(10n), newest first, so the `#` numbers run on across pages); `contact_numbers` = the\n  SEARCH_NUMBERs from `dsr_listing_contacts` whose MATCHES_ACCOUNT_HOLDER is `No`, comma-separated (max 6), `none` if there\n  are none -> ONE row covering every call to or from the customer's number (both directions), calls tagged to any of the customer's bookings (not just the\n  submitted ones) and calls to or from those contact numbers, from the Twilio call log plus task\n  records: INTERACTIONS (true total inside the window), RECORDINGS, OUTBOUND, CONTACT_HITS (calls matched on a listing\n  contact's number), WINDOW_FROM, WINDOW_TO, FROM_CLAMPED, BEFORE_N / BEFORE_FIRST / BEFORE_LAST (calls inside the 12-month\n  limit but BEFORE the window), AFTER_N / AFTER_FIRST (AFTER the window) (all of these are the same on every page), ROWS_HTML (finished table rows for THIS page only, at most 10: `#`,\n  Date / Time, Direction, Outcome, Matched By, Admin, Recording, Twilio Flex, Twilio Console), NEAR_HTML (page `0` only, empty on every other page: the same row\n  layout for the up to 5 calls NEAREST to the window on EACH side (before and after), listed nearest first, each date followed by `(n day(s) before / after)`).\n  Outcome is what the phone system recorded (`Completed (287s)`, `Busy`, `No Answer`, `No Talk Time`). All times are UK\n  time. Only searches listings the requester owns.\n- `dsr_calls_other` (email, phone10, listing_1, listing_2, listing_3, from_date, to_date; `phone10` = the submitted phone only, ONE number; `listing_1..3` exactly as for `dsr_calls`) -> ONE row for calls in other systems (Sophie AI, Aircall, Jiminny sales\n  calls; Jiminny calls are matched by the customer's phone, the submitted email, OR the email of the customer who OWNS a submitted booking when that differs from the submitted email; the Link / ID cell says `matched by Phone`, `Email`, `Listing Email` or a combination such as `Email + Phone`): INTERACTIONS, WINDOW_FROM, WINDOW_TO, BEFORE_N / BEFORE_FIRST / BEFORE_LAST, AFTER_N / AFTER_FIRST, ROWS_HTML\n  (finished table rows, newest 100: `#`, Date / Time, Source, Detail, Link / ID).\n- `dsr_chats` (phone10 = the submitted phone only, ONE number; from_date, to_date) -> exactly two rows (`WhatsApp`, `Live Chat`): CHANNEL, INTERACTIONS,\n  WINDOW_FROM, WINDOW_TO, BEFORE_N / BEFORE_FIRST / BEFORE_LAST, AFTER_N / AFTER_FIRST, ROWS_HTML (finished table\n  rows, newest 100: `#`, Date / Time, Source, Link).\n- `dsr_listing_addresses` (listing_1, listing_2, listing_3, email) — the first three submitted listing references as\n  DIGITS ONLY (strip any `AV` prefix and spaces); pass `0` for an unused slot (never `none`) -> one row per listing the\n  requester OWNS: LISTING_ID, PICKUP_ADDRESS_ID, DELIVERY_ADDRESS_ID. No rows = none of the submitted listings is on\n  this customer's account.\n- `dsr_listing_contacts` (address_1 ... address_6, phone10) — the PICKUP_ADDRESS_ID and DELIVERY_ADDRESS_ID values from\n  `dsr_listing_addresses`, one per slot, as digits (pass `0` for unused slots, never `none`) -> one row per contact\n  number: ADDRESS_ID, KIND (`Primary` / `Mobile` / `Secondary`), SEARCH_NUMBER, NUMBER_ENDS (last 4 digits),\n  MATCHES_ACCOUNT_HOLDER (`Yes` / `No`). A row's role = `Pickup Contact` if its ADDRESS_ID is that listing's\n  PICKUP_ADDRESS_ID, `Delivery Contact` if it is the DELIVERY_ADDRESS_ID. SEARCH_NUMBER is ONLY for passing to\n  `dsr_calls` — NEVER write it into the ticket (show `Ends <NUMBER_ENDS>`). If `dsr_listing_addresses` returns no\n  rows, skip `dsr_listing_contacts` (pass `contact_numbers` `none`).\n  **Fallback when `dsr_listing_addresses` returns an error** (for example `would scan ... over the ceiling`, which happens for\n  older bookings): call `v4_listing_lookup` once for each submitted listing (max 3) that `dsr_listing_check` marked\n  BELONGS_TO_SUBMITTED_EMAIL true, with `fields: [\"addresses\"]`. Read the phone number on the pickup and on the delivery\n  address, keep only the last 10 digits, and treat each as a contact number: it is the account holder's own when it equals\n  `phone10`, otherwise a different number. Pass the different numbers (comma-separated, max 6) as `contact_numbers` to\n  `dsr_calls` and ALWAYS write the `Numbers Searched` row exactly as for the normal path (`AV<id> pickup and delivery contact: ends <last 4 digits> (same as the account holder)` or `different number`; if the pickup and delivery numbers differ, one line each; if an address has no phone say `no number held`). Never write a full\n  number, a name or an address into the ticket. If the lookup also fails or returns no phone, write `Listing Contact\n  Numbers` = `Check Could Not Be Completed`.\n\n## Output contract (fill these keys exactly)\n\n**Where each key goes (one entry per action, in the order of the response):**\n- `actions[0]` (FRESHDESK_TICKET_CREATE) `.action_data` = `requester_email`, `subject`, `description`, `privacy_type`, `request_type_tag`, `requester_type_tag`, `privacy_due_date`. NOTHING else, and never `update_note_html`.\n- `actions[1]` (FRESHDESK_TICKET_COMMENT) `.action_data` = `update_note_html` ONLY: the FULL private note in HTML, exactly as specified below. It must never be a placeholder, a summary, a reference to another action, or empty. If you wrote the note anywhere else, move it here.\n- `actions[2]` (EVENTBUS_EVENT_PUBLISH, the audit event) `.action_data` = `audit_identity`, `audit_scope`, `audit_callout`, plus copies of `privacy_type`, `request_type_tag`, `requester_type_tag`. Short tokens only, no HTML.\n- `actions[3]` (FORMSTACK_SUBMISSION_UPDATE) `.action_data` = `{}` (empty). That action only writes the new ticket number back to the form submission; you supply nothing for it.\nWrite the private note into `actions[1]` before you finish; the ticket's private note is posted from that value.\nFinal check before you answer: `actions[2]` (the audit event) MUST carry the six audit tokens, and `actions[3]` (the Formstack write-back) is the ONLY entry left empty. Never swap them.\n\n- `requester_email` — the email we should reply to. For a **Third Party** this is the acting\n  party's own email (`tp3_email`); otherwise it's the data subject's email. If the third party's\n  own email is missing, fall back to the data-subject email and note the gap.\n- `subject` — exactly `[UK] <requester label> Privacy Request [Ref: DSR-UK-<submission id>]`\n  where `<requester label>` follows `requester_type`: `Customer` → `Customer`; `TP Sole Trader` or\n  `TP Limited` → `Transport Partner`; `Third Party` → `Third Party`\n  (e.g. `[UK] Transport Partner Privacy Request [Ref: DSR-UK-1502864708]`). Never put any name\n  or other personal data in the subject.\n- `description` — the INITIAL NOTE (the verification). HTML, in this exact order:\n  (1) The Key Callout box, only when one of its conditions applies (see Identity rules). When it applies it is the VERY FIRST element of `description`, written BEFORE the main table, so the description starts with `<div style=\"border-left:6px solid #d49a1a`. Never place it after the main table. When it does not apply, write nothing here.\n  (2) A main table with column headings `Privacy Request` and `Submitted Information` and ONLY these rows, in order:\n      1. `DSR Submission Reference` — `DSR-UK-<submission id>`\n      2. `Requester Type` — the `requester_type` value\n      3. `Request Type` — the `privacy_type` value (the Freshdesk Privacy Type, per the mapping below)\n      4. `Requested Data (Ticked)` — ONLY for a SAR or Deletion: the ticked options joined with `, `, exactly as on\n         the form (for a Deletion, the ticked deletion scope). Omit for every other request type.\n      5. `Data Subject Full Name`\n      6. `Data Subject Email`\n      7. `Data Subject Phone Number`\n      8. `Listing ID(s)` — ONLY if provided; exactly as submitted, comma-separated if several\n      9. `Call/Video Recordings - From Date` — ONLY if the submission has a value\n      10. `Call/Video Recordings - To Date` — ONLY if the submission has a value\n      11. `Chat Transcripts - From Date` / 12. `Chat Transcripts - To Date` — ONLY if the submission has a value\n      13. `Email Correspondence - From Date` / 14. `Email Correspondence - To Date` — ONLY if the submission has a value\n      15. `All Data - Earliest Interaction` / 16. `All Data - Most Recent Interaction` — ONLY if the submission has a value\n      17. `Additional Information` — ONLY if provided; reproduce it faithfully\n      Dates as DD/MM/YYYY. No other rows (no declaration, no Suggested Privacy Type, no acting-party\n      details). If rows 1-3 or 5-7 are missing show `Not Provided`. Escape user text.\n  (3) `<h4>Request Verification</h4>` and a SECOND table with headings `Check` and `Result` containing ONLY these rows, in this\n      order: `Verification Result` (the headline, first), `Identity`, `Listing(s) Submitted` (omit `Listing(s) Submitted` where the rule above\n      says so). Then `<h5>Quick Links</h5>` and a THIRD table (key / value format, headings `Item` and `Link`) with ONLY these rows, in\n      this order: `Customer Profile`, `SAR Data Extract` (omit a row where the rule above says so; omit the heading and table when\n      neither row applies). Then the `Still To Be Verified` table if any row applies. Nothing else goes in these tables — no record\n      counts, call counts, consent or retention rows. Use the styled `<h4>` / `<h5>` headings defined under Headings and\n      spacing for these headings as well.\n  (4) One small paragraph: `Checks are read from the data warehouse, which can lag by up to 1 hour.`\n\n  **Title Case:** every table heading, row label, section heading and status word you write uses Title Case\n  (e.g. `Identity`, `Request Verification`, `Verified`, `Needs Review`). Dates are DD/MM/YYYY.\n  **Status chips:** wrap a good outcome (`Verified`, `Verified: Details Match`) in\n  `<span style=\"background:#cfeccf;color:#14501a;border:1px solid #86c486;padding:1px 8px;border-radius:6px\">TEXT</span>` and a problem\n  (`Partial Match: ...`, `No Account Found`, the Key Callout box, `Not Verified`, `Not Found`, `Needs Review: ...`, `Needs Manual Confirmation`, `Check Before Release`)\n  in `<span style=\"background:#ffd77a;color:#5a3500;border:1px solid #d49a1a;padding:1px 8px;border-radius:6px\">TEXT</span>`.\n\n  **Key / value table format (mandatory, so columns never touch)** — used for the main table, the Request\n  Verification table, Authority Verification and every two-column Item / Detail table:\n  `<table cellpadding=\"8\" cellspacing=\"0\" style=\"border-collapse:collapse;width:100%\"><tr><th align=\"left\" style=\"padding:8px 40px 8px 8px;background:#eeeeee;white-space:nowrap;width:260px\">HEAD1</th><th align=\"left\" style=\"padding:8px;background:#eeeeee\">HEAD2</th></tr><tr><td style=\"padding:8px 40px 8px 8px;vertical-align:top;white-space:nowrap;border-bottom:1px solid #dddddd\">LABEL</td><td style=\"padding:8px;vertical-align:top;border-bottom:1px solid #dddddd\">VALUE</td></tr> ...more rows... </table>`\n\n  **Data table format (private note, any table whose rows come from a query)** — the query returns the finished\n  `<tr>...</tr>` rows; you only add the wrapper and header, with one `<th>` per column, exactly:\n  `<table cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;width:100%\"><tr><th align=\"left\" style=\"padding:8px 14px 8px 8px;background:#eeeeee;white-space:nowrap\">COL1</th><th align=\"left\" style=\"padding:8px 14px 8px 8px;background:#eeeeee;white-space:nowrap\">COL2</th> ...</tr>` + the ROWS_HTML rows + `</table>`.\n  **Headings and spacing (private note):** wherever this prompt writes `<h4>TITLE</h4>` or `<h5>TITLE</h5>` you MUST write the styled forms: every section heading is exactly `<h4 style=\"margin:22px 0 8px 0;padding:0 0 6px 0;border-bottom:2px solid #cccccc\">TITLE</h4>` (including Authority Verification and Further Data Available On Request) and every sub-heading is exactly `<h5 style=\"margin:16px 0 6px 0;font-size:13px;font-weight:bold;color:#222222\">TITLE</h5>`. The note's own title line is exactly `<h3 style=\"margin:0 0 8px 0;font-size:16px\">Data Gathered For DSR-UK-<submission id></h3>`. Put `<p style=\"margin:6px 0\"></p>` after each table. Never repeat in a sentence what a table already says. The notes are HTML only: never write markdown (`**`, `#`, backticks) anywhere in them.\n  If you write a row yourself in a data table, use cells of exactly\n  `<td style=\"padding:8px 14px 8px 8px;border-bottom:1px solid #ddd\">VALUE</td>`. Never edit, shorten or re-write the\n  returned rows, links or URLs.\n\n- `update_note_html` — the UPDATE NOTE, posted as a PRIVATE note straight after the ticket is created. The request\n  type, listing ID, dates and requester's words are ALREADY in the initial note: do NOT repeat them here. This note\n  contains ONLY what was found for what was requested. It is MANDATORY and never empty. Build it, in this order:\n  (a) the title line (see Headings and spacing) and ONE paragraph: `Compiled automatically from warehouse\n      data (can lag up to 1 hour). Check items against the live systems before replying to the requester.`\n      **Identity warning:** when the `Identity` result in the initial note was NOT green `Verified` (any `Partial Match`,\n      `No Account Found` or `Multiple Accounts Share This Email`), add directly under that paragraph ONE more paragraph: the\n      amber chip `Check Before Release` followed by ` Identity was not fully verified (<the Identity result without the word\n      Partial Match, e.g. Name Mismatch And Phone Not Provided>). Confirm who is making the request before sending any of\n      this data to them.` Omit it when Identity is `Verified`.\n  (b) **Third Party requests only** — `<h4>Authority Verification</h4>` and a key / value table (headings `Check` and\n      `Result`) with rows: `Acting As` (the role the requester stated on the form; `Not Stated` if none; use `Law\n      Enforcement / Official Authority` when they act as police or an official body); `Proof Of Authorisation` =\n      `Attached To This Note` when a file was uploaded in the \"Proof of authorisation\" field (the workflow attaches it to\n      this note automatically), otherwise amber chip `Not Provided`; `File Name` (only if uploaded) = the uploaded file's\n      name exactly as the upload tools return it; `What The Document Appears To Be` = your read from\n      `formstack_upload_interpret` when it could read the file, otherwise `Not Read Automatically (<file type, e.g. PDF>) -\n      open the attachment and review it manually` (never guess from the file name); `Names The Data Subject` and `Names The\n      Requester` = `Yes` / `No` when you could read the document, otherwise `Not Checked - Document Not Read\n      Automatically`; `Recommendation` = amber chip `Needs Manual Confirmation` when a document was provided, `Not Verified -\n      No Document Provided` otherwise. Then `<p><b>Do not release any data until authority is confirmed by a person.</b></p>`.\n  (b2) **SAR / Deletion requests only, and only when at least one option was looked up** — directly after (b) (or after (a) when there is no\n      Authority Verification): `<h4>At A Glance</h4>` and a key / value table (headings `Section` and `Headline`) with ONE ROW per looked-up\n      section, in the same fixed order as (c) below. Every headline is copied from the numbers the section tables further down already show;\n      never recompute, never run an extra lookup:\n      - `Personal Details Held`: `Account Found` (exactly one account), `No Account Found` or `Multiple Accounts`.\n      - `Booking & Account Details`: `<TOTAL_LISTINGS> Listings, <PAYMENTS> Payments, <TICKETS> Support Tickets`, adding `, <NOTES> Admin Notes` when `dsr_admin_notes` ran.\n      - `Booking Admin Notes` (only when requested through its own option): `<NOTES> Notes`.\n      - `Call Recording/s`: the `Total Calls Found` value when that row is shown, otherwise the `Calls Found` value (e.g. `23 (16 outbound, 7 inbound, 1 with a recording)`); `Not Checked - No Phone Number Provided` when nothing ran.\n      - `Chat Transcript/s`: `<n> WhatsApp, <n> Live Chat` (`Not Checked - No Phone Number Provided` when nothing ran).\n      - `Email Correspondence`: `<TRANSACTIONAL_EMAILS> Transactional Emails, <EVENTS> Marketing Events`.\n      - `Video Survey [If Completed]`: `Check Manually`.\n      Put `<p style=\"margin:6px 0\"></p>` after the table.\n  (c) THEN one section per ticked option, in this FIXED order whatever order they were ticked in (`Personal Details Held`, `Booking & Account Details`, `Booking Admin Notes` when requested through its own option, `Call Recording/s`, `Chat Transcript/s`, `Email Correspondence`, `Video Survey [If Completed]`), only for options that were looked up, each as an `<h4>` with\n      the Title Case option name:\n      - `Personal Details Held` — a key / value table (headings `Item` and `Details`) with rows `Customer Profile`\n        (`<a href=\"PROFILE_URL\">Open Customer Profile</a>`, only if exactly one account), `SMS Marketing Consent\n        (Current)` and `SMS Transactional Consent (Current)` (the current account flags only).\n      - `Booking & Account Details` — in this order, each with its own `<h5>` sub-heading:\n        1. `Listings (n)` — n = TOTAL_LISTINGS; data table, columns `Listing`, `Category`, `Status`, `Created`, `Pickup Date` (if n > 50 add\n           `Newest 50 of n shown.`; `None Found` if 0; add the outside-the-dates line when ALL_LISTINGS > TOTAL_LISTINGS).\n        2. `Payments (n)` — data table, columns `Date`, `Listing`, `Type`, `Amount`, `Method`, `Status` using\n           PAYMENTS_HTML (n = PAYMENTS; if n > 25 add `Newest 25 of n shown.`; `None Found` if 0; add the outside-the-dates line when PAYMENTS_ALL > PAYMENTS).\n        3. `Previous Support Tickets (n)` — data table, columns `Ticket`, `Created` using TICKETS_HTML (n = TICKETS; if n > 20 add\n           `Newest 20 of n shown.`; `None Found` if 0; add the outside-the-dates line when TICKETS_ALL > TICKETS).\n        4. `Booking Admin Notes (n)` — (when `dsr_admin_notes` ran) data table, columns `Listing`, `Date`, `Note`,\n           `Contact Required` (if NOTES > 25 add `Newest 25 of NOTES shown.`; `None Found` if 0; add the outside-the-dates line when ALL_NOTES > NOTES), followed by this paragraph, copied EXACTLY (it must always be written in full, as HTML, never shortened):\n           `<p style=\"margin:6px 0\"><span style=\"background:#ffd77a;color:#5a3500;border:1px solid #d49a1a;padding:1px 8px;border-radius:6px\">Check Before Release</span> Admin notes are internal staff notes and may mention staff, Transport Partners or other third parties. Review and redact before releasing them.</p>`. If listing references were\n           not provided, write `No Listing ID Was Provided, So Booking Admin Notes Were Not Searched`.\n      - `Booking Admin Notes` (only when it was requested through its own ticked option and `Booking & Account Details`\n        is not ticked) — the same table and warning as above under its own `<h4>`.\n      - `Call Recording/s` — ONE summary table, then only the lists that have rows (never write an empty list or a\n        `None Found` heading for a source that found nothing; the summary row already says 0):\n        1. `Summary` key / value table (headings `Item` and `Details`) with rows, in this order (what was searched first, then what was found, then what was left out):\n           `Window Searched` = `<WINDOW_FROM> to <WINDOW_TO>` (add ` - the requested start date of <requested from-date> is\n           older than the 12-month retention limit, so only calls from <WINDOW_FROM> are provided` when FROM_CLAMPED = 1; if no\n           dates were given add ` (no dates given - the last 12 months, the retention limit for call recordings, were\n           searched)`); `Customer Profile` (only if PROFILE_URL is not null) = `<a href=\"PROFILE_URL\">Open Customer Profile</a>`; `Phones Searched` = the last 4 digits of every number passed as `phone10`, each marked where it came from, e.g. `ends 1902 (form and customer profile)` or `ends 1902 (form), ends 4455 (customer profile)`; `Numbers Searched` (ALWAYS\n           when a listing reference was submitted and owned, whether the numbers came from `dsr_listing_contacts` or from the\n           `v4_listing_lookup` fallback; omit only when no submitted listing belongs to the requester) = one line per listing, e.g. `AV9628002 pickup and delivery contact: ends 3473 (same as\n           the account holder)` (merge a pickup and delivery contact with the same last four digits into one line; say `same as\n           the account holder` when MATCHES_ACCOUNT_HOLDER is `Yes`, otherwise `different number`); `Total Calls Found` = `<INTERACTIONS from dsr_calls plus INTERACTIONS from dsr_calls_other> (<a> phone system, <b> other systems)` (omit this row when dsr_calls_other did not run); `Calls Found` = amber chip `0 Found` when INTERACTIONS = 0, else `<INTERACTIONS> (<OUTBOUND> outbound,\n           <INTERACTIONS minus OUTBOUND> inbound, <RECORDINGS> with a recording)`; `Other Call Systems` = `<n> Found (<the systems named in the Source column, e.g. Sophie AI>)` from `dsr_calls_other`; `Before <WINDOW_FROM>` (only if BEFORE_N from `dsr_calls` plus\n           `dsr_calls_other` > 0) = `<total> calls (<earliest BEFORE_FIRST> to <latest BEFORE_LAST>) - not included`; `After\n           <WINDOW_TO>` (only if > 0) = `<total> calls (from <earliest AFTER_FIRST>) - not included`. If no phone was provided\n           and nothing could run, write one line `Not Checked - No Phone Number Provided` instead of the table. Under the table,\n           ONE grey paragraph (`<p style=\"margin:6px 0;color:#555555\">`): `All times are UK time. Outcome is what the phone\n           system recorded; Busy, No Answer and No Talk Time mean the call was attempted but no conversation took place. A\n           dash under Recording means no recording is held in the warehouse for that call; check the Twilio Flex or\n           Console link, where one may still exist.`\n        2. If INTERACTIONS > 0: `<h5>Calls (n)</h5>` (n = INTERACTIONS) then ONE list made by joining ROWS_HTML from pages 1, 2, 3 and so on in page order (never write the rows of a page twice), in GROUPS OF 25 (see the grouping rule), columns\n           `#`, `Date / Time`, `Direction`, `Outcome`, `Matched By`, `Admin`, `Recording`, `Twilio Flex`, `Twilio Console`.\n           `Admin` is the AnyVan admin who handled the call, `Recording` the recording link, `Twilio Flex` the Flex Insights\n           link and `Twilio Console` the console call log (use the console link when Flex has no entry). A `-` means no\n           such link exists for that call. Count the rows you hold: it must equal INTERACTIONS (or 100 when INTERACTIONS is larger). If it is lower, add this line under the table: `<p style=\"margin:6px 0\"><b>Only <rows held> of <INTERACTIONS> calls could be listed here. Open the SAR Data Extract to see the rest.</b></p>`. If CONTACT_HITS > 0 add this paragraph, copied EXACTLY:\n           `<p style=\"margin:6px 0\"><span style=\"background:#ffd77a;color:#5a3500;border:1px solid #d49a1a;padding:1px 8px;border-radius:6px\">Check Before Release</span> Calls matched on a listing contact's number may involve a different person. Confirm the requester is entitled to them.</p>`\n        3. If `dsr_calls_other` INTERACTIONS > 0: `<h5>Other Call Systems (n)</h5>` and data tables in groups of 25, columns\n           `#`, `Date / Time`, `Source`, `Detail`, `Link / ID`. If any row says `Listing Email`, add this paragraph, copied EXACTLY: `<p style=\"margin:6px 0\"><span style=\"background:#ffd77a;color:#5a3500;border:1px solid #d49a1a;padding:1px 8px;border-radius:6px\">Check Before Release</span> Calls marked Listing Email were matched through the email of the account that owns a submitted booking, which differs from the email submitted. Confirm the requester is entitled to them.</p>`. Then `Jiminny calls are sales-team calls: open <a\n           href=\"https://dashboards.anyvan.com/operations/interaction-hub\">Interaction Hub</a>, search the requester's phone\n           and open the call to listen or read it.`\n        4. If NEAR_HTML (from page `0`) is not empty: `<h5>Nearest Calls Outside The Requested Window</h5>` and ONE data table (same columns\n           as the Calls table) of NEAR_HTML, then `<p>These calls are not included. If the requester confirms one of them is\n           the call they meant (for example a different date), add it to the reply.</p>`\n      - `Chat Transcript/s` — ONE summary table, then only the lists that have rows (never write an empty list or a `None\n        Found` heading): key / value table (headings `Item` and `Details`) with rows `Window Searched` = `<WINDOW_FROM> to\n        <WINDOW_TO>`; `WhatsApp` = `<n> Found` (amber chip `0 Found` when 0); `Live Chat` = `<n> Found` (amber chip when 0);\n        `Before <WINDOW_FROM>` (only if the two channels' BEFORE_N added together > 0) = `<total> conversations (<earliest\n        BEFORE_FIRST> to <latest BEFORE_LAST>) - not included`; `After <WINDOW_TO>` (only if > 0) = `<total> conversations\n        (from <earliest AFTER_FIRST>) - not included`. Then, for each channel with n > 0, `<h5>WhatsApp (n)</h5>` /\n        `<h5>Live Chat (n)</h5>` and the ROWS_HTML rows as data tables (grouping rule below), columns `#`, `Date / Time`,\n        `Source`, `Link`. If no phone was provided: `Not Checked - No Phone Number Provided` instead.\n      - `Email Correspondence` — a key / value table (headings `Item` and `Details`) with rows `Transactional Emails` =\n        `<TRANSACTIONAL_EMAILS> in the requested dates` (and, when TRANSACTIONAL_EMAILS_ALL is larger, ` (<difference> more outside the requested\n        dates, not included)`) and `Marketing Emails` = `<EVENTS> events (<FIRST_ON> to <LAST_ON>)` or `None Found` (and, when EVENTS_ALL is\n        larger, ` - <difference> more outside the requested dates, not included`).\n      - `Video Survey [If Completed]` — the one line given above.\n      **Grouping rule (calls and each chat channel):** if there are 25 rows or fewer, write ONE data table and NO group\n      heading. If there are more, split the returned rows (each `<tr>...</tr>`) into groups of 25: a sub-heading `<p\n      style=\"margin:10px 0 4px 0;color:#555555\">Calls #1-25</p>` (`WhatsApp #1-25` / `Live Chat #1-25` for chats)\n      followed by one data table holding those 25 rows, then `Calls #26-50` and its own table ... (the last group's\n      heading shows its real end number). **If n > 100** put this warning FIRST in that list: `<p><b>WARNING: <n> calls fall inside the\n      window. Only the newest 100 are listed here. The remaining <n minus 100> must be added manually: open the <a\n      href=\"https://dashboards.anyvan.com/operations/sar-data-extract\">SAR Data Extract</a> (enter the requester's email\n      and phone; Calls tab), export the CSV and keep only calls between <WINDOW_FROM> and <WINDOW_TO>.</b></p>` (use\n      `chats` / `WhatsApp conversations` for chat channels).\n  (d) `<h4>Further Data Available On Request</h4>` — ONLY for SAR / Deletion requests, and only rows relevant to the\n      ticked options. One sentence: `Not compiled here. Get these only if the requester asks for more.` then a key /\n      value table (headings `Data` and `Where To Get It`) with these rows, each included only when its ticked option\n      applies (a SAR with nothing ticked = all rows). Name the source with a link where given:\n      - `Personal Details Held`: `Marketing Consent, Opt-In And Opt-Out History (HubSpot)` | `<a\n        href=\"https://dashboards.anyvan.com/operations/sar-data-extract\">SAR Data Extract</a> (Consent History tab)`\n      - `Booking & Account Details`: `Stripe Payment Detail` | `SAR Data Extract (Stripe Payments tab)`; `Listing\n        Feedback` | `SAR Data Extract (Listing Feedback tab)`\n      - `Call Recording/s`: `Call Transcripts` | `SAR Data Extract (Calls tab) or <a\n        href=\"https://dashboards.anyvan.com/operations/interaction-hub\">Interaction Hub</a>`\n      - `Chat Transcript/s`: `Full Conversation Text` | `Interaction Hub`\n      - `Email Correspondence`: `System Emails (Platform-Sent)` and `Pre-Listing Emails` | `SAR Data Extract (Emails\n        tab)`\n      Then ONE grey paragraph: `Enter the requester's email and phone in the extract.` plus, only if `Call Recording/s` was\n      ticked, ` For calls, only use anything inside the window searched above.`\n  (e) **SAR / Deletion requests only** — `<h4>Before You Reply</h4>` as the LAST section of the note, after (d): a key / value table (headings\n      `Check` and `Action`) with ONLY the rows that apply, in this order. It is a checklist that points back to the warnings above; do not repeat\n      their wording at length:\n      - `Identity` = `Confirm who is making the request before sending any data` (only when the Identity warning in (a) was written).\n      - `Authority` = `Do not release any data until a person has reviewed the proof of authorisation` (Third Party requests only).\n      - `Admin Notes` = `Review and redact the booking admin notes before releasing them` (only when an admin notes table has at least one row).\n      - `Calls Matched On A Contact Number` = `Confirm the requester is entitled to calls matched on a listing contact's number` (only when CONTACT_HITS > 0).\n      - `Calls Matched On A Listing Email` = `Confirm the requester is entitled to calls marked Listing Email` (only when such a row was listed).\n      - `Live Check` = `Check every item against the live systems; warehouse data can lag by up to 1 hour` (ALWAYS written, so the table is never empty).\n  For a non-SAR request type the update note is just (a), (b) if Third Party, and `<p><a href=\"PROFILE_URL\">Open Customer\n  Profile</a></p>` (only if exactly one account).\n  Copy the HTML rows returned by queries (ROWS_HTML, PAYMENTS_HTML, TICKETS_HTML) VERBATIM; never edit, shorten or\n  re-write a row, link or URL.\n- `dsr_type` — one of: `SAR`, `Rectification`, `Deletion`, `Restriction`, `Portability`,\n  `Objection`, `Withdrawal of Consent`, `Marketing Opt-Out` (used for the tag).\n- `requester_type` — one of: `Customer`, `TP Sole Trader`, `TP Limited`, `Third Party` (used in\n  the subject; `TP Sole Trader` vs `TP Limited` is decided by the submission's business-type).\n- `request_type_tag` — lowercase tag token: `sar` | `rectification` | `deletion` | `restriction` |\n  `portability` | `objection` | `withdraw-consent` | `marketing-opt-out`.\n- `privacy_type` — the best-fit **Freshdesk \"Privacy Type\"** value (the *exact* choice string),\n  per the mapping below. It is written to the Freshdesk custom field `cf_privacy_request_type` by the\n  workflow and also shown in the `Request Type` row of the description.\n- `requester_type_tag` — lowercase tag token: `customer` | `tp` | `third-party`.\n- `audit_identity` — for the audit trail only, one lowercase token: `verified` | `partial_match` | `no_account` | `multiple_accounts` | `not_applicable` (Transport Partner requests). No personal data.\n- `audit_scope` — the ticked options joined with `|`, lowercase, e.g. `call recording/s|personal details held`; `none` if nothing was ticked. No personal data.\n- `audit_callout` — `yes` when a Key Callout was written, otherwise `no`.\n- `privacy_due_date` — the statutory response deadline as `YYYY-MM-DD`. Base date = the\n  submission date; add **one calendar month** (same day-of-month next month; if that day doesn't\n  exist, use the last day of the next month).\n\n## Request-type mapping (Formstack option string → `dsr_type` / `request_type_tag`)\n- `Access My Data (SAR)` → `SAR` / `sar`\n- `Correct My Data` → `Rectification` / `rectification`\n- `Delete My Data` → `Deletion` / `deletion`\n- `Restrict Processing` → `Restriction` / `restriction`\n- `Data Portability` → `Portability` / `portability`\n- `Object to Processing` → `Objection` / `objection`\n- `Withdraw Consent` → `Withdrawal of Consent` / `withdraw-consent`\n- `Marketing Opt-Out` → `Marketing Opt-Out` / `marketing-opt-out`\n\n## Freshdesk Privacy Type mapping (set `privacy_type` to the EXACT choice string)\nMatch the **live form option strings** exactly. Data categories (`What data would you like to\naccess?`): `Personal Details Held`, `Booking & Account Details`, `Call Recording/s`,\n`Chat Transcript/s`, `Email Correspondence`, `Video Survey [If Completed]`. Requester types:\n`A Customer`, `A Transport Partner`, `An Authorised Third Party`.\nDerive from the request type, and for SAR / Deletion from the sub-selections:\n- SAR, only `Call Recording/s` and/or `Video Survey [If Completed]` → `Call Recording/s`\n- SAR, only `Chat Transcript/s` → `Chat/s [Whatsapp/Live Chat]`\n- SAR, anything else (≥2 categories, `Personal Details Held`, `Booking & Account Details`, `Email Correspondence`) → `Subject Access Request (SAR)`\n- Delete, requester `A Customer`, `Full Account and All Associated Data` → `Deletion of Customer Account`\n- Delete, requester `A Transport Partner` → `Deletion of Transport Partner Account`\n- Delete, otherwise → `Right to Erasure Request` (`Deletion of Card Information` has no form scope — officer-set only)\n- Correct My Data → `Correct My Data [Rectification]`\n- Data Portability → `Data Portability`\n- Object to Processing → `Object to Processing Request`\n- Restrict Processing → `Restrict Processing`\n- Withdraw Consent → `Withdraw Consent`\n- Marketing Opt-Out → `Marketing Preferences / Opt-Out Request`\n- Requester `An Authorised Third Party` acting as law enforcement / official authority → `Law Enforcement / Official Authority`\n- A data-handling complaint **or a breach concern** raised → `Complaint Regarding Data Handling`\n- A general query or a retention/storage question → `General Data Protection Enquiry` or `Retention Period / Data Storage Query`\n\n## Rules\n- `actions[1].action_data.update_note_html` is the whole private note. Writing `placeholder`, `see above` or any stand-in is a failure: the note would be posted as that text.\n- Do not include personal data (names, emails, phone numbers) in the `subject`.\n- If a required piece of data is missing, still create the ticket and show `Not Provided` in the\n  description rather than fabricating a value.\n- (Later, when the `cf_*` custom fields are added, these same values map to dropdowns — see\n  `docs/freshdesk-custom-fields.md`.)\n",
+  "bedrock_model_id": "eu.anthropic.claude-haiku-5-5",
+  "workflow_id": "5c56b756-4655-433c-94b9-ff1748ddd6b3",
+  "version": 43,
+  "workflow_group_id": "d6ad9a00-757a-4e48-961e-428646024574",
+  "status": "ACTIVE",
+  "status_changed_via": "admin_ui",
+  "event_filter": "payload.formId = \"6559077\"",
+  "created_at": "2026-10-29T20:28:08.194Z",
+  "action_selection_mode": "locked",
+  "user_prompt": "A DSR Formstack form was submitted (submission id `{event.payload.uniqueId}`).\n\n1. Call `formstack_submission` to read the full submission.\n2. If the requester type is \"Authorised Third Party\", call `formstack_upload` /\n   `formstack_upload_interpret` on the uploaded proof-of-authorisation file(s) and summarise\n   what the document is, who it names, and whether it appears to authorise the requester.\n3. Work out what was requested (the request type and, for a SAR, the data categories ticked) and run ONLY the\n   lookups that scope needs, as described under \"What was requested\" in the config prompt, with `snowflake_query`.\n4. Write the initial note (`description`: the request table and the Request Verification table) and the private\n   update note (`update_note_html`: only what was found, with Authority Verification for third parties first, then one\n   section per ticked option; do not repeat the request details from the initial note), then the other output-contract fields.\n\nMap faithfully from the submission — do not guess. Compose the subject as\n`[UK] <requester label> Privacy Request [Ref: DSR-UK-{event.payload.uniqueId}]` (no name in the subject)\n(requester label = Customer / Transport Partner / Third Party, per the config prompt)\nand the description table exactly as specified in the config prompt (only the listed rows).\n",
+  "activated_by": "anthony.hines@anyvan.com",
+  "status_changed_by": "anthony.hines@anyvan.com",
+  "updated_at": "2026-10-29T20:32:48.237Z",
+  "trigger_type": "EVENT",
+  "activated_at": "2026-10-29T20:32:48.237Z",
+  "status_changed_at": "2026-10-29T20:32:48.237Z",
+  "snowflake_queries": [
+    {
+      "description": "Customer account check by email, plus a flag when the phone number belongs to a DIFFERENT account. One row: ACCOUNTS_FOUND, NAME_MATCHES, NAME_PARTIAL, PHONE_MATCHES, PHONE_OTHER_ACCOUNTS, PHONE_OTHER_PROFILE_URL (only when exactly one), PROFILE_URL, USER_ID, SMS consents, ACCOUNT_PHONES (search only), ACCOUNT_PHONE_ENDS.",
+      "name": "dsr_customer_identity",
+      "params": [
+        {
+          "description": "Data subject email from the submission",
+          "name": "email",
+          "required": true,
+          "sample": "jane@example.com",
+          "type": "string"
+        },
+        {
+          "description": "Data subject full name from the submission",
+          "name": "full_name",
+          "required": true,
+          "sample": "Jane Smith",
+          "type": "string"
+        },
+        {
+          "description": "Last 10 digits of the data subject phone (digits only), or none if not provided",
+          "name": "phone10",
+          "required": true,
+          "sample": "7700900123",
+          "type": "string"
+        }
+      ],
+      "sql": "WITH n AS (SELECT UPPER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(:full_name,'[^A-Za-z ]',' '),' +',' '))) AS S, REGEXP_REPLACE(UPPER(:full_name),'[^A-Z]','') AS SJ), m AS (SELECT USER_ID, FULL_NAME, CONSENT_SMS_MARKETING, CONSENT_SMS_TRANSACTIONAL, RIGHT(REGEXP_REPLACE(PRIMARY_PHONE_NUMBER,'[^0-9]',''),10) AS P1, RIGHT(REGEXP_REPLACE(SECONDARY_PHONE_NUMBER,'[^0-9]',''),10) AS P2, IFF(LOWER(EMAIL_ADDRESS) = LOWER(:email), 1, 0) AS EM, IFF((CONTAINS(' '||UPPER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(FULL_NAME,'[^A-Za-z ]',' '),' +',' ')))||' ',' '||SPLIT_PART(n.S,' ',1)||' ') AND CONTAINS(' '||UPPER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(FULL_NAME,'[^A-Za-z ]',' '),' +',' ')))||' ',' '||REGEXP_SUBSTR(n.S,'[^ ]+$')||' ')) OR (CONTAINS(' '||n.S||' ',' '||SPLIT_PART(UPPER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(FULL_NAME,'[^A-Za-z ]',' '),' +',' '))),' ',1)||' ') AND CONTAINS(' '||n.S||' ',' '||REGEXP_SUBSTR(UPPER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(FULL_NAME,'[^A-Za-z ]',' '),' +',' '))),'[^ ]+$')||' ')) OR REGEXP_REPLACE(UPPER(FULL_NAME),'[^A-Z]','')=n.SJ, 1, 0) AS NP, IFF(:phone10 <> 'none' AND (RIGHT(REGEXP_REPLACE(PRIMARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10 OR RIGHT(REGEXP_REPLACE(SECONDARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10), 1, 0) AS PM FROM CONFORMED.PRODUCTION.DIM_USER_CUSTOMER CROSS JOIN n WHERE LOWER(EMAIL_ADDRESS) = LOWER(:email) OR (:phone10 <> 'none' AND (RIGHT(REGEXP_REPLACE(PRIMARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10 OR RIGHT(REGEXP_REPLACE(SECONDARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10))) SELECT COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) AS ACCOUNTS_FOUND, MAX(IFF(EM = 1 AND UPPER(TRIM(FULL_NAME)) = UPPER(TRIM(:full_name)), 1, 0)) AS NAME_MATCHES, MAX(IFF(EM = 1 AND NP = 1, 1, 0)) AS NAME_PARTIAL, MAX(IFF(EM = 1 AND PM = 1, 1, 0)) AS PHONE_MATCHES, COUNT(DISTINCT IFF(EM = 0 AND PM = 1, USER_ID, NULL)) AS PHONE_OTHER_ACCOUNTS, IFF(COUNT(DISTINCT IFF(EM = 0 AND PM = 1, USER_ID, NULL)) = 1, 'https://www.anyvan.com/administer-manage-user/' || MAX(IFF(EM = 0 AND PM = 1, USER_ID, NULL)), NULL) AS PHONE_OTHER_PROFILE_URL, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, 'https://www.anyvan.com/administer-manage-user/' || MAX(IFF(EM = 1, USER_ID, NULL)), NULL) AS PROFILE_URL, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, MAX(IFF(EM = 1, USER_ID, NULL))::STRING, NULL) AS USER_ID, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, IFF(MAX(IFF(EM = 1, CONSENT_SMS_MARKETING::NUMBER, NULL)) IS NULL, 'Not recorded', IFF(MAX(IFF(EM = 1, CONSENT_SMS_MARKETING::NUMBER, NULL)) > 0, 'Yes', 'No')), NULL) AS SMS_MARKETING_CONSENT, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, IFF(MAX(IFF(EM = 1, CONSENT_SMS_TRANSACTIONAL::NUMBER, NULL)) IS NULL, 'Not recorded', IFF(MAX(IFF(EM = 1, CONSENT_SMS_TRANSACTIONAL::NUMBER, NULL)) > 0, 'Yes', 'No')), NULL) AS SMS_TRANSACTIONAL_CONSENT, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, ARRAY_TO_STRING(ARRAY_DISTINCT(ARRAY_CAT(ARRAY_AGG(IFF(EM = 1 AND LENGTH(P1) >= 9, P1, NULL)), ARRAY_AGG(IFF(EM = 1 AND LENGTH(P2) >= 9, P2, NULL)))), ','), NULL) AS ACCOUNT_PHONES, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, ARRAY_TO_STRING(ARRAY_DISTINCT(ARRAY_CAT(ARRAY_AGG(IFF(EM = 1 AND LENGTH(P1) >= 9, RIGHT(P1, 4), NULL)), ARRAY_AGG(IFF(EM = 1 AND LENGTH(P2) >= 9, RIGHT(P2, 4), NULL)))), ', '), NULL) AS ACCOUNT_PHONE_ENDS FROM m LIMIT 1"
+    },
+    {
+      "description": "Transport Partner account check by email for a DSR. Returns one row: ACCOUNTS_FOUND, NAME_MATCHES (full name or nickname), PHONE_MATCHES. Also PROFILE_URL (admin user page link, only when exactly one account). No personal data returned.",
+      "name": "dsr_tp_identity",
+      "params": [
+        {
+          "description": "Data subject email from the submission",
+          "name": "email",
+          "required": true,
+          "sample": "jane@example.com",
+          "type": "string"
+        },
+        {
+          "description": "Data subject full name from the submission",
+          "name": "full_name",
+          "required": true,
+          "sample": "Jane Smith",
+          "type": "string"
+        },
+        {
+          "description": "Last 10 digits of the data subject phone (digits only), or none if not provided",
+          "name": "phone10",
+          "required": true,
+          "sample": "7700900123",
+          "type": "string"
+        }
+      ],
+      "sql": "SELECT COUNT(DISTINCT USER_ID) AS ACCOUNTS_FOUND, MAX(IFF(UPPER(TRIM(FULL_NAME)) = UPPER(TRIM(:full_name)) OR UPPER(TRIM(NICKNAME)) = UPPER(TRIM(:full_name)), 1, 0)) AS NAME_MATCHES, MAX(IFF(:phone10 <> 'none' AND (RIGHT(REGEXP_REPLACE(PRIMARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10 OR RIGHT(REGEXP_REPLACE(SECONDARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10), 1, 0)) AS PHONE_MATCHES, IFF(COUNT(DISTINCT USER_ID) = 1, 'https://www.anyvan.com/administer-manage-user/' || MAX(USER_ID), NULL) AS PROFILE_URL FROM CONFORMED.PRODUCTION.DIM_USER_TRANSPORTPROVIDER WHERE LOWER(EMAIL_ADDRESS) = LOWER(:email) LIMIT 1"
+    },
+    {
+      "description": "Checks listing/booking references from a DSR (up to 5). Returns one row per reference: LISTING_ID_INPUT, LISTING_FOUND (boolean), BELONGS_TO_SUBMITTED_EMAIL (true/false, null when not found). Customer ownership only; never returns another customer's details.",
+      "name": "dsr_listing_check",
+      "params": [
+        {
+          "description": "All listing references from the submission, comma-separated, exactly as submitted (an AV prefix is fine)",
+          "name": "listing_ids",
+          "required": true,
+          "sample": "9644155, AV9644156",
+          "type": "string"
+        },
+        {
+          "description": "Data subject email from the submission",
+          "name": "email",
+          "required": true,
+          "sample": "jane@example.com",
+          "type": "string"
+        }
+      ],
+      "sql": "SELECT t.LISTING_ID_INPUT, l.LISTING_ID IS NOT NULL AS LISTING_FOUND, IFF(l.LISTING_ID IS NULL, NULL, LOWER(u.EMAIL_ADDRESS) = LOWER(:email)) AS BELONGS_TO_SUBMITTED_EMAIL FROM (SELECT TRY_TO_NUMBER(REGEXP_REPLACE(TRIM(value), '[^0-9]', '')) AS LISTING_ID_INPUT FROM TABLE(SPLIT_TO_TABLE(:listing_ids, ','))) t LEFT JOIN (SELECT LISTING_ID, LISTING_USER_ID FROM CONFORMED.PRODUCTION.MASTER_LISTING WHERE LISTING_ID IN (TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids, ',', 1), '[^0-9]', '')), TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids, ',', 2), '[^0-9]', '')), TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids, ',', 3), '[^0-9]', '')), TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids, ',', 4), '[^0-9]', '')), TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids, ',', 5), '[^0-9]', '')))) l ON l.LISTING_ID = t.LISTING_ID_INPUT LEFT JOIN CONFORMED.PRODUCTION.DIM_USER_CUSTOMER u ON u.USER_ID = l.LISTING_USER_ID LIMIT 50"
+    },
+    {
+      "description": "Customer's bookings: TOTAL_LISTINGS created or picked up inside the All Data window (ALL_LISTINGS = all time) and ROWS_HTML for the in-window ones (newest 50).",
+      "name": "dsr_listings",
+      "params": [
+        {
+          "description": "Data subject email from the submission",
+          "name": "email",
+          "required": true,
+          "sample": "jane@example.com",
+          "type": "string"
+        },
+        {
+          "description": "All Data window start YYYY-MM-DD, or none",
+          "name": "all_from",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        },
+        {
+          "description": "All Data window end YYYY-MM-DD inclusive, or none",
+          "name": "all_to",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        }
+      ],
+      "sql": "WITH k AS(SELECT '<td style=\"padding:8px 24px 8px 8px;border-bottom:1px solid #ddd\">' AS C),d AS(SELECT COALESCE(TRY_TO_DATE(:all_from),'1900-01-01'::DATE)AS F,COALESCE(TRY_TO_DATE(:all_to),'2999-12-31'::DATE)AS T),l AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY x.W ORDER BY x.CR DESC)AS RN FROM(SELECT LISTING_ID,LISTING_CATEGORY_NAME AS CAT,LISTING_STATUS AS ST,PICK_UP_DATE AS PU,LISTING_CREATED_DATE AS CR,IFF(COALESCE(LISTING_CREATED_DATE::DATE BETWEEN d.F AND d.T,FALSE)OR COALESCE(PICK_UP_DATE::DATE BETWEEN d.F AND d.T,FALSE)OR(LISTING_CREATED_DATE IS NULL AND PICK_UP_DATE IS NULL),1,0)AS W FROM CONFORMED.PRODUCTION.MASTER_LISTING CROSS JOIN d WHERE LISTING_USER_ID IN(SELECT USER_ID FROM CONFORMED.PRODUCTION.DIM_USER_CUSTOMER WHERE LOWER(EMAIL_ADDRESS)=LOWER(:email)) AND LISTING_ID IS NOT NULL)x) SELECT SUM(l.W)AS TOTAL_LISTINGS,COUNT(l.RN)AS ALL_LISTINGS,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(l.RN<=50 AND l.W=1,'<!--'||LPAD(l.RN,4,'0')||'-->'||'<tr>'||k.C||'<a href=\"https://www.anyvan.com/administer/instant-listings/'||l.LISTING_ID||'/manage\">AV'||l.LISTING_ID||'</a>'||'</td>'||k.C||COALESCE(l.CAT,'')||'</td>'||k.C||COALESCE(l.ST,'')||'</td>'||k.C||COALESCE(TO_CHAR(l.CR,'DD/MM/YYYY'),'n/a')||'</td>'||k.C||COALESCE(TO_CHAR(l.PU,'DD/MM/YYYY'),'n/a')||'</td>'||'</tr>',NULL))),''),'<!--[0-9]+-->','')AS ROWS_HTML FROM k LEFT JOIN l ON 1=1 GROUP BY k.C LIMIT 1"
+    },
+    {
+      "description": "Payments and tickets inside the All Data window (PAYMENTS / TICKETS; *_ALL = all time), transactional email count inside the Email window (TRANSACTIONAL_EMAILS; *_ALL = all time), plus finished HTML rows.",
+      "name": "dsr_records",
+      "params": [
+        {
+          "description": "Data subject email from the submission",
+          "name": "email",
+          "required": true,
+          "sample": "jane@example.com",
+          "type": "string"
+        },
+        {
+          "description": "All Data window start YYYY-MM-DD, or none",
+          "name": "all_from",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        },
+        {
+          "description": "All Data window end YYYY-MM-DD inclusive, or none",
+          "name": "all_to",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        },
+        {
+          "description": "Email window start YYYY-MM-DD, or none",
+          "name": "email_from",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        },
+        {
+          "description": "Email window end YYYY-MM-DD inclusive, or none",
+          "name": "email_to",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        }
+      ],
+      "sql": "WITH k AS(SELECT '<td style=\"padding:8px 24px 8px 8px;border-bottom:1px solid #ddd\">' AS C),d AS(SELECT COALESCE(TRY_TO_DATE(:all_from),'1900-01-01'::DATE)AS AF,COALESCE(TRY_TO_DATE(:all_to),'2999-12-31'::DATE)AS AE,COALESCE(TRY_TO_DATE(:email_from),'1900-01-01'::DATE)AS EF,COALESCE(TRY_TO_DATE(:email_to),'2999-12-31'::DATE)AS ET),p AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY x.W ORDER BY x.D DESC)AS RN FROM(SELECT p.CREATED_AT AS D,p.LISTING_ID AS LI,p.TRANSACTION_TYPE AS TY,COALESCE(NULLIF(p.AMOUNT_PAID,0),p.AMOUNT)AS AM,sc.ISO_CODE AS CU,p.PAYMENT_METHOD AS ME,IFF(p.VOIDED_AT IS NOT NULL,'Voided',IFF(p.FAILED_AT IS NOT NULL,'Failed',IFF(p.SETTLED_AT IS NOT NULL,'Settled','Pending')))AS ST,IFF(COALESCE(p.CREATED_AT::DATE BETWEEN d.AF AND d.AE,TRUE),1,0)AS W FROM HARMONISED.PRODUCTION.PAYMENT p CROSS JOIN d LEFT JOIN HARMONISED.PRODUCTION.SEED_CURRENCY sc ON sc.CURRENCY_ID=p.CURRENCY_ID WHERE p.USER_ID IN(SELECT USER_ID FROM CONFORMED.PRODUCTION.DIM_USER_CUSTOMER WHERE LOWER(EMAIL_ADDRESS)=LOWER(:email)) AND p.DELETED_ROW=FALSE)x),t AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY x.W ORDER BY x.D DESC)AS RN FROM(SELECT FRESHDESK_TICKET_ID AS ID,CREATED_AT AS D,IFF(COALESCE(CREATED_AT::DATE BETWEEN d.AF AND d.AE,TRUE),1,0)AS W FROM HARMONISED.PRODUCTION.FRESHDESK_TICKET CROSS JOIN d WHERE LOWER(REQUESTER_EMAIL)=LOWER(:email)AND DELETED_ROW=FALSE)x) SELECT a.PAYMENTS,a.PAYMENTS_ALL,c.TRANSACTIONAL_EMAILS,c.TRANSACTIONAL_EMAILS_ALL,b.TICKETS,b.TICKETS_ALL,a.PAYMENTS_HTML,b.TICKETS_HTML FROM (SELECT SUM(p.W)AS PAYMENTS,COUNT(p.RN)AS PAYMENTS_ALL,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(p.RN<=25 AND p.W=1,'<!--'||LPAD(p.RN,3,'0')||'-->'||'<tr>'||k.C||TO_CHAR(p.D,'DD/MM/YYYY')||'</td>'||k.C||COALESCE('AV'||p.LI,'n/a')||'</td>'||k.C||INITCAP(COALESCE(p.TY,''))||'</td>'||k.C||COALESCE(p.CU,'')||' '||TO_CHAR(p.AM,'FM999,990.00')||'</td>'||k.C||INITCAP(COALESCE(p.ME,''))||'</td>'||k.C||p.ST||'</td>'||'</tr>',NULL))),''),'<!--[0-9]+-->','')AS PAYMENTS_HTML FROM p CROSS JOIN k)a CROSS JOIN (SELECT SUM(t.W)AS TICKETS,COUNT(t.RN)AS TICKETS_ALL,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(t.RN<=20 AND t.W=1,'<!--'||LPAD(t.RN,3,'0')||'-->'||'<tr>'||k.C||'<a href=\"https://anyvan.freshdesk.com/a/tickets/'||t.ID||'\">#'||t.ID||'</a>'||'</td>'||k.C||TO_CHAR(t.D,'DD/MM/YYYY')||'</td>'||'</tr>',NULL))),''),'<!--[0-9]+-->','')AS TICKETS_HTML FROM t CROSS JOIN k)b CROSS JOIN (SELECT SUM(IFF(m.EVENT_TIMESTAMP::DATE BETWEEN d.EF AND d.ET,1,0))AS TRANSACTIONAL_EMAILS,COUNT(*)AS TRANSACTIONAL_EMAILS_ALL FROM HARMONISED.PRODUCTION.EVENTS_MESSAGING_MESSAGE m CROSS JOIN d WHERE LOWER(m.RESOLVED_USER_EMAIL)=LOWER(:email)AND m.CHANNEL='EMAIL')c LIMIT 1"
+    },
+    {
+      "description": "Marketing email events for the customer: EVENTS inside the requested window, FIRST_ON / LAST_ON inside it, and EVENTS_ALL (all time).",
+      "name": "dsr_marketing_emails",
+      "params": [
+        {
+          "description": "Data subject email from the submission",
+          "name": "email",
+          "required": true,
+          "sample": "jane@example.com",
+          "type": "string"
+        },
+        {
+          "description": "Email window start YYYY-MM-DD, or none",
+          "name": "from_date",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        },
+        {
+          "description": "Email window end YYYY-MM-DD inclusive, or none",
+          "name": "to_date",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        }
+      ],
+      "sql": "SELECT SUM(W)AS EVENTS,MIN(IFF(W=1,T,NULL))::DATE AS FIRST_ON,MAX(IFF(W=1,T,NULL))::DATE AS LAST_ON,COUNT(*)AS EVENTS_ALL FROM(SELECT e.EVENT_TIMESTAMP AS T,IFF(e.EVENT_TIMESTAMP::DATE BETWEEN COALESCE(TRY_TO_DATE(:from_date),'1900-01-01'::DATE)AND COALESCE(TRY_TO_DATE(:to_date),'2999-12-31'::DATE),1,0)AS W FROM HARMONISED.PRODUCTION.EVENTS_EMAIL e WHERE LOWER(e.EMAIL_ADDRESS)=LOWER(:email))LIMIT 1"
+    },
+    {
+      "description": "Admin notes on owned submitted bookings: NOTES inside the All Data window (ALL_NOTES = all time), FIRST_ON, LAST_ON, ROWS_HTML (newest 25 in window).",
+      "name": "dsr_admin_notes",
+      "params": [
+        {
+          "description": "All listing references from the submission, comma-separated, exactly as submitted (an AV prefix is fine), or 0 if none",
+          "name": "listing_ids",
+          "required": true,
+          "sample": "9644155, AV9644156",
+          "type": "string"
+        },
+        {
+          "description": "Data subject email from the submission",
+          "name": "email",
+          "required": true,
+          "sample": "jane@example.com",
+          "type": "string"
+        },
+        {
+          "description": "All Data window start YYYY-MM-DD, or none",
+          "name": "all_from",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        },
+        {
+          "description": "All Data window end YYYY-MM-DD inclusive, or none",
+          "name": "all_to",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        }
+      ],
+      "sql": "WITH k AS(SELECT '<td style=\"padding:8px 24px 8px 8px;border-bottom:1px solid #ddd\">' AS C),d AS(SELECT COALESCE(TRY_TO_DATE(:all_from),'1900-01-01'::DATE)AS F,COALESCE(TRY_TO_DATE(:all_to),'2999-12-31'::DATE)AS T),n AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY x.W ORDER BY x.D DESC)AS RN FROM(SELECT a.LISTING_ID,a.CREATED_AT AS D,a.NOTE,a.CONTACT_REQUIRED AS CR,IFF(COALESCE(a.CREATED_AT::DATE BETWEEN d.F AND d.T,TRUE),1,0)AS W FROM HARMONISED.PRODUCTION.ADMIN_LISTING_NOTES a CROSS JOIN d WHERE a.DELETED_ROW=FALSE AND a.LISTING_ID IN(TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',1),'[^0-9]','')),TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',2),'[^0-9]','')),TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',3),'[^0-9]',''))) AND a.LISTING_ID IN(SELECT l.LISTING_ID FROM CONFORMED.PRODUCTION.MASTER_LISTING l JOIN CONFORMED.PRODUCTION.DIM_USER_CUSTOMER u ON u.USER_ID=l.LISTING_USER_ID WHERE LOWER(u.EMAIL_ADDRESS)=LOWER(:email)AND l.LISTING_ID IN(TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',1),'[^0-9]','')),TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',2),'[^0-9]','')),TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',3),'[^0-9]','')))))x) SELECT SUM(n.W)AS NOTES,COUNT(n.RN)AS ALL_NOTES,MIN(IFF(n.W=1,n.D,NULL))::DATE AS FIRST_ON,MAX(IFF(n.W=1,n.D,NULL))::DATE AS LAST_ON,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(n.RN<=25 AND n.W=1,'<!--'||LPAD(n.RN,3,'0')||'-->'||'<tr>'||k.C||'AV'||n.LISTING_ID||'</td>'||k.C||TO_CHAR(CONVERT_TIMEZONE('UTC','Europe/London',n.D::TIMESTAMP_NTZ),'DD/MM/YYYY HH24:MI')||'</td>'||k.C||REPLACE(REPLACE(REPLACE(REPLACE(LEFT(n.NOTE,500),'&','&amp;'),'<','&lt;'),'>','&gt;'),CHR(10),'<br>')||IFF(LENGTH(n.NOTE)>500,' ...','')||'</td>'||k.C||IFF(n.CR=1,'Yes','No')||'</td>'||'</tr>',NULL))),''),'<!--[0-9]+-->','')AS ROWS_HTML FROM k LEFT JOIN n ON 1=1 GROUP BY k.C LIMIT 1"
+    },
+    {
+      "description": "All calls to/from the customer's phone (both directions), calls tagged to any of the customer's bookings (owned only) and calls to/from listing contact numbers, inside the window (12-month cap). Twilio call log (busy/no-answer too) + task records, admin, recording/Flex/console links, UK time. One row: counts, WINDOW_*, BEFORE_*/AFTER_* , ROWS_HTML (10 rows for the requested page, newest first), NEAR_HTML (10 nearest outside the window, page 0 only). Lags ~1h.",
+      "name": "dsr_calls",
+      "params": [
+        {
+          "description": "First listing id, digits only, or 0",
+          "name": "listing_1",
+          "required": true,
+          "sample": "9644155",
+          "type": "string"
+        },
+        {
+          "description": "Second listing id, digits only, or 0",
+          "name": "listing_2",
+          "required": true,
+          "sample": "0",
+          "type": "string"
+        },
+        {
+          "description": "Third listing id, digits only, or 0",
+          "name": "listing_3",
+          "required": true,
+          "sample": "0",
+          "type": "string"
+        },
+        {
+          "description": "Data subject email from the submission",
+          "name": "email",
+          "required": true,
+          "sample": "jane@example.com",
+          "type": "string"
+        },
+        {
+          "description": "The data subject's own 10-digit phone numbers, comma-separated (form phone first, then the account's other phones, max 3), or none",
+          "name": "phone10",
+          "required": true,
+          "sample": "7700900123",
+          "type": "string"
+        },
+        {
+          "description": "10-digit listing contact numbers (not the account holder's), comma-separated, max 6, or none",
+          "name": "contact_numbers",
+          "required": true,
+          "sample": "none",
+          "type": "string"
+        },
+        {
+          "description": "Window start YYYY-MM-DD, or none. Calls older than 12 months are clamped; chats look back 24 months",
+          "name": "from_date",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        },
+        {
+          "description": "Window end YYYY-MM-DD inclusive, or none for today",
+          "name": "to_date",
+          "required": true,
+          "sample": "2026-09-30",
+          "type": "string"
+        },
+        {
+          "description": "Page number: 0 = counts and nearest calls only, no call rows; 1 to 10 = calls #(10n-9) to #(10n), newest first",
+          "name": "page",
+          "required": true,
+          "sample": "1",
+          "type": "string"
+        }
+      ],
+      "sql": "WITH w AS(SELECT GREATEST(COALESCE(f,m),m)AS F,COALESCE(TRY_TO_DATE(:to_date),CURRENT_DATE())AS E,IFF(f<m,1,0)AS CL FROM(SELECT TRY_TO_DATE(:from_date)AS f,ADD_MONTHS(CURRENT_DATE(),-12)AS m)),k AS(SELECT '<td style=\"padding:8px 14px 8px 8px;border-bottom:1px solid #ddd\">' AS C),o AS(SELECT ARRAY_AGG(l.LISTING_ID)AS A FROM CONFORMED.PRODUCTION.MASTER_LISTING l JOIN CONFORMED.PRODUCTION.DIM_USER_CUSTOMER u ON u.USER_ID=l.LISTING_USER_ID WHERE LOWER(u.EMAIL_ADDRESS)=LOWER(:email)AND(TRUE OR l.LISTING_ID IN(TRY_TO_NUMBER(:listing_1),TRY_TO_NUMBER(:listing_2),TRY_TO_NUMBER(:listing_3)))),p AS(SELECT ARRAY_AGG(RIGHT(TRIM(value),10))AS P FROM TABLE(SPLIT_TO_TABLE(:contact_numbers,','))WHERE LENGTH(TRIM(value))>=9),t AS(SELECT q.* FROM(SELECT c.ID AS SID,c.START_TIME::TIMESTAMP_NTZ AS U,c.DIRECTION AS DR,c.STATUS AS ST,c.DURATION AS DU,RIGHT(REGEXP_REPLACE(c.\"FROM\",'[^0-9]',''),10) AS F1,RIGHT(REGEXP_REPLACE(c.\"TO\",'[^0-9]',''),10) AS T1 FROM HARMONISED.PRODUCTION.TWILIO_CALL c WHERE c.START_TIME>=ADD_MONTHS(CURRENT_DATE(),-12))q CROSS JOIN p WHERE (ARRAYS_OVERLAP(ARRAY_CONSTRUCT(q.F1,q.T1),SPLIT(:phone10,','))OR ARRAYS_OVERLAP(ARRAY_CONSTRUCT(q.F1,q.T1),p.P))),mm AS(SELECT m.EVENTTIMESTAMP::TIMESTAMP_NTZ AS U,m.CUSTOMERCALLSID AS CS,COALESCE(m.WORKERCALLSID,m.TASKSID)AS WS,m.CONFERENCESID AS CF,COALESCE(m.TALKTIME,0)AS TT,LOWER(m.TASKTYPE)AS TY,INITCAP(REPLACE(SPLIT_PART(m.WORKEREMAIL,'@',1),'.',' '))AS AG,RIGHT(REGEXP_REPLACE(m.FROMNUMBER,'[^0-9]',''),10) AS F1,RIGHT(REGEXP_REPLACE(m.TONUMBER,'[^0-9]',''),10) AS T1,COALESCE(m.V4LISTINGID,m.CALISTINGID)AS LI FROM CONFORMED.PRODUCTION.FCT_TWILIO_CALL_METRICS m WHERE m.TASKCHANNELNAME='voice' AND NOT LOWER(m.WORKEREMAIL)REGEXP '.*(sophie|amy-sdr).*' AND m.EVENTTIMESTAMP>=ADD_MONTHS(CURRENT_DATE(),-12)),u AS(SELECT t.U,t.SID,IFF(t.DR ILIKE 'outbound%','Outbound','Inbound')AS DIR,INITCAP(REPLACE(t.ST,'-',' '))||IFF(COALESCE(t.DU,0)>0,' ('||t.DU||'s)','')AS OC,t.F1,t.T1,mm.LI,mm.WS,mm.CF,mm.AG FROM t LEFT JOIN mm ON mm.CS=t.SID QUALIFY ROW_NUMBER()OVER(PARTITION BY t.SID ORDER BY mm.U)=1 UNION ALL SELECT mm.U,mm.CS,IFF(mm.TY='inbound','Inbound','Outbound'),IFF(mm.TT>0,'Connected ('||mm.TT||'s)','No Talk Time'),mm.F1,mm.T1,mm.LI,mm.WS,mm.CF,mm.AG FROM mm LEFT JOIN t ON t.SID=mm.CS OR(t.F1=mm.F1 AND ABS(DATEDIFF('second',t.U,mm.U))<=10)WHERE t.SID IS NULL),v AS(SELECT u.*,CONVERT_TIMEZONE('UTC','Europe/London',u.U)::TIMESTAMP_NTZ AS T,ARRAY_TO_STRING(ARRAY_CONSTRUCT_COMPACT(IFF(ARRAYS_OVERLAP(ARRAY_CONSTRUCT(u.F1,u.T1),SPLIT(:phone10,',')),'Customer Number',NULL),IFF(ARRAY_CONTAINS(TO_VARIANT(u.LI),o.A),'Tagged To Listing',NULL),IFF(ARRAYS_OVERLAP(ARRAY_CONSTRUCT(u.F1,u.T1),p.P),'Listing Contact Number',NULL)),', ')AS WHY FROM u CROSS JOIN o CROSS JOIN p),r AS(SELECT CALL_SID,MAX(RECORDING_ID)AS RID FROM CONFORMED.PRODUCTION.CALL_TRANSCRIPT_CALLS WHERE RECORDING_ID LIKE 'RE%' AND CALL_SID IN(SELECT WS FROM v)GROUP BY CALL_SID),fx AS(SELECT CONVERSATION_ATTRIBUTE_4 AS CF,ANY_VALUE(CONVERSATION)AS FU FROM HARMONISED.PRODUCTION.TWILIO_FLEX_INSIGHTS_BI_TWILIO_TELEPHONY WHERE CONVERSATION_ATTRIBUTE_4 ILIKE 'CF%' GROUP BY 1),x AS(SELECT v.*,r.RID,fx.FU,IFF(v.T>=w.F AND v.T<w.E+1,1,0)AS IW,IFF(v.T<w.F,1,0)AS B,IFF(v.T>=w.E+1,1,0)AS A,IFF(v.T<w.F,DATEDIFF('day',v.T::DATE,w.F),DATEDIFF('day',w.E,v.T::DATE))AS DS FROM v CROSS JOIN w LEFT JOIN r ON r.CALL_SID=v.WS LEFT JOIN fx ON fx.CF=v.CF WHERE v.WHY<>''),y AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY IW,B ORDER BY IFF(IW=1,0,DS),T DESC)AS S FROM x),z AS(SELECT y.*,'<!--'||y.A||LPAD(y.S,3,'0')||'-->'||'<tr>'||k.C||CONCAT_WS('</td>'||k.C,y.S+IFF(y.IW+y.B=0,LEAST(5,SUM(y.B)OVER()),0),TO_CHAR(y.T,'DD/MM/YYYY HH24:MI')||IFF(y.IW=1,'',' ('||y.DS||IFF(y.B=1,' day(s) before)',' day(s) after)')),y.DIR,y.OC,y.WHY,COALESCE(y.AG,'Not Recorded'),IFF(y.RID IS NULL,'-','<a href=\"https://twilio-recordings.anyvan.com/recordings/'||y.RID||'\">Recording</a>'),IFF(y.FU IS NULL,'-','<a href=\"'||y.FU||'\">Twilio Flex</a>'),IFF(y.SID ILIKE 'CA%','<a href=\"https://console.twilio.com/us1/monitor/logs/calls/'||y.SID||'\">Twilio Console</a>','-'))||'</td></tr>' AS H FROM y CROSS JOIN k) SELECT SUM(z.IW)AS INTERACTIONS,COUNT_IF(z.IW=1 AND z.RID IS NOT NULL)AS RECORDINGS,COUNT_IF(z.IW=1 AND z.DIR='Outbound')AS OUTBOUND,COUNT_IF(z.IW=1 AND z.WHY ILIKE '%Contact%')AS CONTACT_HITS,MAX(w.F)AS WINDOW_FROM,MAX(w.E)AS WINDOW_TO,MAX(w.CL)AS FROM_CLAMPED,SUM(z.B)AS BEFORE_N,MIN(IFF(z.B=1,z.T,NULL))::DATE AS BEFORE_FIRST,MAX(IFF(z.B=1,z.T,NULL))::DATE AS BEFORE_LAST,SUM(z.A)AS AFTER_N,MIN(IFF(z.A=1,z.T,NULL))::DATE AS AFTER_FIRST,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(z.IW=1 AND z.S>(TRY_TO_NUMBER(:page)-1)*10 AND z.S<=TRY_TO_NUMBER(:page)*10,z.H,NULL))),''),'<!--[0-9]+-->','')AS ROWS_HTML,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(z.IW=0 AND z.S<=5 AND TRY_TO_NUMBER(:page)=0,z.H,NULL))),''),'<!--[0-9]+-->','')AS NEAR_HTML FROM w LEFT JOIN z ON 1=1 LIMIT 1"
+    },
+    {
+      "description": "Calls in other systems for the customer's phone or email (12-month cap): Sophie AI, Aircall and Jiminny sales calls (Jiminny matched by phone, submitted email, or the booking owner's email), UK time. One row: INTERACTIONS, WINDOW_*, BEFORE_*/AFTER_*, ROWS_HTML (newest 100).",
+      "name": "dsr_calls_other",
+      "params": [
+        {
+          "description": "Data subject email from the submission",
+          "name": "email",
+          "required": true,
+          "sample": "jane@example.com",
+          "type": "string"
+        },
+        {
+          "description": "Last 10 digits of the data subject phone (digits only), or none",
+          "name": "phone10",
+          "required": true,
+          "sample": "7700900123",
+          "type": "string"
+        },
+        {
+          "description": "Listing id 1, digits only (no AV prefix), or 0",
+          "name": "listing_1",
+          "required": true,
+          "sample": "9644155",
+          "type": "string"
+        },
+        {
+          "description": "Listing id 2, digits only (no AV prefix), or 0",
+          "name": "listing_2",
+          "required": true,
+          "sample": "0",
+          "type": "string"
+        },
+        {
+          "description": "Listing id 3, digits only (no AV prefix), or 0",
+          "name": "listing_3",
+          "required": true,
+          "sample": "0",
+          "type": "string"
+        },
+        {
+          "description": "Window start YYYY-MM-DD, or none. Calls older than 12 months are clamped; chats look back 24 months",
+          "name": "from_date",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        },
+        {
+          "description": "Window end YYYY-MM-DD inclusive, or none for today",
+          "name": "to_date",
+          "required": true,
+          "sample": "2026-09-30",
+          "type": "string"
+        }
+      ],
+      "sql": "WITH w AS(SELECT GREATEST(COALESCE(TRY_TO_DATE(:from_date),ADD_MONTHS(CURRENT_DATE(),-12)),ADD_MONTHS(CURRENT_DATE(),-12))AS F,COALESCE(TRY_TO_DATE(:to_date),CURRENT_DATE())AS E,IFF(TRY_TO_DATE(:from_date)<ADD_MONTHS(CURRENT_DATE(),-12),1,0)AS CL),k AS(SELECT '<td style=\"padding:8px 14px 8px 8px;border-bottom:1px solid #ddd\">' AS C),le AS(SELECT LOWER(u.EMAIL_ADDRESS) AS EM FROM CONFORMED.PRODUCTION.MASTER_LISTING l JOIN CONFORMED.PRODUCTION.DIM_USER_CUSTOMER u ON u.USER_ID=l.LISTING_USER_ID WHERE l.LISTING_ID IN(TRY_TO_NUMBER(:listing_1),TRY_TO_NUMBER(:listing_2),TRY_TO_NUMBER(:listing_3))AND LOWER(u.EMAIL_ADDRESS)<>LOWER(:email) GROUP BY 1),jc AS(SELECT m.EVENT_ID,m.ANYVAN_USER_TEAMNAME AS TM,CONVERT_TIMEZONE('UTC','Europe/London',TRY_TO_TIMESTAMP(m.ACTUAL_START_TIME)::TIMESTAMP_NTZ)::TIMESTAMP_NTZ AS T,m.DURATION_SECONDS AS DU,m.STATUS AS ST,m.PARTICIPANTS AS P FROM HARMONISED.PRODUCTION.JIMINNY_CALL_METADATA m WHERE TRY_TO_DATE(LEFT(m.ACTUAL_START_TIME,10))>=ADD_MONTHS(CURRENT_DATE(),-12) AND (m.PARTICIPANTS ILIKE CONCAT('%',RIGHT(:phone10,4),'%') OR m.PARTICIPANTS ILIKE CONCAT('%',:email,'%') OR EXISTS(SELECT 1 FROM le WHERE m.PARTICIPANTS ILIKE CONCAT('%',le.EM,'%')))),jm AS(SELECT EVENT_ID,ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(DISTINCT BY1)),' + ')AS BY2 FROM (SELECT c.EVENT_ID,'Phone' AS BY1 FROM jc c,LATERAL FLATTEN(input=>REGEXP_SUBSTR_ALL(c.P,'''phone'':\\\\s*''([^'']+)''',1,1,'e',1))f WHERE RIGHT(REGEXP_REPLACE(f.value::string,'[^0-9]',''),10)=:phone10 UNION ALL SELECT c.EVENT_ID,'Email' FROM jc c,LATERAL FLATTEN(input=>REGEXP_SUBSTR_ALL(c.P,'''email'':\\\\s*''([^'']+)''',1,1,'e',1))f WHERE LOWER(f.value::string)=LOWER(:email) UNION ALL SELECT c.EVENT_ID,'Listing Email' FROM jc c,LATERAL FLATTEN(input=>REGEXP_SUBSTR_ALL(c.P,'''email'':\\\\s*''([^'']+)''',1,1,'e',1))f WHERE LOWER(f.value::string) IN(SELECT EM FROM le))GROUP BY 1),ev AS(SELECT CONVERT_TIMEZONE('UTC','Europe/London',s.EVENTTIMESTAMP::TIMESTAMP_NTZ)::TIMESTAMP_NTZ AS T,'Sophie AI' AS SRC,COALESCE(s.INTERACTION_TYPE,'AI call') AS DT,IFF(s.RECORDINGSID IS NULL,'-','<a href=\"https://twilio-recordings.anyvan.com/recordings/'||s.RECORDINGSID||'\">Recording</a>') AS LK FROM MART_SALES_OPS.PRODUCTION.SOPHIE_CALLS_INCREMENTAL s WHERE RIGHT(REGEXP_REPLACE(s.CUSTOMERPHONENUMBER,'[^0-9]',''),10)=:phone10 AND s.EVENTTIMESTAMP>=ADD_MONTHS(CURRENT_DATE(),-12) UNION ALL SELECT CONVERT_TIMEZONE('UTC','Europe/London',COALESCE(TRY_TO_TIMESTAMP(a.STARTED_AT::string),a.SYNCED_DATE)::TIMESTAMP_NTZ)::TIMESTAMP_NTZ,'Aircall',INITCAP(a.DIRECTION)||IFF(a.ANSWERED_AT IS NULL,' - Not Answered',' - Answered'),IFF(a.RECORDING IS NULL,'-','<a href=\"'||a.RECORDING::string||'\">Recording</a>') FROM HARMONISED.PRODUCTION.AIRCALL_CALL a WHERE NOT COALESCE(a.DELETED_ROW,FALSE)AND RIGHT(REGEXP_REPLACE(COALESCE(a.RAW_DIGITS,''),'[^0-9]',''),10)=:phone10 AND a.SYNCED_DATE>=ADD_MONTHS(CURRENT_DATE(),-12) UNION ALL SELECT j.T,'Jiminny',COALESCE(j.TM,'')||' - '||COALESCE(j.DU::string,'?')||'s - '||INITCAP(COALESCE(j.ST,'')),'Jiminny ID '||j.EVENT_ID||' (matched by '||jm.BY2||')' FROM jc j JOIN jm USING(EVENT_ID)),x AS(SELECT ev.*,IFF(ev.T>=w.F AND ev.T<DATEADD('day',1,w.E),1,0)AS IW,IFF(ev.T<w.F,1,0)AS B,IFF(ev.T>=DATEADD('day',1,w.E),1,0)AS A FROM ev CROSS JOIN w),y AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY IW ORDER BY T DESC)AS RN FROM x) SELECT SUM(y.IW)AS INTERACTIONS,MAX(w.F)AS WINDOW_FROM,MAX(w.E)AS WINDOW_TO,SUM(y.B)AS BEFORE_N,MIN(IFF(y.B=1,y.T,NULL))::DATE AS BEFORE_FIRST,MAX(IFF(y.B=1,y.T,NULL))::DATE AS BEFORE_LAST,SUM(y.A)AS AFTER_N,MIN(IFF(y.A=1,y.T,NULL))::DATE AS AFTER_FIRST,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(y.IW=1 AND y.RN<=100,'<!--'||LPAD(y.RN,3,'0')||'-->'||'<tr>'||k.C||y.RN||'</td>'||k.C||TO_CHAR(y.T,'DD/MM/YYYY HH24:MI')||'</td>'||k.C||y.SRC||'</td>'||k.C||y.DT||'</td>'||k.C||y.LK||'</td></tr>',NULL))),''),'<!--[0-9]+-->','')AS ROWS_HTML FROM w CROSS JOIN k LEFT JOIN y ON 1=1 LIMIT 1"
+    },
+    {
+      "description": "WhatsApp and Live Chat by customer phone (24-month default lookback). Two rows (WhatsApp, Live Chat): INTERACTIONS, WINDOW_FROM/TO, BEFORE_N/FIRST/LAST and AFTER_N/FIRST (outside the window), ROWS_HTML (newest 100 table rows). Admin and Sophie AI. Lags ~1h.",
+      "name": "dsr_chats",
+      "params": [
+        {
+          "description": "Last 10 digits of the data subject phone (digits only), or none",
+          "name": "phone10",
+          "required": true,
+          "sample": "7700900123",
+          "type": "string"
+        },
+        {
+          "description": "Window start YYYY-MM-DD, or none. Calls older than 12 months are clamped; chats look back 24 months",
+          "name": "from_date",
+          "required": true,
+          "sample": "2026-09-01",
+          "type": "string"
+        },
+        {
+          "description": "Window end YYYY-MM-DD inclusive, or none for today",
+          "name": "to_date",
+          "required": true,
+          "sample": "2026-09-30",
+          "type": "string"
+        }
+      ],
+      "sql": "WITH w AS(SELECT COALESCE(TRY_TO_DATE(:from_date),ADD_MONTHS(CURRENT_DATE(),-24))AS F,COALESCE(TRY_TO_DATE(:to_date),CURRENT_DATE())AS E),k AS(SELECT '<td style=\"padding:8px 24px 8px 8px;border-bottom:1px solid #ddd\">' AS C),ev AS(SELECT CASE c.TASKCHANNELNAME WHEN 'whatsapp' THEN 'WhatsApp' ELSE 'Live Chat' END AS CH,CONVERT_TIMEZONE('UTC','Europe/London',c.EVENTTIMESTAMP::TIMESTAMP_NTZ)::TIMESTAMP_NTZ AS T,'Agent' AS SRC,IFF(c.CUSTOMERCALLSID IS NULL,NULL,'https://av-public-2653.s3.eu-west-1.amazonaws.com/twilio-message-viewer.html?conversationId='||c.CUSTOMERCALLSID)AS U FROM CONFORMED.PRODUCTION.FCT_TWILIO_CALL_METRICS c WHERE c.TASKCHANNELNAME IN('whatsapp','chat')AND c.WORKEREMAIL IS NOT NULL AND LOWER(c.WORKEREMAIL)NOT LIKE '%sophie%' AND (RIGHT(REGEXP_REPLACE(c.FROMNUMBER,'[^0-9]',''),10)=:phone10 OR RIGHT(REGEXP_REPLACE(c.TONUMBER,'[^0-9]',''),10)=:phone10)AND c.EVENTTIMESTAMP>=ADD_MONTHS(CURRENT_DATE(),-24) UNION ALL SELECT IFF(s.CUSTOMERPHONENUMBER LIKE '+%','WhatsApp','Live Chat'),CONVERT_TIMEZONE('UTC','Europe/London',s.EVENTTIMESTAMP::TIMESTAMP_NTZ)::TIMESTAMP_NTZ,'Sophie AI','https://av-public-2653.s3.eu-west-1.amazonaws.com/twilio-message-viewer.html?conversationId='||s.CALLSID FROM MART_SALES_OPS.PRODUCTION.SOPHIE_CHATS_INCREMENTAL s WHERE RIGHT(REGEXP_REPLACE(s.CUSTOMERPHONENUMBER,'[^0-9]',''),10)=:phone10 AND s.EVENTTIMESTAMP>=ADD_MONTHS(CURRENT_DATE(),-24)),x AS(SELECT ev.*,IFF(ev.T>=w.F AND ev.T<DATEADD('day',1,w.E),1,0)AS IW,IFF(ev.T<w.F,1,0)AS B,IFF(ev.T>=DATEADD('day',1,w.E),1,0)AS A FROM ev CROSS JOIN w),y AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY CH,IW ORDER BY T DESC)AS RN FROM x) SELECT h.CH AS CHANNEL,COALESCE(SUM(y.IW),0)AS INTERACTIONS,MAX(w.F)AS WINDOW_FROM,MAX(w.E)AS WINDOW_TO,COALESCE(SUM(y.B),0)AS BEFORE_N,MIN(IFF(y.B=1,y.T,NULL))::DATE AS BEFORE_FIRST,MAX(IFF(y.B=1,y.T,NULL))::DATE AS BEFORE_LAST,COALESCE(SUM(y.A),0)AS AFTER_N,MIN(IFF(y.A=1,y.T,NULL))::DATE AS AFTER_FIRST,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(y.IW=1 AND y.RN<=100,'<!--'||LPAD(y.RN,3,'0')||'-->'||'<tr>'||k.C||y.RN||'</td>'||k.C||TO_CHAR(y.T,'DD/MM/YYYY HH24:MI')||'</td>'||k.C||y.SRC||'</td>'||k.C||IFF(y.U IS NULL,'No Link Available','<a href=\"'||y.U||'\">Transcript</a>')||'</td>'||'</tr>',NULL))),''),'<!--[0-9]+-->','')AS ROWS_HTML FROM(SELECT 'WhatsApp' AS CH UNION ALL SELECT 'Live Chat')h CROSS JOIN w CROSS JOIN k LEFT JOIN y ON y.CH=h.CH GROUP BY h.CH ORDER BY h.CH LIMIT 2"
+    },
+    {
+      "description": "Pickup and delivery address ids of the submitted listings (max 3) that the requester OWNS. One row per listing: LISTING_ID, PICKUP_ADDRESS_ID, DELIVERY_ADDRESS_ID. No rows = none owned. Ids only, no personal data.",
+      "name": "dsr_listing_addresses",
+      "params": [
+        {
+          "description": "First listing id, digits only (no AV prefix), or 0",
+          "name": "listing_1",
+          "required": true,
+          "sample": "9644155",
+          "type": "string"
+        },
+        {
+          "description": "Second listing id, digits only, or 0",
+          "name": "listing_2",
+          "required": true,
+          "sample": "9644156",
+          "type": "string"
+        },
+        {
+          "description": "Third listing id, digits only, or 0",
+          "name": "listing_3",
+          "required": true,
+          "sample": "0",
+          "type": "string"
+        },
+        {
+          "description": "Data subject email from the submission",
+          "name": "email",
+          "required": true,
+          "sample": "jane@example.com",
+          "type": "string"
+        }
+      ],
+      "sql": "SELECT i.LISTING_ID,i.PICKUP_ADDRESS AS PICKUP_ADDRESS_ID,i.DELIVERY_ADDRESS AS DELIVERY_ADDRESS_ID FROM HARMONISED.PRODUCTION.LISTING i JOIN(SELECT l.LISTING_ID FROM CONFORMED.PRODUCTION.MASTER_LISTING l JOIN CONFORMED.PRODUCTION.DIM_USER_CUSTOMER u ON u.USER_ID=l.LISTING_USER_ID WHERE LOWER(u.EMAIL_ADDRESS)=LOWER(:email)AND l.LISTING_ID IN(TRY_TO_NUMBER(:listing_1),TRY_TO_NUMBER(:listing_2),TRY_TO_NUMBER(:listing_3)))o ON o.LISTING_ID=i.LISTING_ID WHERE i.LISTING_ID IN(TRY_TO_NUMBER(:listing_1),TRY_TO_NUMBER(:listing_2),TRY_TO_NUMBER(:listing_3))ORDER BY i.LISTING_ID LIMIT 10"
+    },
+    {
+      "description": "Contact numbers held on listing address records (max 6 address ids). One row per number: ADDRESS_ID, KIND (Primary/Mobile/Secondary), SEARCH_NUMBER (only to pass to dsr_calls; never show), NUMBER_ENDS (last 4 digits), MATCHES_ACCOUNT_HOLDER (Yes/No). No names.",
+      "name": "dsr_listing_contacts",
+      "params": [
+        {
+          "description": "Address id from dsr_listing_addresses (digits only), or 0",
+          "name": "address_1",
+          "required": true,
+          "sample": "25500860",
+          "type": "string"
+        },
+        {
+          "description": "Address id from dsr_listing_addresses (digits only), or 0",
+          "name": "address_2",
+          "required": true,
+          "sample": "0",
+          "type": "string"
+        },
+        {
+          "description": "Address id from dsr_listing_addresses (digits only), or 0",
+          "name": "address_3",
+          "required": true,
+          "sample": "0",
+          "type": "string"
+        },
+        {
+          "description": "Address id from dsr_listing_addresses (digits only), or 0",
+          "name": "address_4",
+          "required": true,
+          "sample": "0",
+          "type": "string"
+        },
+        {
+          "description": "Address id from dsr_listing_addresses (digits only), or 0",
+          "name": "address_5",
+          "required": true,
+          "sample": "0",
+          "type": "string"
+        },
+        {
+          "description": "Address id from dsr_listing_addresses (digits only), or 0",
+          "name": "address_6",
+          "required": true,
+          "sample": "0",
+          "type": "string"
+        },
+        {
+          "description": "Last 10 digits of the data subject phone (digits only), or none",
+          "name": "phone10",
+          "required": true,
+          "sample": "7700900123",
+          "type": "string"
+        }
+      ],
+      "sql": "SELECT DISTINCT d.ADDRESS_ID,CASE f.INDEX WHEN 0 THEN 'Primary' WHEN 1 THEN 'Mobile' ELSE 'Secondary' END AS KIND,RIGHT(REGEXP_REPLACE(f.VALUE::STRING,'[^0-9]',''),10)AS SEARCH_NUMBER,RIGHT(REGEXP_REPLACE(f.VALUE::STRING,'[^0-9]',''),4)AS NUMBER_ENDS,IFF(RIGHT(REGEXP_REPLACE(f.VALUE::STRING,'[^0-9]',''),10)=:phone10,'Yes','No')AS MATCHES_ACCOUNT_HOLDER FROM HARMONISED.PRODUCTION.ADDRESS d LEFT JOIN HARMONISED.PRODUCTION.PHONE_NUMBER p ON p.PHONE_NUMBER_ID=d.SECOND_PHONE_NUMBER_ID CROSS JOIN LATERAL FLATTEN(ARRAY_CONSTRUCT(d.PHONE_NUMBER,d.MOBILE_PHONE_NUMBER,p.FULL_NUMBER))f WHERE d.ADDRESS_ID IN(TRY_TO_NUMBER(:address_1),TRY_TO_NUMBER(:address_2),TRY_TO_NUMBER(:address_3),TRY_TO_NUMBER(:address_4),TRY_TO_NUMBER(:address_5),TRY_TO_NUMBER(:address_6))AND LENGTH(REGEXP_REPLACE(f.VALUE::STRING,'[^0-9]',''))>=9 ORDER BY 1,2 LIMIT 50"
+    }
+  ],
+  "description": "",
+  "agentic_tools": [
+    "formstack_submission",
+    "formstack_upload",
+    "formstack_upload_interpret",
+    "snowflake_query",
+    "v4_listing_lookup"
+  ],
+  "actions": [
+    {
+      "config": {
+        "custom_fields": {
+          "cf_privacy_due_date": "{privacy_due_date}",
+          "cf_privacy_request_type": "{privacy_type}"
+        },
+        "description": "{description}",
+        "group_id": 31000119185,
+        "priority": 2,
+        "requester_email": "{requester_email}",
+        "status": 2,
+        "subject": "{subject}",
+        "tags": [
+          "privacy",
+          "{request_type_tag}",
+          "{requester_type_tag}"
+        ]
+      },
+      "type": "FRESHDESK_TICKET_CREATE"
+    },
+    {
+      "config": {
+        "attachments": {
+          "fields": [
+            {
+              "field_label": "Proof of authorisation [PDF/JPG/PNG]"
+            }
+          ],
+          "max": 10,
+          "submission_id": "{event.payload.uniqueId}"
+        },
+        "body": "{update_note_html}",
+        "comment_type": "note",
+        "private": true,
+        "ticket_id": "{steps[0].ticket_id}"
+      },
+      "type": "FRESHDESK_TICKET_COMMENT"
+    },
+    {
+      "config": {
+        "fields": {
+          "form_id": "{event.payload.formId}",
+          "identity_result": "{audit_identity}",
+          "key_callout": "{audit_callout}",
+          "privacy_type": "{privacy_type}",
+          "request_type": "{request_type_tag}",
+          "requester_type": "{requester_type_tag}",
+          "scope": "{audit_scope}",
+          "submission_id": "{event.payload.uniqueId}",
+          "ticket_id": "{steps[0].ticket_id}"
+        }
+      },
+      "type": "EVENTBUS_EVENT_PUBLISH"
+    },
+    {
+      "config": {
+        "field_map": {
+          "field_199789402": {
+            "source": "{steps[0].ticket_id}",
+            "value_type": "text"
+          }
+        },
+        "submission_id": "{event.payload.uniqueId}"
+      },
+      "type": "FORMSTACK_SUBMISSION_UPDATE"
+    }
+  ],
+  "max_iterations": 16,
+  "created_by": "anthony.hines@anyvan.com",
+  "routing_pk": "WORKFLOW",
+  "owner": "anthony.hines@anyvan.com"
+}

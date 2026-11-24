@@ -1,8 +1,37 @@
 # Wiring the DSR Formstack form to Freshdesk (workflow-system)
 
 Turns a DSR Formstack submission into a Freshdesk ticket via the workflow-system, mirroring the
-existing **"Damage Claim - UK - Formstack"** workflow. The workflow only *creates* the ticket;
-the existing `FRESHDESK_TICKET_CREATED` classifier routes it.
+existing **"Damage Claim - UK - Formstack"** workflow.
+
+## ⚠️ Deployed reality (v43 — reconciled 2026-11-24)
+Much of the detail further down describes the original **MVP** (one action, tags + description) and
+is kept for history. **What is actually live has moved well past it** — the repo files now mirror it
+(`workflow/deployed-v43.json` is the lossless source of truth):
+
+- **`[UK] Privacy Submission Workflow [TEST]` is v43, ACTIVE** (since 2026-10-29) and processing real
+  submissions. The `[TEST]` in the name is cosmetic — **this is the production privacy intake.**
+- It is a **4-action SAR-assembly workflow**, not a ticket-stamper:
+  1. **`FRESHDESK_TICKET_CREATE`** — ticket with the request + verification tables; tags
+     `["privacy","{request_type_tag}","{requester_type_tag}"]`; custom fields `cf_privacy_due_date`
+     **and** `cf_privacy_request_type`.
+  2. **`FRESHDESK_TICKET_COMMENT`** — a private note with the findings, **attaching** the uploaded
+     proof-of-authorisation file(s).
+  3. **`EVENTBUS_EVENT_PUBLISH`** — an audit event (identity result, scope, callout, ids).
+  4. **`FORMSTACK_SUBMISSION_UPDATE`** — writes the `ticket_id` back to Formstack field `199789402`.
+- It runs **~12 named read-only Snowflake queries** (`workflow/snowflake_queries.json`) to actually
+  **assemble the SAR data**, scoped to what was requested. Agentic tools now include `snowflake_query`
+  and `v4_listing_lookup`; model **Haiku 5.5**; `max_iterations` 16; `action_selection_mode` locked.
+- **⚠️ Group targeting:** the live `FRESHDESK_TICKET_CREATE` still writes to the **sandbox** group
+  **`31000119185`** (*Privacy [Ant Automation Testing]*), **not** the live Privacy queue `31000116264`.
+  `env:test` has been dropped from the tags. Confirm this is the intended queue; flipping to the live
+  queue is a one-field change (`workflow/actions.json` is the ready live-group variant).
+- The subject is `[UK] <requester> Privacy Request [Ref: DSR-UK-{id}]` (the `DSR-UK-<id> — <type>`
+  format mentioned in "Validate" below is **stale**).
+- The workflow is now edited in the **admin UI / workflow-system MCP**; **`create.sh` is legacy** (its
+  `workflow_edit.py` CLI is no longer shipped). After any UI edit, re-reconcile the repo from the live
+  definition so these files stay truthful.
+
+The workflow only *creates* the ticket; the existing `FRESHDESK_TICKET_CREATED` classifier routes it.
 
 > **Gate 0 — the form must publish the event.** The workflow consumes `FORMSTACK_FORM_SUBMITTED`,
 > which only fires if the Formstack form has a **webhook** to `https://events.anyvan.com/v1/formstack/form-submitted`.
@@ -57,15 +86,17 @@ each reply ticket back into its original.
 > Always run the DRY-RUN first and confirm the "WOULD MERGE" lines before `--apply`.
 
 ## Files in `workflow/`
-- `actions.json` — a single `FRESHDESK_TICKET_CREATE` action (tags + description + the
-  `cf_privacy_due_date` date field), pinned to the live **Privacy** group `31000116264` so tickets
-  land in-queue by default (the classifier can still re-route/assign). `actions.test.json` is the
-  same action pinned to the sandbox group `31000119185` + `env:test`. A `FORMSTACK_SUBMISSION_UPDATE`
-  write-back is deferred.
-- `config_prompt.md` — the AI config/system prompt (output contract + rules).
+- `deployed-v43.json` — **lossless snapshot of the live workflow** (source of truth after any UI edit).
+- `actions.json` / `actions.test.json` — the **4-action** chain (create → private comment w/ auth-file
+  attachment → eventbus audit → Formstack submission write-back). `actions.test.json` is exactly what
+  is deployed (sandbox group `31000119185`); `actions.json` is the identical chain pinned to the live
+  Privacy group `31000116264`, ready for the go-live flip.
+- `snowflake_queries.json` — the ~12 named read-only queries the workflow runs to assemble the SAR.
+- `config_prompt.md` — the AI config/system prompt (checks, output contract, mappings, rules).
 - `user_prompt.md` — the per-event instruction.
-- `create.sh` — the `workflow_edit.py create` invocation tying it together.
+- `create.sh` — **legacy / reference only** (see the header in the file; its CLI is no longer shipped).
 
+> **(Historical — superseded by v43; see "Deployed reality" at the top.)**
 > **MVP:** this workflow maps to ticket **tags + a structured HTML description + one date custom
 > field** (`cf_privacy_due_date`, the statutory deadline). No dropdown/text custom fields and no
 > submission write-back yet. `actions.json` is a single `FRESHDESK_TICKET_CREATE`. Adding the

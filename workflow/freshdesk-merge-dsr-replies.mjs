@@ -5,7 +5,8 @@
 // reply arrives with no Freshdesk ticket id to thread on and Freshdesk opens a NEW ticket. This
 // script finds those reply tickets and merges each into the original workflow-created ticket.
 //
-//   Reply ticket subject : "Re: Your AnyVan Privacy Request: Reference DSR-<submissionId>"
+//   Reply ticket subject : "Re: Your AnyVan Privacy Request: Reference DSR-UK-<submissionId>"
+//                          (market-stamped; the matcher tolerates an optional 2-letter prefix)
 //   Original ticket subj : "[UK] <Type> Privacy Data Request | Requester Type: <...> [<submissionId>]"
 //   Shared key           : <submissionId>  (digits)
 //
@@ -38,7 +39,7 @@ if (!KEY) { console.error("Set FRESHDESK_API_KEY (agent API key)."); process.exi
 const AUTH = "Basic " + Buffer.from(`${KEY}:X`).toString("base64");
 const H = { Authorization: AUTH, "Content-Type": "application/json" };
 
-const REPLY_RE    = /Reference\s+DSR-(\d+)/i;   // reply ticket -> submissionId
+const REPLY_RE    = /Reference\s+DSR-(?:[A-Z]{2}-)?(\d+)/i; // reply -> submissionId; tolerates the market stamp (e.g. DSR-UK-<id>)
 const ORIGINAL_RE = /\[(\d+)\]\s*$/;            // original ticket subject ends with [submissionId]
 const isClosedish = (s) => s === 4 || s === 5;  // 4 resolved, 5 closed (merged secondaries close)
 
@@ -69,7 +70,7 @@ function partition(tickets) {
     const o = subj.match(ORIGINAL_RE);
     if (o) { originalsById.set(o[1], t); continue; }      // originals end with [id]
     const rp = subj.match(REPLY_RE);
-    if (rp) replies.push({ ticket: t, id: rp[1] });        // replies carry "Reference DSR-<id>"
+    if (rp) replies.push({ ticket: t, id: rp[1] });        // replies carry "Reference DSR-UK-<id>" (market-stamped)
   }
   return { replies, originalsById };
 }
