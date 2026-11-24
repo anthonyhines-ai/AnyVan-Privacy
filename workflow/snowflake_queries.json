@@ -1,0 +1,457 @@
+[
+  {
+    "description": "Customer account check by email, plus a flag when the phone number belongs to a DIFFERENT account. One row: ACCOUNTS_FOUND, NAME_MATCHES, NAME_PARTIAL, PHONE_MATCHES, PHONE_OTHER_ACCOUNTS, PHONE_OTHER_PROFILE_URL (only when exactly one), PROFILE_URL, USER_ID, SMS consents, ACCOUNT_PHONES (search only), ACCOUNT_PHONE_ENDS.",
+    "name": "dsr_customer_identity",
+    "params": [
+      {
+        "description": "Data subject email from the submission",
+        "name": "email",
+        "required": true,
+        "sample": "jane@example.com",
+        "type": "string"
+      },
+      {
+        "description": "Data subject full name from the submission",
+        "name": "full_name",
+        "required": true,
+        "sample": "Jane Smith",
+        "type": "string"
+      },
+      {
+        "description": "Last 10 digits of the data subject phone (digits only), or none if not provided",
+        "name": "phone10",
+        "required": true,
+        "sample": "7700900123",
+        "type": "string"
+      }
+    ],
+    "sql": "WITH n AS (SELECT UPPER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(:full_name,'[^A-Za-z ]',' '),' +',' '))) AS S, REGEXP_REPLACE(UPPER(:full_name),'[^A-Z]','') AS SJ), m AS (SELECT USER_ID, FULL_NAME, CONSENT_SMS_MARKETING, CONSENT_SMS_TRANSACTIONAL, RIGHT(REGEXP_REPLACE(PRIMARY_PHONE_NUMBER,'[^0-9]',''),10) AS P1, RIGHT(REGEXP_REPLACE(SECONDARY_PHONE_NUMBER,'[^0-9]',''),10) AS P2, IFF(LOWER(EMAIL_ADDRESS) = LOWER(:email), 1, 0) AS EM, IFF((CONTAINS(' '||UPPER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(FULL_NAME,'[^A-Za-z ]',' '),' +',' ')))||' ',' '||SPLIT_PART(n.S,' ',1)||' ') AND CONTAINS(' '||UPPER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(FULL_NAME,'[^A-Za-z ]',' '),' +',' ')))||' ',' '||REGEXP_SUBSTR(n.S,'[^ ]+$')||' ')) OR (CONTAINS(' '||n.S||' ',' '||SPLIT_PART(UPPER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(FULL_NAME,'[^A-Za-z ]',' '),' +',' '))),' ',1)||' ') AND CONTAINS(' '||n.S||' ',' '||REGEXP_SUBSTR(UPPER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(FULL_NAME,'[^A-Za-z ]',' '),' +',' '))),'[^ ]+$')||' ')) OR REGEXP_REPLACE(UPPER(FULL_NAME),'[^A-Z]','')=n.SJ, 1, 0) AS NP, IFF(:phone10 <> 'none' AND (RIGHT(REGEXP_REPLACE(PRIMARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10 OR RIGHT(REGEXP_REPLACE(SECONDARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10), 1, 0) AS PM FROM CONFORMED.PRODUCTION.DIM_USER_CUSTOMER CROSS JOIN n WHERE LOWER(EMAIL_ADDRESS) = LOWER(:email) OR (:phone10 <> 'none' AND (RIGHT(REGEXP_REPLACE(PRIMARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10 OR RIGHT(REGEXP_REPLACE(SECONDARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10))) SELECT COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) AS ACCOUNTS_FOUND, MAX(IFF(EM = 1 AND UPPER(TRIM(FULL_NAME)) = UPPER(TRIM(:full_name)), 1, 0)) AS NAME_MATCHES, MAX(IFF(EM = 1 AND NP = 1, 1, 0)) AS NAME_PARTIAL, MAX(IFF(EM = 1 AND PM = 1, 1, 0)) AS PHONE_MATCHES, COUNT(DISTINCT IFF(EM = 0 AND PM = 1, USER_ID, NULL)) AS PHONE_OTHER_ACCOUNTS, IFF(COUNT(DISTINCT IFF(EM = 0 AND PM = 1, USER_ID, NULL)) = 1, 'https://www.anyvan.com/administer-manage-user/' || MAX(IFF(EM = 0 AND PM = 1, USER_ID, NULL)), NULL) AS PHONE_OTHER_PROFILE_URL, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, 'https://www.anyvan.com/administer-manage-user/' || MAX(IFF(EM = 1, USER_ID, NULL)), NULL) AS PROFILE_URL, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, MAX(IFF(EM = 1, USER_ID, NULL))::STRING, NULL) AS USER_ID, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, IFF(MAX(IFF(EM = 1, CONSENT_SMS_MARKETING::NUMBER, NULL)) IS NULL, 'Not recorded', IFF(MAX(IFF(EM = 1, CONSENT_SMS_MARKETING::NUMBER, NULL)) > 0, 'Yes', 'No')), NULL) AS SMS_MARKETING_CONSENT, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, IFF(MAX(IFF(EM = 1, CONSENT_SMS_TRANSACTIONAL::NUMBER, NULL)) IS NULL, 'Not recorded', IFF(MAX(IFF(EM = 1, CONSENT_SMS_TRANSACTIONAL::NUMBER, NULL)) > 0, 'Yes', 'No')), NULL) AS SMS_TRANSACTIONAL_CONSENT, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, ARRAY_TO_STRING(ARRAY_DISTINCT(ARRAY_CAT(ARRAY_AGG(IFF(EM = 1 AND LENGTH(P1) >= 9, P1, NULL)), ARRAY_AGG(IFF(EM = 1 AND LENGTH(P2) >= 9, P2, NULL)))), ','), NULL) AS ACCOUNT_PHONES, IFF(COUNT(DISTINCT IFF(EM = 1, USER_ID, NULL)) = 1, ARRAY_TO_STRING(ARRAY_DISTINCT(ARRAY_CAT(ARRAY_AGG(IFF(EM = 1 AND LENGTH(P1) >= 9, RIGHT(P1, 4), NULL)), ARRAY_AGG(IFF(EM = 1 AND LENGTH(P2) >= 9, RIGHT(P2, 4), NULL)))), ', '), NULL) AS ACCOUNT_PHONE_ENDS FROM m LIMIT 1"
+  },
+  {
+    "description": "Transport Partner account check by email for a DSR. Returns one row: ACCOUNTS_FOUND, NAME_MATCHES (full name or nickname), PHONE_MATCHES. Also PROFILE_URL (admin user page link, only when exactly one account). No personal data returned.",
+    "name": "dsr_tp_identity",
+    "params": [
+      {
+        "description": "Data subject email from the submission",
+        "name": "email",
+        "required": true,
+        "sample": "jane@example.com",
+        "type": "string"
+      },
+      {
+        "description": "Data subject full name from the submission",
+        "name": "full_name",
+        "required": true,
+        "sample": "Jane Smith",
+        "type": "string"
+      },
+      {
+        "description": "Last 10 digits of the data subject phone (digits only), or none if not provided",
+        "name": "phone10",
+        "required": true,
+        "sample": "7700900123",
+        "type": "string"
+      }
+    ],
+    "sql": "SELECT COUNT(DISTINCT USER_ID) AS ACCOUNTS_FOUND, MAX(IFF(UPPER(TRIM(FULL_NAME)) = UPPER(TRIM(:full_name)) OR UPPER(TRIM(NICKNAME)) = UPPER(TRIM(:full_name)), 1, 0)) AS NAME_MATCHES, MAX(IFF(:phone10 <> 'none' AND (RIGHT(REGEXP_REPLACE(PRIMARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10 OR RIGHT(REGEXP_REPLACE(SECONDARY_PHONE_NUMBER, '[^0-9]', ''), 10) = :phone10), 1, 0)) AS PHONE_MATCHES, IFF(COUNT(DISTINCT USER_ID) = 1, 'https://www.anyvan.com/administer-manage-user/' || MAX(USER_ID), NULL) AS PROFILE_URL FROM CONFORMED.PRODUCTION.DIM_USER_TRANSPORTPROVIDER WHERE LOWER(EMAIL_ADDRESS) = LOWER(:email) LIMIT 1"
+  },
+  {
+    "description": "Checks listing/booking references from a DSR (up to 5). Returns one row per reference: LISTING_ID_INPUT, LISTING_FOUND (boolean), BELONGS_TO_SUBMITTED_EMAIL (true/false, null when not found). Customer ownership only; never returns another customer's details.",
+    "name": "dsr_listing_check",
+    "params": [
+      {
+        "description": "All listing references from the submission, comma-separated, exactly as submitted (an AV prefix is fine)",
+        "name": "listing_ids",
+        "required": true,
+        "sample": "9644155, AV9644156",
+        "type": "string"
+      },
+      {
+        "description": "Data subject email from the submission",
+        "name": "email",
+        "required": true,
+        "sample": "jane@example.com",
+        "type": "string"
+      }
+    ],
+    "sql": "SELECT t.LISTING_ID_INPUT, l.LISTING_ID IS NOT NULL AS LISTING_FOUND, IFF(l.LISTING_ID IS NULL, NULL, LOWER(u.EMAIL_ADDRESS) = LOWER(:email)) AS BELONGS_TO_SUBMITTED_EMAIL FROM (SELECT TRY_TO_NUMBER(REGEXP_REPLACE(TRIM(value), '[^0-9]', '')) AS LISTING_ID_INPUT FROM TABLE(SPLIT_TO_TABLE(:listing_ids, ','))) t LEFT JOIN (SELECT LISTING_ID, LISTING_USER_ID FROM CONFORMED.PRODUCTION.MASTER_LISTING WHERE LISTING_ID IN (TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids, ',', 1), '[^0-9]', '')), TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids, ',', 2), '[^0-9]', '')), TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids, ',', 3), '[^0-9]', '')), TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids, ',', 4), '[^0-9]', '')), TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids, ',', 5), '[^0-9]', '')))) l ON l.LISTING_ID = t.LISTING_ID_INPUT LEFT JOIN CONFORMED.PRODUCTION.DIM_USER_CUSTOMER u ON u.USER_ID = l.LISTING_USER_ID LIMIT 50"
+  },
+  {
+    "description": "Customer's bookings: TOTAL_LISTINGS created or picked up inside the All Data window (ALL_LISTINGS = all time) and ROWS_HTML for the in-window ones (newest 50).",
+    "name": "dsr_listings",
+    "params": [
+      {
+        "description": "Data subject email from the submission",
+        "name": "email",
+        "required": true,
+        "sample": "jane@example.com",
+        "type": "string"
+      },
+      {
+        "description": "All Data window start YYYY-MM-DD, or none",
+        "name": "all_from",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      },
+      {
+        "description": "All Data window end YYYY-MM-DD inclusive, or none",
+        "name": "all_to",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      }
+    ],
+    "sql": "WITH k AS(SELECT '<td style=\"padding:8px 24px 8px 8px;border-bottom:1px solid #ddd\">' AS C),d AS(SELECT COALESCE(TRY_TO_DATE(:all_from),'1900-01-01'::DATE)AS F,COALESCE(TRY_TO_DATE(:all_to),'2999-12-31'::DATE)AS T),l AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY x.W ORDER BY x.CR DESC)AS RN FROM(SELECT LISTING_ID,LISTING_CATEGORY_NAME AS CAT,LISTING_STATUS AS ST,PICK_UP_DATE AS PU,LISTING_CREATED_DATE AS CR,IFF(COALESCE(LISTING_CREATED_DATE::DATE BETWEEN d.F AND d.T,FALSE)OR COALESCE(PICK_UP_DATE::DATE BETWEEN d.F AND d.T,FALSE)OR(LISTING_CREATED_DATE IS NULL AND PICK_UP_DATE IS NULL),1,0)AS W FROM CONFORMED.PRODUCTION.MASTER_LISTING CROSS JOIN d WHERE LISTING_USER_ID IN(SELECT USER_ID FROM CONFORMED.PRODUCTION.DIM_USER_CUSTOMER WHERE LOWER(EMAIL_ADDRESS)=LOWER(:email)) AND LISTING_ID IS NOT NULL)x) SELECT SUM(l.W)AS TOTAL_LISTINGS,COUNT(l.RN)AS ALL_LISTINGS,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(l.RN<=50 AND l.W=1,'<!--'||LPAD(l.RN,4,'0')||'-->'||'<tr>'||k.C||'<a href=\"https://www.anyvan.com/administer/instant-listings/'||l.LISTING_ID||'/manage\">AV'||l.LISTING_ID||'</a>'||'</td>'||k.C||COALESCE(l.CAT,'')||'</td>'||k.C||COALESCE(l.ST,'')||'</td>'||k.C||COALESCE(TO_CHAR(l.CR,'DD/MM/YYYY'),'n/a')||'</td>'||k.C||COALESCE(TO_CHAR(l.PU,'DD/MM/YYYY'),'n/a')||'</td>'||'</tr>',NULL))),''),'<!--[0-9]+-->','')AS ROWS_HTML FROM k LEFT JOIN l ON 1=1 GROUP BY k.C LIMIT 1"
+  },
+  {
+    "description": "Payments and tickets inside the All Data window (PAYMENTS / TICKETS; *_ALL = all time), transactional email count inside the Email window (TRANSACTIONAL_EMAILS; *_ALL = all time), plus finished HTML rows.",
+    "name": "dsr_records",
+    "params": [
+      {
+        "description": "Data subject email from the submission",
+        "name": "email",
+        "required": true,
+        "sample": "jane@example.com",
+        "type": "string"
+      },
+      {
+        "description": "All Data window start YYYY-MM-DD, or none",
+        "name": "all_from",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      },
+      {
+        "description": "All Data window end YYYY-MM-DD inclusive, or none",
+        "name": "all_to",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      },
+      {
+        "description": "Email window start YYYY-MM-DD, or none",
+        "name": "email_from",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      },
+      {
+        "description": "Email window end YYYY-MM-DD inclusive, or none",
+        "name": "email_to",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      }
+    ],
+    "sql": "WITH k AS(SELECT '<td style=\"padding:8px 24px 8px 8px;border-bottom:1px solid #ddd\">' AS C),d AS(SELECT COALESCE(TRY_TO_DATE(:all_from),'1900-01-01'::DATE)AS AF,COALESCE(TRY_TO_DATE(:all_to),'2999-12-31'::DATE)AS AE,COALESCE(TRY_TO_DATE(:email_from),'1900-01-01'::DATE)AS EF,COALESCE(TRY_TO_DATE(:email_to),'2999-12-31'::DATE)AS ET),p AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY x.W ORDER BY x.D DESC)AS RN FROM(SELECT p.CREATED_AT AS D,p.LISTING_ID AS LI,p.TRANSACTION_TYPE AS TY,COALESCE(NULLIF(p.AMOUNT_PAID,0),p.AMOUNT)AS AM,sc.ISO_CODE AS CU,p.PAYMENT_METHOD AS ME,IFF(p.VOIDED_AT IS NOT NULL,'Voided',IFF(p.FAILED_AT IS NOT NULL,'Failed',IFF(p.SETTLED_AT IS NOT NULL,'Settled','Pending')))AS ST,IFF(COALESCE(p.CREATED_AT::DATE BETWEEN d.AF AND d.AE,TRUE),1,0)AS W FROM HARMONISED.PRODUCTION.PAYMENT p CROSS JOIN d LEFT JOIN HARMONISED.PRODUCTION.SEED_CURRENCY sc ON sc.CURRENCY_ID=p.CURRENCY_ID WHERE p.USER_ID IN(SELECT USER_ID FROM CONFORMED.PRODUCTION.DIM_USER_CUSTOMER WHERE LOWER(EMAIL_ADDRESS)=LOWER(:email)) AND p.DELETED_ROW=FALSE)x),t AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY x.W ORDER BY x.D DESC)AS RN FROM(SELECT FRESHDESK_TICKET_ID AS ID,CREATED_AT AS D,IFF(COALESCE(CREATED_AT::DATE BETWEEN d.AF AND d.AE,TRUE),1,0)AS W FROM HARMONISED.PRODUCTION.FRESHDESK_TICKET CROSS JOIN d WHERE LOWER(REQUESTER_EMAIL)=LOWER(:email)AND DELETED_ROW=FALSE)x) SELECT a.PAYMENTS,a.PAYMENTS_ALL,c.TRANSACTIONAL_EMAILS,c.TRANSACTIONAL_EMAILS_ALL,b.TICKETS,b.TICKETS_ALL,a.PAYMENTS_HTML,b.TICKETS_HTML FROM (SELECT SUM(p.W)AS PAYMENTS,COUNT(p.RN)AS PAYMENTS_ALL,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(p.RN<=25 AND p.W=1,'<!--'||LPAD(p.RN,3,'0')||'-->'||'<tr>'||k.C||TO_CHAR(p.D,'DD/MM/YYYY')||'</td>'||k.C||COALESCE('AV'||p.LI,'n/a')||'</td>'||k.C||INITCAP(COALESCE(p.TY,''))||'</td>'||k.C||COALESCE(p.CU,'')||' '||TO_CHAR(p.AM,'FM999,990.00')||'</td>'||k.C||INITCAP(COALESCE(p.ME,''))||'</td>'||k.C||p.ST||'</td>'||'</tr>',NULL))),''),'<!--[0-9]+-->','')AS PAYMENTS_HTML FROM p CROSS JOIN k)a CROSS JOIN (SELECT SUM(t.W)AS TICKETS,COUNT(t.RN)AS TICKETS_ALL,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(t.RN<=20 AND t.W=1,'<!--'||LPAD(t.RN,3,'0')||'-->'||'<tr>'||k.C||'<a href=\"https://anyvan.freshdesk.com/a/tickets/'||t.ID||'\">#'||t.ID||'</a>'||'</td>'||k.C||TO_CHAR(t.D,'DD/MM/YYYY')||'</td>'||'</tr>',NULL))),''),'<!--[0-9]+-->','')AS TICKETS_HTML FROM t CROSS JOIN k)b CROSS JOIN (SELECT SUM(IFF(m.EVENT_TIMESTAMP::DATE BETWEEN d.EF AND d.ET,1,0))AS TRANSACTIONAL_EMAILS,COUNT(*)AS TRANSACTIONAL_EMAILS_ALL FROM HARMONISED.PRODUCTION.EVENTS_MESSAGING_MESSAGE m CROSS JOIN d WHERE LOWER(m.RESOLVED_USER_EMAIL)=LOWER(:email)AND m.CHANNEL='EMAIL')c LIMIT 1"
+  },
+  {
+    "description": "Marketing email events for the customer: EVENTS inside the requested window, FIRST_ON / LAST_ON inside it, and EVENTS_ALL (all time).",
+    "name": "dsr_marketing_emails",
+    "params": [
+      {
+        "description": "Data subject email from the submission",
+        "name": "email",
+        "required": true,
+        "sample": "jane@example.com",
+        "type": "string"
+      },
+      {
+        "description": "Email window start YYYY-MM-DD, or none",
+        "name": "from_date",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      },
+      {
+        "description": "Email window end YYYY-MM-DD inclusive, or none",
+        "name": "to_date",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      }
+    ],
+    "sql": "SELECT SUM(W)AS EVENTS,MIN(IFF(W=1,T,NULL))::DATE AS FIRST_ON,MAX(IFF(W=1,T,NULL))::DATE AS LAST_ON,COUNT(*)AS EVENTS_ALL FROM(SELECT e.EVENT_TIMESTAMP AS T,IFF(e.EVENT_TIMESTAMP::DATE BETWEEN COALESCE(TRY_TO_DATE(:from_date),'1900-01-01'::DATE)AND COALESCE(TRY_TO_DATE(:to_date),'2999-12-31'::DATE),1,0)AS W FROM HARMONISED.PRODUCTION.EVENTS_EMAIL e WHERE LOWER(e.EMAIL_ADDRESS)=LOWER(:email))LIMIT 1"
+  },
+  {
+    "description": "Admin notes on owned submitted bookings: NOTES inside the All Data window (ALL_NOTES = all time), FIRST_ON, LAST_ON, ROWS_HTML (newest 25 in window).",
+    "name": "dsr_admin_notes",
+    "params": [
+      {
+        "description": "All listing references from the submission, comma-separated, exactly as submitted (an AV prefix is fine), or 0 if none",
+        "name": "listing_ids",
+        "required": true,
+        "sample": "9644155, AV9644156",
+        "type": "string"
+      },
+      {
+        "description": "Data subject email from the submission",
+        "name": "email",
+        "required": true,
+        "sample": "jane@example.com",
+        "type": "string"
+      },
+      {
+        "description": "All Data window start YYYY-MM-DD, or none",
+        "name": "all_from",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      },
+      {
+        "description": "All Data window end YYYY-MM-DD inclusive, or none",
+        "name": "all_to",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      }
+    ],
+    "sql": "WITH k AS(SELECT '<td style=\"padding:8px 24px 8px 8px;border-bottom:1px solid #ddd\">' AS C),d AS(SELECT COALESCE(TRY_TO_DATE(:all_from),'1900-01-01'::DATE)AS F,COALESCE(TRY_TO_DATE(:all_to),'2999-12-31'::DATE)AS T),n AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY x.W ORDER BY x.D DESC)AS RN FROM(SELECT a.LISTING_ID,a.CREATED_AT AS D,a.NOTE,a.CONTACT_REQUIRED AS CR,IFF(COALESCE(a.CREATED_AT::DATE BETWEEN d.F AND d.T,TRUE),1,0)AS W FROM HARMONISED.PRODUCTION.ADMIN_LISTING_NOTES a CROSS JOIN d WHERE a.DELETED_ROW=FALSE AND a.LISTING_ID IN(TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',1),'[^0-9]','')),TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',2),'[^0-9]','')),TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',3),'[^0-9]',''))) AND a.LISTING_ID IN(SELECT l.LISTING_ID FROM CONFORMED.PRODUCTION.MASTER_LISTING l JOIN CONFORMED.PRODUCTION.DIM_USER_CUSTOMER u ON u.USER_ID=l.LISTING_USER_ID WHERE LOWER(u.EMAIL_ADDRESS)=LOWER(:email)AND l.LISTING_ID IN(TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',1),'[^0-9]','')),TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',2),'[^0-9]','')),TRY_TO_NUMBER(REGEXP_REPLACE(SPLIT_PART(:listing_ids,',',3),'[^0-9]','')))))x) SELECT SUM(n.W)AS NOTES,COUNT(n.RN)AS ALL_NOTES,MIN(IFF(n.W=1,n.D,NULL))::DATE AS FIRST_ON,MAX(IFF(n.W=1,n.D,NULL))::DATE AS LAST_ON,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(n.RN<=25 AND n.W=1,'<!--'||LPAD(n.RN,3,'0')||'-->'||'<tr>'||k.C||'AV'||n.LISTING_ID||'</td>'||k.C||TO_CHAR(CONVERT_TIMEZONE('UTC','Europe/London',n.D::TIMESTAMP_NTZ),'DD/MM/YYYY HH24:MI')||'</td>'||k.C||REPLACE(REPLACE(REPLACE(REPLACE(LEFT(n.NOTE,500),'&','&amp;'),'<','&lt;'),'>','&gt;'),CHR(10),'<br>')||IFF(LENGTH(n.NOTE)>500,' ...','')||'</td>'||k.C||IFF(n.CR=1,'Yes','No')||'</td>'||'</tr>',NULL))),''),'<!--[0-9]+-->','')AS ROWS_HTML FROM k LEFT JOIN n ON 1=1 GROUP BY k.C LIMIT 1"
+  },
+  {
+    "description": "All calls to/from the customer's phone (both directions), calls tagged to any of the customer's bookings (owned only) and calls to/from listing contact numbers, inside the window (12-month cap). Twilio call log (busy/no-answer too) + task records, admin, recording/Flex/console links, UK time. One row: counts, WINDOW_*, BEFORE_*/AFTER_* , ROWS_HTML (10 rows for the requested page, newest first), NEAR_HTML (10 nearest outside the window, page 0 only). Lags ~1h.",
+    "name": "dsr_calls",
+    "params": [
+      {
+        "description": "First listing id, digits only, or 0",
+        "name": "listing_1",
+        "required": true,
+        "sample": "9644155",
+        "type": "string"
+      },
+      {
+        "description": "Second listing id, digits only, or 0",
+        "name": "listing_2",
+        "required": true,
+        "sample": "0",
+        "type": "string"
+      },
+      {
+        "description": "Third listing id, digits only, or 0",
+        "name": "listing_3",
+        "required": true,
+        "sample": "0",
+        "type": "string"
+      },
+      {
+        "description": "Data subject email from the submission",
+        "name": "email",
+        "required": true,
+        "sample": "jane@example.com",
+        "type": "string"
+      },
+      {
+        "description": "The data subject's own 10-digit phone numbers, comma-separated (form phone first, then the account's other phones, max 3), or none",
+        "name": "phone10",
+        "required": true,
+        "sample": "7700900123",
+        "type": "string"
+      },
+      {
+        "description": "10-digit listing contact numbers (not the account holder's), comma-separated, max 6, or none",
+        "name": "contact_numbers",
+        "required": true,
+        "sample": "none",
+        "type": "string"
+      },
+      {
+        "description": "Window start YYYY-MM-DD, or none. Calls older than 12 months are clamped; chats look back 24 months",
+        "name": "from_date",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      },
+      {
+        "description": "Window end YYYY-MM-DD inclusive, or none for today",
+        "name": "to_date",
+        "required": true,
+        "sample": "2026-09-30",
+        "type": "string"
+      },
+      {
+        "description": "Page number: 0 = counts and nearest calls only, no call rows; 1 to 10 = calls #(10n-9) to #(10n), newest first",
+        "name": "page",
+        "required": true,
+        "sample": "1",
+        "type": "string"
+      }
+    ],
+    "sql": "WITH w AS(SELECT GREATEST(COALESCE(f,m),m)AS F,COALESCE(TRY_TO_DATE(:to_date),CURRENT_DATE())AS E,IFF(f<m,1,0)AS CL FROM(SELECT TRY_TO_DATE(:from_date)AS f,ADD_MONTHS(CURRENT_DATE(),-12)AS m)),k AS(SELECT '<td style=\"padding:8px 14px 8px 8px;border-bottom:1px solid #ddd\">' AS C),o AS(SELECT ARRAY_AGG(l.LISTING_ID)AS A FROM CONFORMED.PRODUCTION.MASTER_LISTING l JOIN CONFORMED.PRODUCTION.DIM_USER_CUSTOMER u ON u.USER_ID=l.LISTING_USER_ID WHERE LOWER(u.EMAIL_ADDRESS)=LOWER(:email)AND(TRUE OR l.LISTING_ID IN(TRY_TO_NUMBER(:listing_1),TRY_TO_NUMBER(:listing_2),TRY_TO_NUMBER(:listing_3)))),p AS(SELECT ARRAY_AGG(RIGHT(TRIM(value),10))AS P FROM TABLE(SPLIT_TO_TABLE(:contact_numbers,','))WHERE LENGTH(TRIM(value))>=9),t AS(SELECT q.* FROM(SELECT c.ID AS SID,c.START_TIME::TIMESTAMP_NTZ AS U,c.DIRECTION AS DR,c.STATUS AS ST,c.DURATION AS DU,RIGHT(REGEXP_REPLACE(c.\"FROM\",'[^0-9]',''),10) AS F1,RIGHT(REGEXP_REPLACE(c.\"TO\",'[^0-9]',''),10) AS T1 FROM HARMONISED.PRODUCTION.TWILIO_CALL c WHERE c.START_TIME>=ADD_MONTHS(CURRENT_DATE(),-12))q CROSS JOIN p WHERE (ARRAYS_OVERLAP(ARRAY_CONSTRUCT(q.F1,q.T1),SPLIT(:phone10,','))OR ARRAYS_OVERLAP(ARRAY_CONSTRUCT(q.F1,q.T1),p.P))),mm AS(SELECT m.EVENTTIMESTAMP::TIMESTAMP_NTZ AS U,m.CUSTOMERCALLSID AS CS,COALESCE(m.WORKERCALLSID,m.TASKSID)AS WS,m.CONFERENCESID AS CF,COALESCE(m.TALKTIME,0)AS TT,LOWER(m.TASKTYPE)AS TY,INITCAP(REPLACE(SPLIT_PART(m.WORKEREMAIL,'@',1),'.',' '))AS AG,RIGHT(REGEXP_REPLACE(m.FROMNUMBER,'[^0-9]',''),10) AS F1,RIGHT(REGEXP_REPLACE(m.TONUMBER,'[^0-9]',''),10) AS T1,COALESCE(m.V4LISTINGID,m.CALISTINGID)AS LI FROM CONFORMED.PRODUCTION.FCT_TWILIO_CALL_METRICS m WHERE m.TASKCHANNELNAME='voice' AND NOT LOWER(m.WORKEREMAIL)REGEXP '.*(sophie|amy-sdr).*' AND m.EVENTTIMESTAMP>=ADD_MONTHS(CURRENT_DATE(),-12)),u AS(SELECT t.U,t.SID,IFF(t.DR ILIKE 'outbound%','Outbound','Inbound')AS DIR,INITCAP(REPLACE(t.ST,'-',' '))||IFF(COALESCE(t.DU,0)>0,' ('||t.DU||'s)','')AS OC,t.F1,t.T1,mm.LI,mm.WS,mm.CF,mm.AG FROM t LEFT JOIN mm ON mm.CS=t.SID QUALIFY ROW_NUMBER()OVER(PARTITION BY t.SID ORDER BY mm.U)=1 UNION ALL SELECT mm.U,mm.CS,IFF(mm.TY='inbound','Inbound','Outbound'),IFF(mm.TT>0,'Connected ('||mm.TT||'s)','No Talk Time'),mm.F1,mm.T1,mm.LI,mm.WS,mm.CF,mm.AG FROM mm LEFT JOIN t ON t.SID=mm.CS OR(t.F1=mm.F1 AND ABS(DATEDIFF('second',t.U,mm.U))<=10)WHERE t.SID IS NULL),v AS(SELECT u.*,CONVERT_TIMEZONE('UTC','Europe/London',u.U)::TIMESTAMP_NTZ AS T,ARRAY_TO_STRING(ARRAY_CONSTRUCT_COMPACT(IFF(ARRAYS_OVERLAP(ARRAY_CONSTRUCT(u.F1,u.T1),SPLIT(:phone10,',')),'Customer Number',NULL),IFF(ARRAY_CONTAINS(TO_VARIANT(u.LI),o.A),'Tagged To Listing',NULL),IFF(ARRAYS_OVERLAP(ARRAY_CONSTRUCT(u.F1,u.T1),p.P),'Listing Contact Number',NULL)),', ')AS WHY FROM u CROSS JOIN o CROSS JOIN p),r AS(SELECT CALL_SID,MAX(RECORDING_ID)AS RID FROM CONFORMED.PRODUCTION.CALL_TRANSCRIPT_CALLS WHERE RECORDING_ID LIKE 'RE%' AND CALL_SID IN(SELECT WS FROM v)GROUP BY CALL_SID),fx AS(SELECT CONVERSATION_ATTRIBUTE_4 AS CF,ANY_VALUE(CONVERSATION)AS FU FROM HARMONISED.PRODUCTION.TWILIO_FLEX_INSIGHTS_BI_TWILIO_TELEPHONY WHERE CONVERSATION_ATTRIBUTE_4 ILIKE 'CF%' GROUP BY 1),x AS(SELECT v.*,r.RID,fx.FU,IFF(v.T>=w.F AND v.T<w.E+1,1,0)AS IW,IFF(v.T<w.F,1,0)AS B,IFF(v.T>=w.E+1,1,0)AS A,IFF(v.T<w.F,DATEDIFF('day',v.T::DATE,w.F),DATEDIFF('day',w.E,v.T::DATE))AS DS FROM v CROSS JOIN w LEFT JOIN r ON r.CALL_SID=v.WS LEFT JOIN fx ON fx.CF=v.CF WHERE v.WHY<>''),y AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY IW,B ORDER BY IFF(IW=1,0,DS),T DESC)AS S FROM x),z AS(SELECT y.*,'<!--'||y.A||LPAD(y.S,3,'0')||'-->'||'<tr>'||k.C||CONCAT_WS('</td>'||k.C,y.S+IFF(y.IW+y.B=0,LEAST(5,SUM(y.B)OVER()),0),TO_CHAR(y.T,'DD/MM/YYYY HH24:MI')||IFF(y.IW=1,'',' ('||y.DS||IFF(y.B=1,' day(s) before)',' day(s) after)')),y.DIR,y.OC,y.WHY,COALESCE(y.AG,'Not Recorded'),IFF(y.RID IS NULL,'-','<a href=\"https://twilio-recordings.anyvan.com/recordings/'||y.RID||'\">Recording</a>'),IFF(y.FU IS NULL,'-','<a href=\"'||y.FU||'\">Twilio Flex</a>'),IFF(y.SID ILIKE 'CA%','<a href=\"https://console.twilio.com/us1/monitor/logs/calls/'||y.SID||'\">Twilio Console</a>','-'))||'</td></tr>' AS H FROM y CROSS JOIN k) SELECT SUM(z.IW)AS INTERACTIONS,COUNT_IF(z.IW=1 AND z.RID IS NOT NULL)AS RECORDINGS,COUNT_IF(z.IW=1 AND z.DIR='Outbound')AS OUTBOUND,COUNT_IF(z.IW=1 AND z.WHY ILIKE '%Contact%')AS CONTACT_HITS,MAX(w.F)AS WINDOW_FROM,MAX(w.E)AS WINDOW_TO,MAX(w.CL)AS FROM_CLAMPED,SUM(z.B)AS BEFORE_N,MIN(IFF(z.B=1,z.T,NULL))::DATE AS BEFORE_FIRST,MAX(IFF(z.B=1,z.T,NULL))::DATE AS BEFORE_LAST,SUM(z.A)AS AFTER_N,MIN(IFF(z.A=1,z.T,NULL))::DATE AS AFTER_FIRST,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(z.IW=1 AND z.S>(TRY_TO_NUMBER(:page)-1)*10 AND z.S<=TRY_TO_NUMBER(:page)*10,z.H,NULL))),''),'<!--[0-9]+-->','')AS ROWS_HTML,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(z.IW=0 AND z.S<=5 AND TRY_TO_NUMBER(:page)=0,z.H,NULL))),''),'<!--[0-9]+-->','')AS NEAR_HTML FROM w LEFT JOIN z ON 1=1 LIMIT 1"
+  },
+  {
+    "description": "Calls in other systems for the customer's phone or email (12-month cap): Sophie AI, Aircall and Jiminny sales calls (Jiminny matched by phone, submitted email, or the booking owner's email), UK time. One row: INTERACTIONS, WINDOW_*, BEFORE_*/AFTER_*, ROWS_HTML (newest 100).",
+    "name": "dsr_calls_other",
+    "params": [
+      {
+        "description": "Data subject email from the submission",
+        "name": "email",
+        "required": true,
+        "sample": "jane@example.com",
+        "type": "string"
+      },
+      {
+        "description": "Last 10 digits of the data subject phone (digits only), or none",
+        "name": "phone10",
+        "required": true,
+        "sample": "7700900123",
+        "type": "string"
+      },
+      {
+        "description": "Listing id 1, digits only (no AV prefix), or 0",
+        "name": "listing_1",
+        "required": true,
+        "sample": "9644155",
+        "type": "string"
+      },
+      {
+        "description": "Listing id 2, digits only (no AV prefix), or 0",
+        "name": "listing_2",
+        "required": true,
+        "sample": "0",
+        "type": "string"
+      },
+      {
+        "description": "Listing id 3, digits only (no AV prefix), or 0",
+        "name": "listing_3",
+        "required": true,
+        "sample": "0",
+        "type": "string"
+      },
+      {
+        "description": "Window start YYYY-MM-DD, or none. Calls older than 12 months are clamped; chats look back 24 months",
+        "name": "from_date",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      },
+      {
+        "description": "Window end YYYY-MM-DD inclusive, or none for today",
+        "name": "to_date",
+        "required": true,
+        "sample": "2026-09-30",
+        "type": "string"
+      }
+    ],
+    "sql": "WITH w AS(SELECT GREATEST(COALESCE(TRY_TO_DATE(:from_date),ADD_MONTHS(CURRENT_DATE(),-12)),ADD_MONTHS(CURRENT_DATE(),-12))AS F,COALESCE(TRY_TO_DATE(:to_date),CURRENT_DATE())AS E,IFF(TRY_TO_DATE(:from_date)<ADD_MONTHS(CURRENT_DATE(),-12),1,0)AS CL),k AS(SELECT '<td style=\"padding:8px 14px 8px 8px;border-bottom:1px solid #ddd\">' AS C),le AS(SELECT LOWER(u.EMAIL_ADDRESS) AS EM FROM CONFORMED.PRODUCTION.MASTER_LISTING l JOIN CONFORMED.PRODUCTION.DIM_USER_CUSTOMER u ON u.USER_ID=l.LISTING_USER_ID WHERE l.LISTING_ID IN(TRY_TO_NUMBER(:listing_1),TRY_TO_NUMBER(:listing_2),TRY_TO_NUMBER(:listing_3))AND LOWER(u.EMAIL_ADDRESS)<>LOWER(:email) GROUP BY 1),jc AS(SELECT m.EVENT_ID,m.ANYVAN_USER_TEAMNAME AS TM,CONVERT_TIMEZONE('UTC','Europe/London',TRY_TO_TIMESTAMP(m.ACTUAL_START_TIME)::TIMESTAMP_NTZ)::TIMESTAMP_NTZ AS T,m.DURATION_SECONDS AS DU,m.STATUS AS ST,m.PARTICIPANTS AS P FROM HARMONISED.PRODUCTION.JIMINNY_CALL_METADATA m WHERE TRY_TO_DATE(LEFT(m.ACTUAL_START_TIME,10))>=ADD_MONTHS(CURRENT_DATE(),-12) AND (m.PARTICIPANTS ILIKE CONCAT('%',RIGHT(:phone10,4),'%') OR m.PARTICIPANTS ILIKE CONCAT('%',:email,'%') OR EXISTS(SELECT 1 FROM le WHERE m.PARTICIPANTS ILIKE CONCAT('%',le.EM,'%')))),jm AS(SELECT EVENT_ID,ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(DISTINCT BY1)),' + ')AS BY2 FROM (SELECT c.EVENT_ID,'Phone' AS BY1 FROM jc c,LATERAL FLATTEN(input=>REGEXP_SUBSTR_ALL(c.P,'''phone'':\\\\s*''([^'']+)''',1,1,'e',1))f WHERE RIGHT(REGEXP_REPLACE(f.value::string,'[^0-9]',''),10)=:phone10 UNION ALL SELECT c.EVENT_ID,'Email' FROM jc c,LATERAL FLATTEN(input=>REGEXP_SUBSTR_ALL(c.P,'''email'':\\\\s*''([^'']+)''',1,1,'e',1))f WHERE LOWER(f.value::string)=LOWER(:email) UNION ALL SELECT c.EVENT_ID,'Listing Email' FROM jc c,LATERAL FLATTEN(input=>REGEXP_SUBSTR_ALL(c.P,'''email'':\\\\s*''([^'']+)''',1,1,'e',1))f WHERE LOWER(f.value::string) IN(SELECT EM FROM le))GROUP BY 1),ev AS(SELECT CONVERT_TIMEZONE('UTC','Europe/London',s.EVENTTIMESTAMP::TIMESTAMP_NTZ)::TIMESTAMP_NTZ AS T,'Sophie AI' AS SRC,COALESCE(s.INTERACTION_TYPE,'AI call') AS DT,IFF(s.RECORDINGSID IS NULL,'-','<a href=\"https://twilio-recordings.anyvan.com/recordings/'||s.RECORDINGSID||'\">Recording</a>') AS LK FROM MART_SALES_OPS.PRODUCTION.SOPHIE_CALLS_INCREMENTAL s WHERE RIGHT(REGEXP_REPLACE(s.CUSTOMERPHONENUMBER,'[^0-9]',''),10)=:phone10 AND s.EVENTTIMESTAMP>=ADD_MONTHS(CURRENT_DATE(),-12) UNION ALL SELECT CONVERT_TIMEZONE('UTC','Europe/London',COALESCE(TRY_TO_TIMESTAMP(a.STARTED_AT::string),a.SYNCED_DATE)::TIMESTAMP_NTZ)::TIMESTAMP_NTZ,'Aircall',INITCAP(a.DIRECTION)||IFF(a.ANSWERED_AT IS NULL,' - Not Answered',' - Answered'),IFF(a.RECORDING IS NULL,'-','<a href=\"'||a.RECORDING::string||'\">Recording</a>') FROM HARMONISED.PRODUCTION.AIRCALL_CALL a WHERE NOT COALESCE(a.DELETED_ROW,FALSE)AND RIGHT(REGEXP_REPLACE(COALESCE(a.RAW_DIGITS,''),'[^0-9]',''),10)=:phone10 AND a.SYNCED_DATE>=ADD_MONTHS(CURRENT_DATE(),-12) UNION ALL SELECT j.T,'Jiminny',COALESCE(j.TM,'')||' - '||COALESCE(j.DU::string,'?')||'s - '||INITCAP(COALESCE(j.ST,'')),'Jiminny ID '||j.EVENT_ID||' (matched by '||jm.BY2||')' FROM jc j JOIN jm USING(EVENT_ID)),x AS(SELECT ev.*,IFF(ev.T>=w.F AND ev.T<DATEADD('day',1,w.E),1,0)AS IW,IFF(ev.T<w.F,1,0)AS B,IFF(ev.T>=DATEADD('day',1,w.E),1,0)AS A FROM ev CROSS JOIN w),y AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY IW ORDER BY T DESC)AS RN FROM x) SELECT SUM(y.IW)AS INTERACTIONS,MAX(w.F)AS WINDOW_FROM,MAX(w.E)AS WINDOW_TO,SUM(y.B)AS BEFORE_N,MIN(IFF(y.B=1,y.T,NULL))::DATE AS BEFORE_FIRST,MAX(IFF(y.B=1,y.T,NULL))::DATE AS BEFORE_LAST,SUM(y.A)AS AFTER_N,MIN(IFF(y.A=1,y.T,NULL))::DATE AS AFTER_FIRST,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(y.IW=1 AND y.RN<=100,'<!--'||LPAD(y.RN,3,'0')||'-->'||'<tr>'||k.C||y.RN||'</td>'||k.C||TO_CHAR(y.T,'DD/MM/YYYY HH24:MI')||'</td>'||k.C||y.SRC||'</td>'||k.C||y.DT||'</td>'||k.C||y.LK||'</td></tr>',NULL))),''),'<!--[0-9]+-->','')AS ROWS_HTML FROM w CROSS JOIN k LEFT JOIN y ON 1=1 LIMIT 1"
+  },
+  {
+    "description": "WhatsApp and Live Chat by customer phone (24-month default lookback). Two rows (WhatsApp, Live Chat): INTERACTIONS, WINDOW_FROM/TO, BEFORE_N/FIRST/LAST and AFTER_N/FIRST (outside the window), ROWS_HTML (newest 100 table rows). Admin and Sophie AI. Lags ~1h.",
+    "name": "dsr_chats",
+    "params": [
+      {
+        "description": "Last 10 digits of the data subject phone (digits only), or none",
+        "name": "phone10",
+        "required": true,
+        "sample": "7700900123",
+        "type": "string"
+      },
+      {
+        "description": "Window start YYYY-MM-DD, or none. Calls older than 12 months are clamped; chats look back 24 months",
+        "name": "from_date",
+        "required": true,
+        "sample": "2026-09-01",
+        "type": "string"
+      },
+      {
+        "description": "Window end YYYY-MM-DD inclusive, or none for today",
+        "name": "to_date",
+        "required": true,
+        "sample": "2026-09-30",
+        "type": "string"
+      }
+    ],
+    "sql": "WITH w AS(SELECT COALESCE(TRY_TO_DATE(:from_date),ADD_MONTHS(CURRENT_DATE(),-24))AS F,COALESCE(TRY_TO_DATE(:to_date),CURRENT_DATE())AS E),k AS(SELECT '<td style=\"padding:8px 24px 8px 8px;border-bottom:1px solid #ddd\">' AS C),ev AS(SELECT CASE c.TASKCHANNELNAME WHEN 'whatsapp' THEN 'WhatsApp' ELSE 'Live Chat' END AS CH,CONVERT_TIMEZONE('UTC','Europe/London',c.EVENTTIMESTAMP::TIMESTAMP_NTZ)::TIMESTAMP_NTZ AS T,'Agent' AS SRC,IFF(c.CUSTOMERCALLSID IS NULL,NULL,'https://av-public-2653.s3.eu-west-1.amazonaws.com/twilio-message-viewer.html?conversationId='||c.CUSTOMERCALLSID)AS U FROM CONFORMED.PRODUCTION.FCT_TWILIO_CALL_METRICS c WHERE c.TASKCHANNELNAME IN('whatsapp','chat')AND c.WORKEREMAIL IS NOT NULL AND LOWER(c.WORKEREMAIL)NOT LIKE '%sophie%' AND (RIGHT(REGEXP_REPLACE(c.FROMNUMBER,'[^0-9]',''),10)=:phone10 OR RIGHT(REGEXP_REPLACE(c.TONUMBER,'[^0-9]',''),10)=:phone10)AND c.EVENTTIMESTAMP>=ADD_MONTHS(CURRENT_DATE(),-24) UNION ALL SELECT IFF(s.CUSTOMERPHONENUMBER LIKE '+%','WhatsApp','Live Chat'),CONVERT_TIMEZONE('UTC','Europe/London',s.EVENTTIMESTAMP::TIMESTAMP_NTZ)::TIMESTAMP_NTZ,'Sophie AI','https://av-public-2653.s3.eu-west-1.amazonaws.com/twilio-message-viewer.html?conversationId='||s.CALLSID FROM MART_SALES_OPS.PRODUCTION.SOPHIE_CHATS_INCREMENTAL s WHERE RIGHT(REGEXP_REPLACE(s.CUSTOMERPHONENUMBER,'[^0-9]',''),10)=:phone10 AND s.EVENTTIMESTAMP>=ADD_MONTHS(CURRENT_DATE(),-24)),x AS(SELECT ev.*,IFF(ev.T>=w.F AND ev.T<DATEADD('day',1,w.E),1,0)AS IW,IFF(ev.T<w.F,1,0)AS B,IFF(ev.T>=DATEADD('day',1,w.E),1,0)AS A FROM ev CROSS JOIN w),y AS(SELECT x.*,ROW_NUMBER()OVER(PARTITION BY CH,IW ORDER BY T DESC)AS RN FROM x) SELECT h.CH AS CHANNEL,COALESCE(SUM(y.IW),0)AS INTERACTIONS,MAX(w.F)AS WINDOW_FROM,MAX(w.E)AS WINDOW_TO,COALESCE(SUM(y.B),0)AS BEFORE_N,MIN(IFF(y.B=1,y.T,NULL))::DATE AS BEFORE_FIRST,MAX(IFF(y.B=1,y.T,NULL))::DATE AS BEFORE_LAST,COALESCE(SUM(y.A),0)AS AFTER_N,MIN(IFF(y.A=1,y.T,NULL))::DATE AS AFTER_FIRST,REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY_SORT(ARRAY_AGG(IFF(y.IW=1 AND y.RN<=100,'<!--'||LPAD(y.RN,3,'0')||'-->'||'<tr>'||k.C||y.RN||'</td>'||k.C||TO_CHAR(y.T,'DD/MM/YYYY HH24:MI')||'</td>'||k.C||y.SRC||'</td>'||k.C||IFF(y.U IS NULL,'No Link Available','<a href=\"'||y.U||'\">Transcript</a>')||'</td>'||'</tr>',NULL))),''),'<!--[0-9]+-->','')AS ROWS_HTML FROM(SELECT 'WhatsApp' AS CH UNION ALL SELECT 'Live Chat')h CROSS JOIN w CROSS JOIN k LEFT JOIN y ON y.CH=h.CH GROUP BY h.CH ORDER BY h.CH LIMIT 2"
+  },
+  {
+    "description": "Pickup and delivery address ids of the submitted listings (max 3) that the requester OWNS. One row per listing: LISTING_ID, PICKUP_ADDRESS_ID, DELIVERY_ADDRESS_ID. No rows = none owned. Ids only, no personal data.",
+    "name": "dsr_listing_addresses",
+    "params": [
+      {
+        "description": "First listing id, digits only (no AV prefix), or 0",
+        "name": "listing_1",
+        "required": true,
+        "sample": "9644155",
+        "type": "string"
+      },
+      {
+        "description": "Second listing id, digits only, or 0",
+        "name": "listing_2",
+        "required": true,
+        "sample": "9644156",
+        "type": "string"
+      },
+      {
+        "description": "Third listing id, digits only, or 0",
+        "name": "listing_3",
+        "required": true,
+        "sample": "0",
+        "type": "string"
+      },
+      {
+        "description": "Data subject email from the submission",
+        "name": "email",
+        "required": true,
+        "sample": "jane@example.com",
+        "type": "string"
+      }
+    ],
+    "sql": "SELECT i.LISTING_ID,i.PICKUP_ADDRESS AS PICKUP_ADDRESS_ID,i.DELIVERY_ADDRESS AS DELIVERY_ADDRESS_ID FROM HARMONISED.PRODUCTION.LISTING i JOIN(SELECT l.LISTING_ID FROM CONFORMED.PRODUCTION.MASTER_LISTING l JOIN CONFORMED.PRODUCTION.DIM_USER_CUSTOMER u ON u.USER_ID=l.LISTING_USER_ID WHERE LOWER(u.EMAIL_ADDRESS)=LOWER(:email)AND l.LISTING_ID IN(TRY_TO_NUMBER(:listing_1),TRY_TO_NUMBER(:listing_2),TRY_TO_NUMBER(:listing_3)))o ON o.LISTING_ID=i.LISTING_ID WHERE i.LISTING_ID IN(TRY_TO_NUMBER(:listing_1),TRY_TO_NUMBER(:listing_2),TRY_TO_NUMBER(:listing_3))ORDER BY i.LISTING_ID LIMIT 10"
+  },
+  {
+    "description": "Contact numbers held on listing address records (max 6 address ids). One row per number: ADDRESS_ID, KIND (Primary/Mobile/Secondary), SEARCH_NUMBER (only to pass to dsr_calls; never show), NUMBER_ENDS (last 4 digits), MATCHES_ACCOUNT_HOLDER (Yes/No). No names.",
+    "name": "dsr_listing_contacts",
+    "params": [
+      {
+        "description": "Address id from dsr_listing_addresses (digits only), or 0",
+        "name": "address_1",
+        "required": true,
+        "sample": "25500860",
+        "type": "string"
+      },
+      {
+        "description": "Address id from dsr_listing_addresses (digits only), or 0",
+        "name": "address_2",
+        "required": true,
+        "sample": "0",
+        "type": "string"
+      },
+      {
+        "description": "Address id from dsr_listing_addresses (digits only), or 0",
+        "name": "address_3",
+        "required": true,
+        "sample": "0",
+        "type": "string"
+      },
+      {
+        "description": "Address id from dsr_listing_addresses (digits only), or 0",
+        "name": "address_4",
+        "required": true,
+        "sample": "0",
+        "type": "string"
+      },
+      {
+        "description": "Address id from dsr_listing_addresses (digits only), or 0",
+        "name": "address_5",
+        "required": true,
+        "sample": "0",
+        "type": "string"
+      },
+      {
+        "description": "Address id from dsr_listing_addresses (digits only), or 0",
+        "name": "address_6",
+        "required": true,
+        "sample": "0",
+        "type": "string"
+      },
+      {
+        "description": "Last 10 digits of the data subject phone (digits only), or none",
+        "name": "phone10",
+        "required": true,
+        "sample": "7700900123",
+        "type": "string"
+      }
+    ],
+    "sql": "SELECT DISTINCT d.ADDRESS_ID,CASE f.INDEX WHEN 0 THEN 'Primary' WHEN 1 THEN 'Mobile' ELSE 'Secondary' END AS KIND,RIGHT(REGEXP_REPLACE(f.VALUE::STRING,'[^0-9]',''),10)AS SEARCH_NUMBER,RIGHT(REGEXP_REPLACE(f.VALUE::STRING,'[^0-9]',''),4)AS NUMBER_ENDS,IFF(RIGHT(REGEXP_REPLACE(f.VALUE::STRING,'[^0-9]',''),10)=:phone10,'Yes','No')AS MATCHES_ACCOUNT_HOLDER FROM HARMONISED.PRODUCTION.ADDRESS d LEFT JOIN HARMONISED.PRODUCTION.PHONE_NUMBER p ON p.PHONE_NUMBER_ID=d.SECOND_PHONE_NUMBER_ID CROSS JOIN LATERAL FLATTEN(ARRAY_CONSTRUCT(d.PHONE_NUMBER,d.MOBILE_PHONE_NUMBER,p.FULL_NUMBER))f WHERE d.ADDRESS_ID IN(TRY_TO_NUMBER(:address_1),TRY_TO_NUMBER(:address_2),TRY_TO_NUMBER(:address_3),TRY_TO_NUMBER(:address_4),TRY_TO_NUMBER(:address_5),TRY_TO_NUMBER(:address_6))AND LENGTH(REGEXP_REPLACE(f.VALUE::STRING,'[^0-9]',''))>=9 ORDER BY 1,2 LIMIT 50"
+  }
+]

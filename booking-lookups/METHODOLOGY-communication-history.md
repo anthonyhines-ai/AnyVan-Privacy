@@ -1,3 +1,6 @@
+**INTERNAL — no customer personal data in this document itself** (methodology/schema reference
+only; any example identifiers below are illustrative).
+
 # Methodology — Communication-history / DSAR lookup (reusable)
 
 How to locate **all communication** between a customer and AnyVan across every channel. This is
@@ -24,7 +27,10 @@ You then have the full key-set to fan out with: **phone (last-10), email, `USER_
 contact id, listing id(s), prelisting id(s)**, and later the **Twilio call SIDs / recording IDs**.
 
 Remember **prelisting id ≠ listing id** (see `/CLAUDE.md`), and that most channels key off a
-subset of these — the map below names which.
+subset of these — the map below names which. Also remember a customer can have **several phone
+numbers on file**, and the number a requester gives you may not be the one that matches — resolve
+identity from email plus **every** phone on the account (primary, secondary, any alt number
+surfaced by HubSpot or the booking) and cross-confirm, rather than matching on one number alone.
 
 ---
 
@@ -46,7 +52,7 @@ right-hand key(s).
 | Two-way conversations | `TWILIO_CONVERSATION_MESSAGE` + `TWILIO_CONVERSATION_PARTICIPANT` | `PARTICIPANT_IDENTITY`, `AUTHOR` |
 | Transactional messaging | `EVENTS_MESSAGING_MESSAGE` | `RESOLVED_USER_PHONE` / `RESOLVED_USER_EMAIL` / `USER_ID` |
 | Email events (itemised) | `EVENTS_EMAIL` | `EMAIL_ADDRESS` |
-| Email (HubSpot wide) | `HUBSPOT_EVENTS_EMAIL`, `HUBSPOT_EMAIL_CAMPAIGNS` | email |
+| Email (HubSpot wide) | `HUBSPOT_EMAIL_CAMPAIGNS` | email |
 | AI chat (Sophie) | `EVENTS_SOPHIE_CHAT` | `LISTING_ID`, `CONVERSATION_SID` |
 | Call-back requests | `EVENTS_CALL_ME_BACK` | `PRE_LISTING_ID`, `CALLBACK_PRE_LISTING_HASH` |
 | Support tickets | `FRESHDESK_TICKET` | (empty as of 2026-08 — check anyway) |
@@ -55,6 +61,14 @@ right-hand key(s).
 
 The schema evolves — when in doubt, discover with a per-DB `INFORMATION_SCHEMA` sweep (§3.5),
 filtering names on `%TWILIO%|%MESSAGE%|%EMAIL%|%CALL%|%CHAT%|%TICKET%|%REVIEW%|%FEEDBACK%`.
+
+**Schema check (2026-11-11):** `HUBSPOT_EVENTS_EMAIL` (previously listed alongside
+`HUBSPOT_EMAIL_CAMPAIGNS` above) only exists in `HARMONISED.DEVELOPMENT`, not `PRODUCTION` —
+removed from the table above since it's not usable under this project's read-only-PRODUCTION-only
+rule. For HubSpot-wide email history beyond `HUBSPOT_EMAIL_CAMPAIGNS`, use the HubSpot CRM
+engagement objects directly (§2) — the contact-level marketing counters there cover lifetime sends
+that `EVENTS_EMAIL`/`HUBSPOT_EMAIL_CAMPAIGNS` may not itemise. All 19 other tables referenced in
+this map were re-confirmed present in `HARMONISED.PRODUCTION`.
 
 ---
 
